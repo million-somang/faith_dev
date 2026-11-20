@@ -336,10 +336,8 @@ export function App() {
   return (
     <ErrorBoundary>
       <div
-        className={`w-full bg-[#FAF8F5] text-[#24211D] flex flex-col font-sans antialiased selection:bg-indigo-600 selection:text-white ${
-          isStandalone
-            ? 'min-h-screen md:py-4 md:px-4'
-            : 'h-screen max-h-[850px] overflow-hidden'
+        className={`w-full min-h-screen bg-[#FAF8F5] text-[#24211D] flex flex-col font-sans antialiased selection:bg-indigo-600 selection:text-white ${
+          isStandalone ? 'md:py-4 md:px-4' : ''
         }`}
       >
         {/* 4초 불투명 웜 베이지 스플래시 */}
@@ -348,12 +346,12 @@ export function App() {
         {/* 100% 올클리어 콘페티 축하 이펙트 */}
         <ConfettiBurst active={showConfetti} onComplete={() => setShowConfetti(false)} />
 
-        {/* 메인 반응형 컨테이너: 모바일/팝업 450px Zero-Scroll ➔ 태블릿 3xl ➔ PC 5xl */}
+        {/* 메인 반응형 컨테이너: 모바일/팝업 450px ➔ 태블릿 3xl ➔ PC 5xl (단일 페이지 스크롤) */}
         <div
-          className={`w-full max-w-[450px] md:max-w-3xl lg:max-w-5xl mx-auto flex-1 flex flex-col min-h-0 ${
+          className={`w-full max-w-[450px] md:max-w-3xl lg:max-w-5xl mx-auto flex-1 flex flex-col ${
             isStandalone
-              ? 'md:bg-white md:border md:border-[#E5DDD0] md:rounded-3xl md:shadow-sm md:overflow-hidden'
-              : 'h-full overflow-hidden'
+              ? 'md:bg-white md:border md:border-[#E5DDD0] md:rounded-3xl md:shadow-sm md:overflow-clip'
+              : ''
           }`}
         >
           {/* Astryx 상단 헤더 + TabList */}
@@ -428,20 +426,14 @@ export function App() {
             </div>
           )}
 
-          {/* 메인 워크스페이스 */}
-          <main
-            className={`flex-1 min-h-0 p-2.5 sm:p-4 flex flex-col ${
-              activeTab === 'todo' && mobileViewMode === 'board'
-                ? 'overflow-hidden md:overflow-y-auto'
-                : 'overflow-y-auto custom-scrollbar'
-            }`}
-          >
+          {/* 메인 워크스페이스 (내부 중첩 스크롤 없이 브라우저 단일 스크롤 흐름) */}
+          <main className="flex-1 p-2.5 sm:p-4 flex flex-col">
             {activeTab === 'todo' && (
-              <div className="flex-1 min-h-0 flex flex-col md:grid md:grid-cols-12 md:gap-5">
+              <div className="flex-1 flex flex-col md:grid md:grid-cols-12 md:gap-5 md:items-start">
                 {/* 좌측 컬럼 (모바일 1열 전체 / PC 7컬럼) */}
                 <section
                   aria-label="할 일 정리 워크스페이스"
-                  className={`flex-1 min-h-0 flex flex-col gap-2 md:col-span-7 ${
+                  className={`flex-1 flex flex-col gap-2 md:col-span-7 ${
                     mobileViewMode === 'report' ? 'hidden md:flex' : 'flex'
                   }`}
                 >
@@ -449,7 +441,7 @@ export function App() {
                   <TodoQuickAdd inputRef={quickAddInputRef} onAdd={handleAddTodo} />
 
                   {/* 2. 시그니처 화이트 할 일 리스트 보드 (페이지 중심 히어로 영역) */}
-                  <div className="flex-1 min-h-0 flex flex-col bg-white rounded-2xl border-2 border-[#D9CEBC] shadow-[0_6px_22px_rgba(36,33,29,0.08)] overflow-hidden">
+                  <div className="flex-1 flex flex-col bg-white rounded-2xl border-2 border-[#D9CEBC] shadow-[0_6px_22px_rgba(36,33,29,0.08)] overflow-clip">
                     {/* 보드 상단 시그니처 헤더 */}
                     <div className="px-3 py-2 border-b border-[#EFE8DC] bg-gradient-to-r from-indigo-50/65 via-white to-white flex items-center justify-between gap-2 shrink-0">
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -521,8 +513,8 @@ export function App() {
                       totalCount={stats.totalCount}
                     />
 
-                    {/* 메인 스크롤 할 일 리스트 (flex-1 min-h-0 내부 스크롤 격리 -> 외부 밀림 0px) */}
-                    <div className="flex-1 min-h-[240px] md:min-h-[380px] md:max-h-[540px] overflow-y-auto custom-scrollbar p-2.5 space-y-2 bg-[#FAF8F5]/50">
+                    {/* 메인 할 일 리스트 (내부 중첩 스크롤 금지 -> 브라우저 단일 스크롤로 자연 확장) */}
+                    <div className="flex-1 min-h-[260px] md:min-h-[420px] p-2.5 space-y-2 bg-[#FAF8F5]/50">
                       {filteredTodos.length > 0 ? (
                         filteredTodos.map((item, idx) => (
                           <TodoItemCard
