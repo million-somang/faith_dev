@@ -49,6 +49,7 @@ export function App() {
   const [legalDoc, setLegalDoc] = useState<LegalDocType>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState<boolean>(false);
+  const [localBannerDismissed, setLocalBannerDismissed] = useState<boolean>(false);
 
   const quickAddInputRef = useRef<HTMLInputElement | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -385,22 +386,33 @@ export function App() {
             </div>
           )}
 
-          {!isCheckingAuth && !isAuthenticated && (
-            <div className="px-3 pt-1.5 shrink-0">
-              <Banner
-                status="info"
-                title="로컬 모드 · 로그인 시 DB 영구 저장"
-                description="마이페이지·다기기 실시간 동기화"
-                isDismissable
-                endContent={
-                  <Button
-                    label="로그인"
-                    variant="secondary"
-                    size="sm"
+          {!isCheckingAuth && !isAuthenticated && !localBannerDismissed && (
+            <div className="px-2.5 sm:px-4 pt-1.5 shrink-0">
+              <div className="px-2.5 py-1 rounded-xl bg-indigo-50/85 border border-indigo-200/80 text-[11px] flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <i className="fas fa-circle-info text-indigo-600 text-[10px] shrink-0"></i>
+                  <span className="font-bold text-indigo-950 truncate">
+                    로컬 모드 · 로그인 시 DB 영구 저장
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
                     onClick={handleOpenLogin}
-                  />
-                }
-              />
+                    className="px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-[10px] font-black cursor-pointer transition-colors"
+                  >
+                    로그인
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLocalBannerDismissed(true)}
+                    aria-label="로컬 모드 안내 닫기"
+                    className="w-5 h-5 rounded-md text-indigo-500 hover:bg-indigo-100 hover:text-indigo-800 flex items-center justify-center cursor-pointer"
+                  >
+                    <i className="fas fa-times text-[10px]"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -433,132 +445,114 @@ export function App() {
                     mobileViewMode === 'report' ? 'hidden md:flex' : 'flex'
                   }`}
                 >
-                  {/* 1. 원라인 통합 상태 바 */}
-                  <div className="bg-white rounded-2xl px-3 py-1.5 border border-[#E5DDD0] astryx-warm-shadow flex items-center justify-between gap-2 shrink-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <svg viewBox="0 0 22 22" className="w-6 h-6 -rotate-90 shrink-0" aria-hidden="true">
-                        <circle cx="11" cy="11" r="8" fill="none" stroke="#E5DDD0" strokeWidth="3" />
-                        <circle
-                          cx="11"
-                          cy="11"
-                          r="8"
-                          fill="none"
-                          stroke="#4338CA"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeDasharray={miniRingCircumference}
-                          strokeDashoffset={miniRingOffset}
-                        />
-                      </svg>
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-black text-[#24211D] truncate">
-                          {formatTodayKoreanLabel()}
-                          {isLoadingRemote && (
-                            <span className="ml-1.5 text-[9px] text-indigo-600 font-bold">
-                              동기화 중...
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[10px] font-bold text-[#6C655B]">
-                          완료 <strong className="text-indigo-700">{stats.completedCount}</strong> /{' '}
-                          {stats.totalCount}건 ({stats.completionRate}%) · 반복 {stats.recurringCount}건
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {pomodoro.isRunning && (
-                        <span className="px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-[10px] font-mono font-black text-indigo-700 animate-pulse-ring">
-                          <i className="fas fa-stopwatch mr-1"></i>
-                          {pomodoro.formattedTime}
-                        </span>
-                      )}
-                      <Button
-                        label="오늘 리포트"
-                        variant="primary"
-                        size="sm"
-                        onClick={() => setMobileViewMode('report')}
-                        data-screenshot-click="result"
-                        className="md:hidden"
-                        icon={<i className="fas fa-chart-pie text-[10px]"></i>}
-                      />
-                    </div>
-                  </div>
-
-                  {/* 2. Astryx 빠른 입력 + 반복 스케줄러 카드 */}
+                  {/* 1. 슬림 1행 빠른 입력 + 펼침 반복 스케줄러 카드 */}
                   <TodoQuickAdd inputRef={quickAddInputRef} onAdd={handleAddTodo} />
 
-                  {/* 3. 필터 · 정렬 · 검색 바 */}
-                  <TodoFilterBar
-                    filter={filter}
-                    onChangeFilter={setFilter}
-                    activeCount={stats.activeCount}
-                    completedCount={stats.completedCount}
-                    recurringCount={stats.recurringCount}
-                    todayCount={stats.todayDueCount}
-                    totalCount={stats.totalCount}
-                  />
+                  {/* 2. 시그니처 화이트 할 일 리스트 보드 (페이지 중심 히어로 영역) */}
+                  <div className="flex-1 min-h-0 flex flex-col bg-white rounded-2xl border-2 border-[#D9CEBC] shadow-[0_6px_22px_rgba(36,33,29,0.08)] overflow-hidden">
+                    {/* 보드 상단 시그니처 헤더 */}
+                    <div className="px-3 py-2 border-b border-[#EFE8DC] bg-gradient-to-r from-indigo-50/65 via-white to-white flex items-center justify-between gap-2 shrink-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                          <i className="fas fa-list-check text-xs"></i>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h2 className="text-[14px] sm:text-[15px] font-black text-[#1C1917] tracking-tight">
+                              오늘의 할 일
+                            </h2>
+                            <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black tabular-nums">
+                              진행중 {stats.activeCount}건
+                            </span>
+                          </div>
+                          <div className="text-[10px] font-bold text-[#6C655B] truncate">
+                            {formatTodayKoreanLabel()} · 완료{' '}
+                            <strong className="text-indigo-700">{stats.completedCount}</strong>/
+                            {stats.totalCount} ({stats.completionRate}%)
+                            {stats.recurringCount > 0 && ` · 반복 ${stats.recurringCount}건`}
+                            {isLoadingRemote && (
+                              <span className="ml-1 text-indigo-600">동기화 중...</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
-                  {/* 4. 가변 할 일 리스트 (flex-1 min-h-0 내부 스크롤 격리 -> 외부 밀림 0px!) */}
-                  <div className="flex-1 min-h-[120px] md:min-h-[300px] md:max-h-[460px] overflow-y-auto custom-scrollbar pr-0.5 space-y-2">
-                    {filteredTodos.length > 0 ? (
-                      filteredTodos.map((item, idx) => (
-                        <TodoItemCard
-                          key={item.id}
-                          item={item}
-                          isPinned={pomodoro.pinnedTodoId === item.id}
-                          canReorder={canReorder}
-                          isFirst={idx === 0}
-                          isLast={idx === filteredTodos.length - 1}
-                          onToggle={handleToggleTodo}
-                          onUpdate={updateTodo}
-                          onSoftDelete={softDeleteTodo}
-                          onMoveOrder={moveTodoOrder}
-                          onTogglePin={pomodoro.togglePinTodo}
-                          onAddSubtask={addSubtask}
-                          onToggleSubtask={toggleSubtask}
-                          onRemoveSubtask={removeSubtask}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <svg viewBox="0 0 22 22" className="w-6 h-6 -rotate-90 shrink-0" aria-hidden="true">
+                          <circle cx="11" cy="11" r="8" fill="none" stroke="#E5DDD0" strokeWidth="3" />
+                          <circle
+                            cx="11"
+                            cy="11"
+                            r="8"
+                            fill="none"
+                            stroke="#4338CA"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeDasharray={miniRingCircumference}
+                            strokeDashoffset={miniRingOffset}
+                          />
+                        </svg>
+                        {pomodoro.isRunning && (
+                          <span className="px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-[10px] font-mono font-black text-indigo-700 animate-pulse-ring">
+                            <i className="fas fa-stopwatch mr-1"></i>
+                            {pomodoro.formattedTime}
+                          </span>
+                        )}
+                        <Button
+                          label="오늘 리포트"
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setMobileViewMode('report')}
+                          data-screenshot-click="result"
+                          className="md:hidden"
+                          icon={<i className="fas fa-chart-pie text-[10px]"></i>}
                         />
-                      ))
-                    ) : (
-                      <TodoEmptyState
-                        isFiltered={isFiltered}
-                        onResetFilters={resetFilters}
-                        onAddRoutine={handleAddRoutine}
-                      />
-                    )}
-                  </div>
-
-                  {/* 5. 하단 실시간 메트릭 & 휴지통/정리 액션 바 */}
-                  <div className="bg-white rounded-2xl p-2 border border-[#E5DDD0] astryx-warm-shadow space-y-1.5 shrink-0">
-                    <div className="grid grid-cols-4 gap-1.5 text-center">
-                      <div className="bg-[#FAF8F5] border border-[#EAE3D7] rounded-xl py-1 px-1">
-                        <span className="block text-[9px] font-bold text-[#6C655B]">진행중</span>
-                        <span className="text-[11px] font-mono font-black text-indigo-700">
-                          {stats.activeCount}건
-                        </span>
-                      </div>
-                      <div className="bg-[#FAF8F5] border border-[#EAE3D7] rounded-xl py-1 px-1">
-                        <span className="block text-[9px] font-bold text-[#6C655B]">반복루틴</span>
-                        <span className="text-[11px] font-mono font-black text-[#24211D]">
-                          {stats.recurringCount}건
-                        </span>
-                      </div>
-                      <div className="bg-[#FAF8F5] border border-[#EAE3D7] rounded-xl py-1 px-1">
-                        <span className="block text-[9px] font-bold text-[#6C655B]">최고연속</span>
-                        <span className="text-[11px] font-mono font-black text-amber-700">
-                          {stats.maxStreak}회
-                        </span>
-                      </div>
-                      <div className="bg-[#FAF8F5] border border-[#EAE3D7] rounded-xl py-1 px-1">
-                        <span className="block text-[9px] font-bold text-[#6C655B]">달성률</span>
-                        <span className="text-[11px] font-mono font-black text-emerald-700">
-                          {stats.completionRate}%
-                        </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-[#EAE3D7] text-[10px]">
+                    {/* 보드 통합 필터 · 정렬 · 검색 바 */}
+                    <TodoFilterBar
+                      filter={filter}
+                      onChangeFilter={setFilter}
+                      activeCount={stats.activeCount}
+                      completedCount={stats.completedCount}
+                      recurringCount={stats.recurringCount}
+                      todayCount={stats.todayDueCount}
+                      totalCount={stats.totalCount}
+                    />
+
+                    {/* 메인 스크롤 할 일 리스트 (flex-1 min-h-0 내부 스크롤 격리 -> 외부 밀림 0px) */}
+                    <div className="flex-1 min-h-[240px] md:min-h-[380px] md:max-h-[540px] overflow-y-auto custom-scrollbar p-2.5 space-y-2 bg-[#FAF8F5]/50">
+                      {filteredTodos.length > 0 ? (
+                        filteredTodos.map((item, idx) => (
+                          <TodoItemCard
+                            key={item.id}
+                            item={item}
+                            isPinned={pomodoro.pinnedTodoId === item.id}
+                            canReorder={canReorder}
+                            isFirst={idx === 0}
+                            isLast={idx === filteredTodos.length - 1}
+                            onToggle={handleToggleTodo}
+                            onUpdate={updateTodo}
+                            onSoftDelete={softDeleteTodo}
+                            onMoveOrder={moveTodoOrder}
+                            onTogglePin={pomodoro.togglePinTodo}
+                            onAddSubtask={addSubtask}
+                            onToggleSubtask={toggleSubtask}
+                            onRemoveSubtask={removeSubtask}
+                          />
+                        ))
+                      ) : (
+                        <TodoEmptyState
+                          isFiltered={isFiltered}
+                          onResetFilters={resetFilters}
+                          onAddRoutine={handleAddRoutine}
+                        />
+                      )}
+                    </div>
+
+                    {/* 슬림 보드 푸터 (1줄 휴지통 · 정리 · 복사 유틸 바) */}
+                    <div className="px-2.5 py-1.5 border-t border-[#EFE8DC] bg-[#FCFBF8] flex items-center justify-between gap-1.5 shrink-0">
                       <Button
                         label={`휴지통 (${stats.trashCount})`}
                         variant="secondary"
@@ -591,9 +585,9 @@ export function App() {
                   </div>
                 </section>
 
-                {/* 우측 컬럼 (모바일 리포트 모드 / PC 5컬럼 상시 노출) */}
+                {/* 우측 컬럼 (모바일 리포트 모드 / PC 5컬럼 톤다운 보조 영역) */}
                 <div
-                  className={`md:col-span-5 ${
+                  className={`md:col-span-5 md:bg-[#F3EDE3]/80 md:p-2 md:rounded-2xl md:border md:border-[#E5DDD0]/80 ${
                     mobileViewMode === 'report' ? 'block' : 'hidden md:block'
                   }`}
                 >

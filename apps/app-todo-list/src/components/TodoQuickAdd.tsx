@@ -6,7 +6,9 @@ import { TextInput } from '@astryxdesign/core/TextInput';
 import { ToggleButton } from '@astryxdesign/core/ToggleButton';
 import {
   CATEGORY_LIST,
+  CATEGORY_MAP,
   PRIORITY_LIST,
+  PRIORITY_MAP,
   RECURRENCE_LIST,
   WEEKDAY_OPTIONS,
 } from '../constants/todoMeta';
@@ -28,6 +30,7 @@ interface TodoQuickAddProps {
 export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
   const now = new Date();
   const [title, setTitle] = useState<string>('');
+  const [optionsOpen, setOptionsOpen] = useState<boolean>(false);
   const [priority, setPriority] = useState<TodoPriority>('important');
   const [category, setCategory] = useState<TodoCategory>('work');
   const [dueDate, setDueDate] = useState<string | null>(() => getLocalDateString());
@@ -45,6 +48,18 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
 
   const todayStr = getLocalDateString();
   const tomorrowStr = getOffsetDateString(1);
+  const selectedPriority = PRIORITY_MAP[priority];
+  const selectedCategory = CATEGORY_MAP[category];
+  const dueShortLabel =
+    dueDate === todayStr
+      ? '오늘'
+      : dueDate === tomorrowStr
+        ? '내일'
+        : dueDate
+          ? dueDate.slice(5).replace('-', '/')
+          : '기한없음';
+  const recShortLabel =
+    RECURRENCE_LIST.find((r) => r.key === recurrenceType)?.shortLabel ?? '1회';
 
   const buildRecurrence = (): Partial<TodoRecurrenceRule> => {
     if (recurrenceType === 'none') {
@@ -100,7 +115,7 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
   return (
     <Card padding={2} elevation="low" className="shrink-0 bg-white border-[#E5DDD0] rounded-2xl">
       <form onSubmit={handleSubmit} className="space-y-2">
-        {/* 1행: Astryx TextInput + Primary Button */}
+        {/* 1행: Astryx TextInput + 옵션 토글 칩 + Primary Button (모바일 1줄 컴팩트) */}
         <div className="flex items-center gap-1.5">
           <div className="flex-1 min-w-0">
             <TextInput
@@ -116,6 +131,32 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
               placeholder="할 일을 입력하고 Enter (단축키 /)"
             />
           </div>
+          <button
+            type="button"
+            onClick={() => setOptionsOpen((prev) => !prev)}
+            aria-expanded={optionsOpen}
+            aria-label="우선순위, 마감일, 반복 설정 펼치기"
+            className={`shrink-0 h-8 px-2 rounded-xl border text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer ${
+              optionsOpen || recurrenceType !== 'none'
+                ? 'bg-indigo-50 border-indigo-300 text-indigo-800'
+                : 'bg-[#FAF8F5] border-[#E5DDD0] text-[#4D473F] hover:bg-[#F2EDE4]'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full shrink-0 ${selectedPriority.dotClass}`} />
+            <span>{selectedPriority.shortLabel}</span>
+            {recurrenceType !== 'none' && (
+              <i className="fas fa-repeat text-[9px] text-indigo-600"></i>
+            )}
+            <span className="hidden sm:inline text-[#6C655B] font-bold">
+              · {selectedCategory.label} · {dueShortLabel}
+              {recurrenceType !== 'none' ? ` · ${recShortLabel}` : ''}
+            </span>
+            <i
+              className={`fas fa-chevron-down text-[9px] text-[#8E8579] transition-transform ${
+                optionsOpen ? 'rotate-180' : ''
+              }`}
+            ></i>
+          </button>
           <Button
             type="submit"
             label="추가"
@@ -126,8 +167,10 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
           />
         </div>
 
-        {/* 2행: 우선순위 + 카테고리 + 마감일 */}
-        <div className="flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
+        {optionsOpen && (
+          <div className="pt-2 border-t border-[#EFE8DC] space-y-2 animate-fade-in">
+            {/* 2행: 우선순위 + 카테고리 + 마감일 */}
+            <div className="flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
           <div className="flex items-center gap-1 shrink-0">
             {PRIORITY_LIST.map((item) => {
               const active = priority === item.key;
@@ -445,6 +488,8 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
             </div>
           )}
         </div>
+          </div>
+        )}
       </form>
     </Card>
   );

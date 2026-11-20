@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
-import { Card } from '@astryxdesign/core/Card';
 import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import {
@@ -158,45 +157,55 @@ export default function TodoItemCard({
   };
 
   return (
-    <Card
-      padding={2}
-      variant={item.completed ? 'muted' : isPinned ? 'blue' : 'default'}
-      elevation={item.completed ? 'none' : isPinned ? 'low' : 'none'}
-      className="rounded-2xl transition-all"
+    <article
+      className={`group relative overflow-hidden rounded-xl border transition-all ${
+        item.completed
+          ? 'bg-[#F6F3EC] border-[#EAE3D7] opacity-80'
+          : isPinned
+            ? 'bg-indigo-50/45 border-indigo-300 ring-1 ring-indigo-300 shadow-sm'
+            : 'bg-white border-[#E4DBD0] hover:border-indigo-300 shadow-[0_1px_3px_rgba(36,33,29,0.06)] hover:shadow-md'
+      }`}
     >
-      <div className="flex items-start gap-2">
-        {/* Astryx CheckboxInput */}
-        <div className="pt-0.5 shrink-0">
-          <CheckboxInput
-            label={item.completed ? `${item.title} 완료 해제` : `${item.title} 완료 체크`}
-            isLabelHidden
-            size="sm"
-            value={item.completed}
-            onChange={() => onToggle(item.id)}
-          />
-        </div>
+      <span
+        aria-hidden="true"
+        className={`absolute inset-y-0 left-0 w-1.5 ${
+          item.completed ? 'bg-stone-300' : priorityMeta.dotClass
+        }`}
+      />
+      <div className="pl-3.5 pr-2.5 py-2.5 sm:pl-4 sm:pr-3 sm:py-3">
+        <div className="flex items-start gap-2.5">
+          {/* Astryx CheckboxInput */}
+          <div className="pt-0.5 shrink-0">
+            <CheckboxInput
+              label={item.completed ? `${item.title} 완료 해제` : `${item.title} 완료 체크`}
+              isLabelHidden
+              size="md"
+              value={item.completed}
+              onChange={() => onToggle(item.id)}
+            />
+          </div>
 
-        {/* 메인 텍스트 + Astryx Badge 행 */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-1.5">
-            <button
-              type="button"
-              onClick={() => setExpanded((prev) => !prev)}
-              className="text-left min-w-0 flex-1 cursor-pointer group pt-0.5"
-            >
-              <p
-                className={`text-xs sm:text-[13px] font-extrabold leading-snug break-words transition-colors ${
-                  item.completed
-                    ? 'line-through text-[#8E8579]'
-                    : 'text-[#24211D] group-hover:text-indigo-700'
-                }`}
+          {/* 메인 텍스트 + Astryx Badge 행 */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-1.5">
+              <button
+                type="button"
+                onClick={() => setExpanded((prev) => !prev)}
+                className="text-left min-w-0 flex-1 cursor-pointer pt-0.5"
               >
-                {item.title}
-              </p>
-            </button>
+                <p
+                  className={`text-[14px] sm:text-[15px] font-extrabold leading-snug tracking-tight break-words transition-colors ${
+                    item.completed
+                      ? 'line-through text-[#8E8579]'
+                      : 'text-[#1C1917] group-hover:text-indigo-700'
+                  }`}
+                >
+                  {item.title}
+                </p>
+              </button>
 
-            {/* 우측 Astryx IconButton 액션 */}
-            <div className="flex items-center gap-0.5 shrink-0">
+              {/* 우측 Astryx IconButton 액션 (시선 분산 완화를 위해 기본 톤다운, 호버/포커스 시 선명) */}
+              <div className="flex items-center gap-0.5 shrink-0 opacity-55 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
               {!item.completed && (
                 <IconButton
                   label="집중 타이머에 고정"
@@ -250,7 +259,7 @@ export default function TodoItemCard({
           </div>
 
           {/* Astryx Badge 메타 행 (우선순위 · 카테고리 · 반복 · 스트릭 · 예정일) */}
-          <div className="flex flex-wrap items-center gap-1 mt-1.5">
+          <div className="flex flex-wrap items-center gap-1 mt-1.5 opacity-90">
             <Badge variant={priorityMeta.badgeVariant} label={priorityMeta.shortLabel} />
             <Badge
               variant={categoryMeta.badgeVariant}
@@ -557,6 +566,7 @@ export default function TodoItemCard({
           </div>
         </div>
       )}
-    </Card>
+      </div>
+    </article>
   );
 }

@@ -49,7 +49,7 @@ export default function TodoFilterBar({
   };
 
   return (
-    <div className="space-y-1.5 shrink-0">
+    <div className="px-2.5 py-1.5 border-b border-[#EFE8DC] bg-[#FCFBF8] space-y-1.5 shrink-0">
       <div className="flex items-center justify-between gap-1">
         {/* 상태 필터 알약 5종 (430px 내 0px 클리핑) */}
         <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto hide-scrollbar">
@@ -63,7 +63,7 @@ export default function TodoFilterBar({
                 className={`px-2 py-1 rounded-xl text-[10px] font-black transition-all cursor-pointer flex items-center gap-1 shrink-0 border ${
                   isSelected
                     ? 'bg-[#24211D] text-white border-[#24211D]'
-                    : 'bg-white text-[#6C655B] border-[#E5DDD0] hover:bg-[#F2EDE4]'
+                    : 'bg-white/90 text-[#6C655B] border-[#E5DDD0] hover:bg-[#F2EDE4]'
                 }`}
               >
                 <span>{tab.label}</span>
