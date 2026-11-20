@@ -12,6 +12,7 @@ import type {
     UseAzitGameController,
 } from '@/types/azit-game.types';
 import { formatDurationCompact } from '@/types/azit-game.types';
+import { getChefSpriteMeta, getMercSpriteMeta } from '@/data/azitCharacterAssets';
 
 export type AzitModalKind = 'market' | 'chefs' | 'mercs' | 'expedition' | null;
 
@@ -392,9 +393,14 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                         <div className="space-y-1.5">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex items-center gap-2.5">
-                                                    <span className="w-11 h-11 rounded-xl bg-white border border-orange-200 flex items-center justify-center text-2xl">
-                                                        {chef.emoji}
-                                                    </span>
+                                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-b from-orange-50 to-white border border-orange-200 shadow-2xs p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                                                        <img
+                                                            src={getChefSpriteMeta(chef.chefCode).spriteUrl}
+                                                            alt={chef.name}
+                                                            className={`w-full h-full object-contain ${levelLocked && !owned ? 'grayscale opacity-65' : ''}`}
+                                                            loading="lazy"
+                                                        />
+                                                    </div>
                                                     <div>
                                                         <div className="text-sm font-black text-slate-900">
                                                             {chef.name}{' '}
@@ -518,10 +524,15 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                     >
                                         <div className="space-y-1.5">
                                             <div className="flex items-start justify-between gap-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="w-10 h-10 rounded-xl bg-white border border-indigo-200 flex items-center justify-center text-xl">
-                                                        {merc.emoji}
-                                                    </span>
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-b from-indigo-50 to-white border border-indigo-200 shadow-2xs p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                                                        <img
+                                                            src={getMercSpriteMeta(merc.mercCode).spriteUrl}
+                                                            alt={merc.name}
+                                                            className={`w-full h-full object-contain ${levelLocked && !owned ? 'grayscale opacity-65' : ''}`}
+                                                            loading="lazy"
+                                                        />
+                                                    </div>
                                                     <div>
                                                         <div className="text-sm font-black text-slate-900">
                                                             {merc.name}{' '}
@@ -751,7 +762,11 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                                             : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                                                     }`}
                                                 >
-                                                    <span>{def?.emoji}</span>
+                                                    <img
+                                                        src={getMercSpriteMeta(merc.mercCode).spriteUrl}
+                                                        alt={def?.name || merc.mercCode}
+                                                        className="w-7 h-7 rounded-lg bg-white/95 p-0.5 object-contain shrink-0"
+                                                    />
                                                     <span>
                                                         {def?.name} Lv.{merc.level}
                                                     </span>

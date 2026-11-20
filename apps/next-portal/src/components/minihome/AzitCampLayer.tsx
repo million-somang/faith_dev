@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import type { AzitExpeditionRecord, AzitFullGameState } from '@/types/azit-game.types';
+import type { AzitExpeditionRecord, AzitFullGameState, AzitMercenaryRecord } from '@/types/azit-game.types';
 import { formatCountdownLabel } from '@/types/azit-game.types';
+import { getMercSpriteMeta } from '@/data/azitCharacterAssets';
 
 const ORIGIN_X = 400;
 const ORIGIN_Y = 236;
@@ -10,13 +11,23 @@ const TILE_W = 66;
 const TILE_H = 33;
 
 const MERC_CAMP_COORDS: Array<{ gridX: number; gridY: number }> = [
-    { gridX: 1.8, gridY: 4.3 },
-    { gridX: 2.9, gridY: 5.2 },
-    { gridX: 4.4, gridY: 5.1 },
-    { gridX: 5.6, gridY: 4.3 },
-    { gridX: 3.5, gridY: 2.4 },
-    { gridX: 5.8, gridY: 3.2 },
+    { gridX: 1.5, gridY: 3.4 },
+    { gridX: 3.5, gridY: 2.3 },
+    { gridX: 1.9, gridY: 5.5 },
+    { gridX: 3.5, gridY: 5.2 },
+    { gridX: 5.9, gridY: 3.6 },
+    { gridX: 5.2, gridY: 4.7 },
 ];
+
+type CampDepthEntity =
+    | { kind: 'campfire'; depth: number }
+    | {
+          kind: 'mercenary';
+          depth: number;
+          merc: AzitMercenaryRecord;
+          idx: number;
+          coord: { gridX: number; gridY: number };
+      };
 
 function getIsoCenter(gridX: number, gridY: number): { x: number; y: number } {
     const x = ORIGIN_X + (gridX - gridY) * (TILE_W / 2);
@@ -73,6 +84,21 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
     const completedCount = gameState.activeExpeditions.filter((e) => e.endsAtMs <= nowMs).length;
     const runningCount = gameState.activeExpeditions.length;
     const nextFinishExp = gameState.activeExpeditions[0] || null;
+
+    const campDepthEntities = useMemo<CampDepthEntity[]>(() => {
+        const entities: CampDepthEntity[] = [{ kind: 'campfire', depth: 7.4 }];
+        gameState.mercenaries.forEach((merc, idx) => {
+            const coord = MERC_CAMP_COORDS[idx] || MERC_CAMP_COORDS[0];
+            entities.push({
+                kind: 'mercenary',
+                depth: coord.gridX + coord.gridY,
+                merc,
+                idx,
+                coord,
+            });
+        });
+        return entities.sort((a, b) => a.depth - b.depth);
+    }, [gameState.mercenaries]);
 
     return (
         <g>
@@ -140,16 +166,6 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
                     );
                 })
             )}
-
-            {/* 중앙 타오르는 모닥불 */}
-            <g transform={`translate(${firePos.x}, ${firePos.y})`}>
-                <ellipse cx="0" cy="4" rx="28" ry="13" fill="#475569" stroke="#1e293b" strokeWidth="1.5" />
-                <ellipse cx="0" cy="2" rx="20" ry="9" fill="#334155" />
-                <line x1="-14" y1="3" x2="14" y2="-1" stroke="#78350f" strokeWidth="5" strokeLinecap="round" />
-                <line x1="-12" y1="-2" x2="12" y2="5" stroke="#92400e" strokeWidth="5" strokeLinecap="round" />
-                <path d="M-9,0 C-10,-16 0,-26 0,-30 C6,-18 12,-14 9,0 Z" fill="#f97316" />
-                <path d="M-5,0 C-5,-11 0,-18 0,-21 C4,-12 6,-9 5,0 Z" fill="#facc15" />
-            </g>
 
             {/* 좌측 상단: 용병 길드 텐트 */}
             <g
@@ -259,59 +275,100 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
                 </text>
             </g>
 
-            {/* 고용된 용병들 2.5D 배치 (미고용 시 모집 안내) */}
-            {gameState.mercenaries.length > 0 ? (
-                gameState.mercenaries.map((merc, idx) => {
-                    const coord = MERC_CAMP_COORDS[idx] || MERC_CAMP_COORDS[0];
-                    const pos = getIsoCenter(coord.gridX, coord.gridY);
-                    const meta = mercCatalogMap.get(merc.mercCode);
-                    const isOut = merc.status === 'expedition';
-
+            {/* 모닥불 및 고용된 용병들 Z-depth 통합 배치 (미고용 시 모집 안내) */}
+            {campDepthEntities.map((entity) => {
+                if (entity.kind === 'campfire') {
                     return (
-                        <g
-                            key={`merc-iso-${merc.mercCode}`}
-                            transform={`translate(${pos.x}, ${pos.y})`}
-                            opacity={isOut ? 0.55 : 1}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onSelectNode('tent');
-                            }}
-                            className="cursor-pointer"
-                        >
-                            <ellipse cx="0" cy="4" rx="17" ry="8" fill="rgba(15, 23, 42, 0.25)" />
-                            {/* 갑옷 몸통 */}
-                            <rect
-                                x="-12"
-                                y="-32"
-                                width="24"
-                                height="30"
-                                rx="9"
-                                fill={isOut ? '#64748b' : '#475569'}
-                                stroke="#1e293b"
-                                strokeWidth="1.4"
-                            />
-                            <rect x="-8" y="-26" width="16" height="14" rx="4" fill="#94a3b8" />
-                            {/* 얼굴 & 투구 */}
-                            <circle cx="0" cy="-42" r="12" fill="#fed7aa" stroke="#92400e" strokeWidth="1.2" />
-                            <path d="M-13,-44 A13,12 0 0,1 13,-44 Z" fill="#64748b" stroke="#1e293b" strokeWidth="1.2" />
-                            <circle cx="-4" cy="-41" r="1.5" fill="#0f172a" />
-                            <circle cx="4" cy="-41" r="1.5" fill="#0f172a" />
-
-                            <rect
-                                x="-42"
-                                y="10"
-                                width="84"
-                                height="17"
-                                rx="8.5"
-                                fill={isOut ? '#7c3aed' : 'rgba(15, 23, 42, 0.86)'}
-                            />
-                            <text x="0" y="21.5" textAnchor="middle" fill="#ffffff" fontSize="9.2" fontWeight="800">
-                                {isOut ? '⚔️ 원정 중' : `${meta?.emoji || '⚔️'} ${meta?.name || merc.mercCode} Lv.${merc.level}`}
-                            </text>
+                        <g key="camp-central-fire" transform={`translate(${firePos.x}, ${firePos.y})`}>
+                            <ellipse cx="0" cy="4" rx="28" ry="13" fill="#475569" stroke="#1e293b" strokeWidth="1.5" />
+                            <ellipse cx="0" cy="2" rx="20" ry="9" fill="#334155" />
+                            <line x1="-14" y1="3" x2="14" y2="-1" stroke="#78350f" strokeWidth="5" strokeLinecap="round" />
+                            <line x1="-12" y1="-2" x2="12" y2="5" stroke="#92400e" strokeWidth="5" strokeLinecap="round" />
+                            <path d="M-9,0 C-10,-16 0,-26 0,-30 C6,-18 12,-14 9,0 Z" fill="#f97316" />
+                            <path d="M-5,0 C-5,-11 0,-18 0,-21 C4,-12 6,-9 5,0 Z" fill="#facc15" />
                         </g>
                     );
-                })
-            ) : (
+                }
+
+                const { merc, idx, coord } = entity;
+                const pos = getIsoCenter(coord.gridX, coord.gridY);
+                const meta = mercCatalogMap.get(merc.mercCode);
+                const sprite = getMercSpriteMeta(merc.mercCode);
+                const isOut = merc.status === 'expedition';
+
+                return (
+                    <g
+                        key={`merc-iso-${merc.mercCode}`}
+                        transform={`translate(${pos.x}, ${pos.y})`}
+                        opacity={isOut ? 0.48 : 1}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectNode('tent');
+                        }}
+                        className="cursor-pointer"
+                    >
+                        <ellipse
+                            cx="0"
+                            cy="5"
+                            rx={sprite.shadowRx}
+                            ry={sprite.shadowRy}
+                            fill="rgba(15, 23, 42, 0.26)"
+                        />
+                        <g>
+                            {!isOut && (
+                                <animateTransform
+                                    attributeName="transform"
+                                    type="translate"
+                                    values="0,0; 0,-2; 0,0"
+                                    dur="3.0s"
+                                    begin={`${(idx * 0.4).toFixed(2)}s`}
+                                    repeatCount="indefinite"
+                                />
+                            )}
+                            <image
+                                href={sprite.spriteUrl}
+                                x={-sprite.spriteWidth / 2}
+                                y={-sprite.spriteHeight + sprite.spriteOffsetY}
+                                width={sprite.spriteWidth}
+                                height={sprite.spriteHeight}
+                                preserveAspectRatio="xMidYMax meet"
+                            />
+                        </g>
+                        {isOut && (
+                            <g transform={`translate(0, ${-sprite.spriteHeight + sprite.spriteOffsetY - 8})`}>
+                                <rect
+                                    x="-26"
+                                    y="-9"
+                                    width="52"
+                                    height="15"
+                                    rx="7.5"
+                                    fill="#7c3aed"
+                                    stroke="#ffffff"
+                                    strokeWidth="1"
+                                />
+                                <text x="0" y="1.5" textAnchor="middle" fill="#ffffff" fontSize="8.2" fontWeight="900">
+                                    ⚔️ 출정 중
+                                </text>
+                            </g>
+                        )}
+                        <rect
+                            x="-46"
+                            y="11"
+                            width="92"
+                            height="17"
+                            rx="8.5"
+                            fill={isOut ? '#7c3aed' : 'rgba(15, 23, 42, 0.86)'}
+                            stroke="rgba(255, 255, 255, 0.35)"
+                            strokeWidth="0.8"
+                        />
+                        <text x="0" y="22.5" textAnchor="middle" fill="#ffffff" fontSize="9.2" fontWeight="800">
+                            {isOut ? '⚔️ 원정 중' : `${meta?.name || merc.mercCode} Lv.${merc.level}`}
+                        </text>
+                    </g>
+                );
+            })}
+
+            {gameState.mercenaries.length === 0 && (
                 <g
                     transform={`translate(${getIsoCenter(2.1, 4.4).x}, ${getIsoCenter(2.1, 4.4).y})`}
                     onClick={(e) => {

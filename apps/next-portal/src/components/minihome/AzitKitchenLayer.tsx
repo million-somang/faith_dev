@@ -10,6 +10,7 @@ import type {
     AzitRecipeId,
 } from '@/types/azit-game.types';
 import { formatCountdownLabel, formatDurationCompact } from '@/types/azit-game.types';
+import { getChefSpriteMeta } from '@/data/azitCharacterAssets';
 
 const ORIGIN_X = 400;
 const ORIGIN_Y = 236;
@@ -23,10 +24,10 @@ const KITCHEN_STOVE_COORDS: Array<{ slotIndex: number; gridX: number; gridY: num
 ];
 
 const CHEF_STATION_COORDS: Array<{ gridX: number; gridY: number }> = [
-    { gridX: 1.6, gridY: 4.1 },
-    { gridX: 3.2, gridY: 4.3 },
-    { gridX: 4.7, gridY: 4.5 },
-    { gridX: 6.1, gridY: 3.6 },
+    { gridX: 1.0, gridY: 4.4 },
+    { gridX: 2.8, gridY: 4.3 },
+    { gridX: 4.6, gridY: 3.7 },
+    { gridX: 6.3, gridY: 3.3 },
 ];
 
 function getIsoCenter(gridX: number, gridY: number): { x: number; y: number } {
@@ -307,53 +308,106 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
                 );
             })}
 
-            {/* 고용된 요리사 2.5D 아바타 (미고용 시 모집 표지판 표시) */}
+            {/* 고용된 요리사 3D 미니미 아바타 (미고용 시 모집 표지판 표시) */}
             {gameState.chefs.length > 0 ? (
-                gameState.chefs.map((chef, idx) => {
-                    const stCoord = CHEF_STATION_COORDS[idx] || CHEF_STATION_COORDS[0];
-                    const pos = getIsoCenter(stCoord.gridX, stCoord.gridY);
-                    const meta = chefCatalogMap.get(chef.chefCode);
-                    const isBusy = gameState.kitchenSlots.some(
-                        (s) => s.status === 'cooking' && s.chefCode === chef.chefCode
-                    );
-                    return (
-                        <g
-                            key={`chef-iso-${chef.chefCode}`}
-                            transform={`translate(${pos.x}, ${pos.y})`}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onOpenChefModal();
-                            }}
-                            className="cursor-pointer"
-                        >
-                            <ellipse cx="0" cy="4" rx="18" ry="8" fill="rgba(15, 23, 42, 0.22)" />
-                            {/* 요리사 몸통 & 앞치마 */}
-                            <rect x="-12" y="-32" width="24" height="30" rx="10" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1.4" />
-                            <rect x="-9" y="-22" width="18" height="18" rx="4" fill="#fb923c" />
-                            {/* 얼굴 */}
-                            <circle cx="0" cy="-42" r="13" fill="#fde68a" stroke="#d97706" strokeWidth="1.2" />
-                            <circle cx="-4" cy="-42" r="1.6" fill="#0f172a" />
-                            <circle cx="4" cy="-42" r="1.6" fill="#0f172a" />
-                            {/* 셰프 모자 */}
-                            <rect x="-11" y="-61" width="22" height="10" rx="5" fill="#ffffff" stroke="#94a3b8" strokeWidth="1.2" />
-                            <circle cx="-5" cy="-64" r="6" fill="#ffffff" />
-                            <circle cx="5" cy="-64" r="6" fill="#ffffff" />
-                            <circle cx="0" cy="-66" r="7" fill="#ffffff" />
-                            {/* 상태 배지 */}
-                            <rect
-                                x="-42"
-                                y="10"
-                                width="84"
-                                height="17"
-                                rx="8.5"
-                                fill={isBusy ? '#ea580c' : 'rgba(15, 23, 42, 0.84)'}
-                            />
-                            <text x="0" y="21.5" textAnchor="middle" fill="#ffffff" fontSize="9.2" fontWeight="800">
-                                {meta?.emoji || '👨‍🍳'} {meta?.name || chef.chefCode} Lv.{chef.level}
-                            </text>
-                        </g>
-                    );
-                })
+                gameState.chefs
+                    .map((chef, idx) => {
+                        const stCoord = CHEF_STATION_COORDS[idx] || CHEF_STATION_COORDS[0];
+                        return {
+                            chef,
+                            idx,
+                            stCoord,
+                            depth: stCoord.gridX + stCoord.gridY,
+                        };
+                    })
+                    .sort((a, b) => a.depth - b.depth)
+                    .map(({ chef, idx, stCoord }) => {
+                        const pos = getIsoCenter(stCoord.gridX, stCoord.gridY);
+                        const meta = chefCatalogMap.get(chef.chefCode);
+                        const sprite = getChefSpriteMeta(chef.chefCode);
+                        const isBusy = gameState.kitchenSlots.some(
+                            (s) => s.status === 'cooking' && s.chefCode === chef.chefCode
+                        );
+                        return (
+                            <g
+                                key={`chef-iso-${chef.chefCode}`}
+                                transform={`translate(${pos.x}, ${pos.y})`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onOpenChefModal();
+                                }}
+                                className="cursor-pointer"
+                            >
+                                <ellipse
+                                    cx="0"
+                                    cy="5"
+                                    rx={sprite.shadowRx}
+                                    ry={sprite.shadowRy}
+                                    fill="rgba(15, 23, 42, 0.25)"
+                                />
+                                {isBusy && (
+                                    <ellipse
+                                        cx="0"
+                                        cy="5"
+                                        rx={sprite.shadowRx + 5}
+                                        ry={sprite.shadowRy + 2.5}
+                                        fill="rgba(249, 115, 22, 0.16)"
+                                        stroke="#fb923c"
+                                        strokeWidth="1.6"
+                                    />
+                                )}
+                                <g>
+                                    <animateTransform
+                                        attributeName="transform"
+                                        type="translate"
+                                        values={isBusy ? '0,0; 0,-4; 0,0' : '0,0; 0,-2; 0,0'}
+                                        dur={isBusy ? '1.2s' : '2.8s'}
+                                        begin={`${(idx * 0.45).toFixed(2)}s`}
+                                        repeatCount="indefinite"
+                                    />
+                                    <image
+                                        href={sprite.spriteUrl}
+                                        x={-sprite.spriteWidth / 2}
+                                        y={-sprite.spriteHeight + sprite.spriteOffsetY}
+                                        width={sprite.spriteWidth}
+                                        height={sprite.spriteHeight}
+                                        preserveAspectRatio="xMidYMax meet"
+                                    />
+                                </g>
+                                {isBusy && (
+                                    <g transform={`translate(0, ${-sprite.spriteHeight + sprite.spriteOffsetY - 8})`}>
+                                        <rect
+                                            x="-26"
+                                            y="-9"
+                                            width="52"
+                                            height="15"
+                                            rx="7.5"
+                                            fill="#ea580c"
+                                            stroke="#ffffff"
+                                            strokeWidth="1"
+                                        />
+                                        <text x="0" y="1.5" textAnchor="middle" fill="#ffffff" fontSize="8.2" fontWeight="900">
+                                            🔥 조리 중
+                                        </text>
+                                    </g>
+                                )}
+                                {/* 상태 배지 */}
+                                <rect
+                                    x="-46"
+                                    y="11"
+                                    width="92"
+                                    height="17"
+                                    rx="8.5"
+                                    fill={isBusy ? '#ea580c' : 'rgba(15, 23, 42, 0.84)'}
+                                    stroke="rgba(255, 255, 255, 0.35)"
+                                    strokeWidth="0.8"
+                                />
+                                <text x="0" y="22.5" textAnchor="middle" fill="#ffffff" fontSize="9.2" fontWeight="800">
+                                    {meta?.name || chef.chefCode} Lv.{chef.level}
+                                </text>
+                            </g>
+                        );
+                    })
             ) : (
                 <g
                     transform={`translate(${getIsoCenter(2.4, 4.4).x}, ${getIsoCenter(2.4, 4.4).y})`}
@@ -587,6 +641,7 @@ export const KitchenStoveActionBubble: React.FC<KitchenStoveActionBubbleProps> =
                             </button>
                             {gameState.chefs.map((chef) => {
                                 const def = gameState.catalog.chefs.find((c) => c.chefCode === chef.chefCode);
+                                const chefSprite = getChefSpriteMeta(chef.chefCode);
                                 const isBusy = busyChefCodes.has(chef.chefCode);
                                 const isPicked = activeChef?.chefCode === chef.chefCode;
                                 return (
@@ -595,7 +650,7 @@ export const KitchenStoveActionBubble: React.FC<KitchenStoveActionBubbleProps> =
                                         type="button"
                                         disabled={isBusy}
                                         onClick={() => setSelectedChefCode(chef.chefCode)}
-                                        className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition-colors ${
+                                        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-extrabold transition-colors ${
                                             isBusy
                                                 ? 'bg-slate-800/50 text-slate-500 cursor-not-allowed'
                                                 : isPicked
@@ -603,7 +658,14 @@ export const KitchenStoveActionBubble: React.FC<KitchenStoveActionBubbleProps> =
                                                   : 'bg-slate-800 text-emerald-200 hover:bg-slate-700 cursor-pointer'
                                         }`}
                                     >
-                                        {def?.emoji} {def?.name} {isBusy ? '(조리중)' : `-${chef.speedBonusPct}%`}
+                                        <img
+                                            src={chefSprite.spriteUrl}
+                                            alt={def?.name || chef.chefCode}
+                                            className="w-5 h-5 rounded-full bg-white/95 object-contain shrink-0"
+                                        />
+                                        <span>
+                                            {def?.name} {isBusy ? '(조리중)' : `-${chef.speedBonusPct}%`}
+                                        </span>
                                     </button>
                                 );
                             })}
