@@ -10,7 +10,7 @@ export const miniappRoutes = new Hono<{ Variables: { adminUserId: string } }>();
 miniappRoutes.get('/api/mini-apps', async (c) => {
     const DB = getDB(c);
     try {
-        let apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+        let apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY created_at DESC, id DESC").all();
 
         // 해외직구 관·부가세 계산기(customs-calc)가 DB에 없으면 자동 시딩
         const hasCustomsCalc = apps.results.some((a: any) => a.slug === 'customs-calc');
@@ -30,7 +30,7 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
                     'calc',
                     'active'
                 ).run();
-                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY created_at DESC, id DESC").all();
             } catch (seedErr) {
                 console.error('Failed to auto-seed customs-calc:', seedErr);
             }
@@ -54,7 +54,7 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
                     'text',
                     'active'
                 ).run();
-                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY created_at DESC, id DESC").all();
             } catch (seedErr) {
                 console.error('Failed to auto-seed ocr:', seedErr);
             }
@@ -78,7 +78,7 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
                     'calc',
                     'active'
                 ).run();
-                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY created_at DESC, id DESC").all();
             } catch (seedErr) {
                 console.error('Failed to auto-seed vacation-planner:', seedErr);
             }
@@ -102,7 +102,7 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
                     'calc',
                     'active'
                 ).run();
-                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY created_at DESC, id DESC").all();
             } catch (seedErr) {
                 console.error('Failed to auto-seed image-resizer:', seedErr);
             }
@@ -126,7 +126,7 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
                     'dev',
                     'active'
                 ).run();
-                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY created_at DESC, id DESC").all();
             } catch (seedErr) {
                 console.error('Failed to auto-seed qr-generator:', seedErr);
             }
@@ -150,7 +150,7 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
                     'calc',
                     'active'
                 ).run();
-                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY created_at DESC, id DESC").all();
             } catch (seedErr) {
                 console.error('Failed to auto-seed todo-list:', seedErr);
             }
@@ -196,19 +196,28 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
     }
 });
 
-// 자주 쓰는 앱 목록 (실행 로그 기반, 서버 영구 저장)
+// 자주 쓰는 앱 목록 (최근 N일 실제 실행 로그 기반, 게임 제외 TOP 5)
 miniappRoutes.get('/api/mini-apps/frequent', async (c) => {
     const DB = getDB(c);
     try {
+        const rawDays = Number(c.req.query('days'));
+        const days = Number.isFinite(rawDays) && rawDays >= 1 && rawDays <= 365 ? Math.floor(rawDays) : 30;
+        const cutoffModifier = `-${days} days`;
+
         const apps = await DB.prepare(`
-            SELECT m.*, COUNT(l.id) as launch_count
+            SELECT
+                m.*,
+                SUM(CASE WHEN l.created_at >= datetime('now', ?) THEN 1 ELSE 0 END) as launch_count_30d,
+                COUNT(l.id) as total_launch_count,
+                SUM(CASE WHEN l.created_at >= datetime('now', ?) THEN 1 ELSE 0 END) as launch_count
             FROM mini_apps m
-            INNER JOIN mini_app_logs l ON m.id = l.mini_app_id
-            WHERE m.status = 'active' AND l.action_type = 'LAUNCH'
+            INNER JOIN mini_app_logs l ON m.id = l.mini_app_id AND l.action_type = 'LAUNCH'
+            WHERE m.status = 'active' AND m.category != 'game'
             GROUP BY m.id
-            ORDER BY launch_count DESC
+            HAVING COUNT(l.id) > 0
+            ORDER BY launch_count_30d DESC, total_launch_count DESC, m.created_at DESC, m.id DESC
             LIMIT 5
-        `).all();
+        `).bind(cutoffModifier, cutoffModifier).all();
         return c.json({ success: true, apps: apps.results });
     } catch (error) {
         console.error('Frequent Apps API Error:', error);

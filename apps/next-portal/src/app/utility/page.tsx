@@ -20,6 +20,10 @@ interface MiniApp {
     app_url: string;
     require_auth: number;
     category: string;
+    created_at?: string;
+    launch_count?: number;
+    launch_count_30d?: number;
+    total_launch_count?: number;
 }
 
 interface CategoryInfo {
@@ -52,7 +56,8 @@ const ESSENTIAL_APPS: MiniApp[] = [
         description: 'SNS 규격 및 픽셀, 비율, 용량(KB) 단위 최대 50장 다중 이미지 일괄 리사이즈 & WebP/JPG/PNG 변환기',
         app_url: '/app/image-resizer/',
         require_auth: 0,
-        category: 'calc'
+        category: 'calc',
+        created_at: '2026-10-13 04:16:44'
     },
     {
         id: 992,
@@ -62,7 +67,8 @@ const ESSENTIAL_APPS: MiniApp[] = [
         description: '정기예금·적금 단리/월복리 이자 산출 및 일반과세(15.4%)·세금우대·비과세 만기 실수령액 원클릭 비교',
         app_url: '/app/interest-calc/',
         require_auth: 0,
-        category: 'finance'
+        category: 'finance',
+        created_at: '2026-08-30 19:28:15'
     },
     {
         id: 993,
@@ -72,7 +78,8 @@ const ESSENTIAL_APPS: MiniApp[] = [
         description: '고용노동부 최신 법정 산식 기반 1일 평균임금·통상임금 비교, 세후 실수령 퇴직금 및 실업급여 모의계산',
         app_url: '/app/severance-calc/',
         require_auth: 0,
-        category: 'finance'
+        category: 'finance',
+        created_at: '2026-08-30 19:28:15'
     },
     {
         id: 994,
@@ -82,7 +89,8 @@ const ESSENTIAL_APPS: MiniApp[] = [
         description: '연소득 대비 DSR 40% 규제 및 스트레스 금리 가산을 반영한 최대 주택담보·신용대출 가능 한도 시뮬레이션',
         app_url: '/finance/util?tab=dsr',
         require_auth: 0,
-        category: 'finance'
+        category: 'finance',
+        created_at: '2026-10-13 01:09:20'
     },
     {
         id: 995,
@@ -92,13 +100,29 @@ const ESSENTIAL_APPS: MiniApp[] = [
         description: 'URL, 매장 와이파이(Wi-Fi) 자동연결, 전자명함(vCard) QR코드를 커스텀 로고·컬러와 함께 PNG/SVG 벡터로 즉시 생성',
         app_url: '/app/qr-generator/',
         require_auth: 0,
-        category: 'dev'
+        category: 'dev',
+        created_at: '2026-11-16 07:21:41'
     }
 ];
 
 const ITEMS_PER_PAGE = 9;
 const RETRY_DELAYS_MS = [1500, 3000, 5000] as const;
 type RawMiniApp = MiniApp & { status?: string };
+
+function parseCreatedTimestamp(value?: string): number {
+    if (!value) return 0;
+    const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+    const ts = Date.parse(normalized);
+    return Number.isNaN(ts) ? 0 : ts;
+}
+
+function sortAppsByNewest(list: MiniApp[]): MiniApp[] {
+    return [...list].sort((a, b) => {
+        const diff = parseCreatedTimestamp(b.created_at) - parseCreatedTimestamp(a.created_at);
+        if (diff !== 0) return diff;
+        return b.id - a.id;
+    });
+}
 
 export default function UtilityPage() {
     const { user } = useAuth();
@@ -146,20 +170,19 @@ export default function UtilityPage() {
     };
 
     const loadFrequentApps = () => {
-        axios.get('/api/mini-apps/frequent')
+        axios.get<{ success?: boolean; apps?: MiniApp[] }>('/api/mini-apps/frequent?days=30')
             .then(res => {
-                if (res.data && res.data.success && Array.isArray(res.data.apps) && res.data.apps.length > 0) {
-                    const filtered = res.data.apps.filter((app: MiniApp) => app.category !== 'game');
-                    if (!filtered.some((a: MiniApp) => a.slug === 'image-resizer')) {
-                        filtered.unshift(ESSENTIAL_APPS[0]);
-                    }
-                    setFrequentApps(filtered.slice(0, 5));
+                if (res.data?.success && Array.isArray(res.data.apps)) {
+                    const filtered = res.data.apps
+                        .filter((app) => app.category !== 'game')
+                        .slice(0, 5);
+                    setFrequentApps(filtered);
                 } else {
-                    setFrequentApps(ESSENTIAL_APPS.slice(0, 5));
+                    setFrequentApps([]);
                 }
             })
             .catch(() => {
-                setFrequentApps(ESSENTIAL_APPS.slice(0, 5));
+                setFrequentApps([]);
             });
     };
 
@@ -185,14 +208,10 @@ export default function UtilityPage() {
                     const list: MiniApp[] = res.data.apps.filter((a) => a.status === 'active');
                     ESSENTIAL_APPS.forEach((essential) => {
                         if (!list.some((a) => a.slug === essential.slug)) {
-                            if (essential.slug === 'image-resizer') {
-                                list.unshift(essential);
-                            } else {
-                                list.push(essential);
-                            }
+                            list.push(essential);
                         }
                     });
-                    setApps(list);
+                    setApps(sortAppsByNewest(list));
                     setIsFallbackMode(false);
                     isFallbackModeRef.current = false;
                     setLoading(false);
@@ -215,7 +234,7 @@ export default function UtilityPage() {
         }
 
         if (!mountedRef.current || requestSeqRef.current !== seq) return;
-        setApps(ESSENTIAL_APPS);
+        setApps(sortAppsByNewest(ESSENTIAL_APPS));
         setIsFallbackMode(true);
         isFallbackModeRef.current = true;
         setLoading(false);
@@ -532,7 +551,7 @@ export default function UtilityPage() {
                                 </h2>
                             </div>
                             <span className="text-[11px] font-semibold text-slate-400">
-                                실시간 실행 빈도 기준
+                                최근 30일 실제 접속 기준
                             </span>
                         </div>
 
