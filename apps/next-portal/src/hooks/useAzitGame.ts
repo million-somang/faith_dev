@@ -45,10 +45,15 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
 
     const onSyncRef = useRef(onSyncState);
     const onToastRef = useRef(onToast);
+    const clockOffsetRef = useRef<number>(0);
     onSyncRef.current = onSyncState;
     onToastRef.current = onToast;
 
     const applyState = useCallback((nextState: AzitFullGameState) => {
+        if (typeof nextState.serverNowMs === 'number') {
+            clockOffsetRef.current = nextState.serverNowMs - Date.now();
+            setNowMs(nextState.serverNowMs);
+        }
         setState(nextState);
         onSyncRef.current?.(nextState.veraPoints, nextState.garden);
     }, []);
@@ -83,7 +88,7 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
     useEffect(() => {
         if (!enabled) return;
         const timer = window.setInterval(() => {
-            setNowMs(Date.now());
+            setNowMs(Date.now() + clockOffsetRef.current);
         }, 1000);
         return () => window.clearInterval(timer);
     }, [enabled]);
@@ -99,10 +104,26 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
                     credentials: 'include',
                     body: JSON.stringify(payload),
                 });
-                const json = (await res.json()) as AzitApiResponse<AzitApiPayload>;
+                const rawText = await res.text();
+                let json: AzitApiResponse<AzitApiPayload> | null = null;
+                try {
+                    json = JSON.parse(rawText) as AzitApiResponse<AzitApiPayload>;
+                } catch {
+                    json = null;
+                }
+
+                if (!json) {
+                    onToastRef.current?.('⚠️ 서버 응답이 지연되어 최신 아지트 상태를 다시 동기화합니다...');
+                    await refreshState();
+                    return false;
+                }
+
                 if (!res.ok || !json.success || !json.data) {
                     const errMsg = json.error?.message || '요청을 처리하지 못했습니다.';
                     onToastRef.current?.(`⚠️ ${errMsg}`);
+                    if (res.status >= 502) {
+                        await refreshState();
+                    }
                     return false;
                 }
                 if (json.data.state) {
@@ -117,13 +138,14 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
                 return true;
             } catch (err) {
                 const errMsg = err instanceof Error ? err.message : '네트워크 오류가 발생했습니다.';
-                onToastRef.current?.(`⚠️ ${errMsg}`);
+                onToastRef.current?.(`⚠️ ${errMsg} (상태 동기화 중...)`);
+                refreshState().catch(() => {});
                 return false;
             } finally {
                 setIsActing(false);
             }
         },
-        [enabled, applyState]
+        [enabled, applyState, refreshState]
     );
 
     const buySeed = useCallback(

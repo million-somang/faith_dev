@@ -244,13 +244,14 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         openKitchenSlotIndex !== null && azitGame?.state
             ? azitGame.state.kitchenSlots.find((s) => s.slotIndex === openKitchenSlotIndex) || null
             : null;
+    const activeGameNowMs = azitGame?.nowMs ?? gardenTickMs;
     const kitchenReadyCount = azitGame?.state
         ? azitGame.state.kitchenSlots.filter(
-              (s) => s.status === 'cooking' && s.endsAtMs !== null && s.endsAtMs <= gardenTickMs
+              (s) => s.status === 'cooking' && s.endsAtMs !== null && s.endsAtMs <= activeGameNowMs
           ).length
         : 0;
     const campReadyCount = azitGame?.state
-        ? azitGame.state.activeExpeditions.filter((e) => e.endsAtMs <= gardenTickMs).length
+        ? azitGame.state.activeExpeditions.filter((e) => e.endsAtMs <= activeGameNowMs).length
         : 0;
 
     const handleGardenPlantCrop = (plotIdx: number, cropId: GardenCropId) => {
@@ -1395,9 +1396,17 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             gameState={azitGame.state}
                             nowMs={azitGame.nowMs}
                             selectedSlotIndex={openKitchenSlotIndex}
+                            isActing={azitGame.isActing}
                             onSelectSlot={(slotIdx) =>
                                 setOpenKitchenSlotIndex((prev) => (prev === slotIdx ? null : slotIdx))
                             }
+                            onQuickClaimSlot={async (slotIdx) => {
+                                const ok = await azitGame.claimCooking(slotIdx);
+                                if (ok) {
+                                    setOpenKitchenSlotIndex(null);
+                                }
+                                return ok;
+                            }}
                             onEnterIndoor={() => setActiveZone('indoor')}
                             onOpenChefModal={() => setActiveAzitModal('chefs')}
                             onOpenMarketModal={() => setActiveAzitModal('market')}

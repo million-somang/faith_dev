@@ -45,7 +45,9 @@ interface AzitKitchenIsoSceneProps {
     gameState: AzitFullGameState;
     nowMs: number;
     selectedSlotIndex: number | null;
+    isActing?: boolean;
     onSelectSlot: (slotIndex: number) => void;
+    onQuickClaimSlot?: (slotIndex: number) => Promise<boolean>;
     onEnterIndoor: () => void;
     onOpenChefModal: () => void;
     onOpenMarketModal: () => void;
@@ -55,7 +57,9 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
     gameState,
     nowMs,
     selectedSlotIndex,
+    isActing = false,
     onSelectSlot,
+    onQuickClaimSlot,
     onEnterIndoor,
     onOpenChefModal,
     onOpenMarketModal,
@@ -252,8 +256,16 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
                             </text>
                         )}
 
-                        {/* 화구 상태 라벨 뱃지 */}
-                        <g transform="translate(0, -56)">
+                        {/* 화구 상태 라벨 뱃지 (완성 시 클릭하면 즉시 원클릭 수령) */}
+                        <g
+                            transform="translate(0, -56)"
+                            onClick={(e) => {
+                                if (isReady && onQuickClaimSlot && !isActing) {
+                                    e.stopPropagation();
+                                    onQuickClaimSlot(slot.slotIndex).catch(() => {});
+                                }
+                            }}
+                        >
                             <rect
                                 x="-46"
                                 y="-11"
@@ -283,7 +295,9 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
                                 {!slot.unlocked
                                     ? `Lv.${slot.unlockLevel} 해금`
                                     : isReady
-                                      ? '✨ 요리 수령!'
+                                      ? isActing
+                                          ? '수령 중...'
+                                          : '✨ 요리 수령!'
                                       : isCooking
                                         ? `⏱ ${countdown}`
                                         : `#${slot.slotIndex + 1} 조리 시작`}
@@ -452,15 +466,8 @@ export const KitchenStoveActionBubble: React.FC<KitchenStoveActionBubbleProps> =
         : undefined;
 
     const getPosClass = () => {
-        if (isZoomed) return 'top-14 left-1/2 -translate-x-1/2';
-        switch (slot.slotIndex) {
-            case 0:
-                return 'bottom-[44%] left-[44%] -translate-x-1/2';
-            case 1:
-                return 'bottom-[40%] left-[55%] -translate-x-1/2';
-            default:
-                return 'bottom-[36%] left-[65%] -translate-x-1/2';
-        }
+        if (isZoomed) return 'top-14 left-1/2 -translate-x-1/2 max-h-[82%] overflow-y-auto';
+        return 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-h-[92%] overflow-y-auto';
     };
 
     const canCookRecipe = (recipe: AzitRecipeCatalogItem): { ok: boolean; missingText: string } => {

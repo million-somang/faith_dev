@@ -135,6 +135,7 @@ export interface AzitFullGameState {
         totalExpeditionsLost: number;
     };
     veraPoints: number;
+    serverNowMs: number;
     garden: ServerGardenState;
     materials: Record<AzitMaterialId, number>;
     dishes: Record<AzitRecipeId, number>;
@@ -904,6 +905,7 @@ export class AzitGameService {
                 totalExpeditionsLost: Number(pRow.total_expeditions_lost ?? 0),
             },
             veraPoints,
+            serverNowMs: Date.now(),
             garden,
             materials,
             dishes,
@@ -1488,7 +1490,8 @@ export class AzitGameService {
         }
 
         const nowMs = Date.now();
-        if (Number(slot.ends_at_ms) > nowMs) {
+        const effectiveNowMs = nowMs + 1500;
+        if (Number(slot.ends_at_ms) > effectiveNowMs) {
             const remainSec = Math.ceil((Number(slot.ends_at_ms) - nowMs) / 1000);
             throw new AzitGameError(`아직 조리가 진행 중입니다. (${remainSec}초 남음)`, 400);
         }
@@ -1508,7 +1511,7 @@ export class AzitGameService {
                  ends_at_ms = NULL,
                  updated_at = CURRENT_TIMESTAMP
              WHERE user_id = $1 AND slot_index = $2 AND status = 'cooking' AND ends_at_ms <= $3 AND is_deleted = 0`,
-            [userId, slotIndex, nowMs]
+            [userId, slotIndex, effectiveNowMs]
         );
         if (claimRes.rowCount === 0) {
             throw new AzitGameError('이미 수령된 요리입니다.', 409);
@@ -1912,7 +1915,8 @@ export class AzitGameService {
         }
 
         const nowMs = Date.now();
-        if (Number(expRow.ends_at_ms) > nowMs) {
+        const effectiveNowMs = nowMs + 1500;
+        if (Number(expRow.ends_at_ms) > effectiveNowMs) {
             const remainSec = Math.ceil((Number(expRow.ends_at_ms) - nowMs) / 1000);
             throw new AzitGameError(`용병단이 아직 복귀 중입니다. (${remainSec}초 남음)`, 400);
         }
@@ -1922,7 +1926,7 @@ export class AzitGameService {
             `UPDATE azit_expeditions
              SET status = 'claiming'
              WHERE id = $1 AND user_id = $2 AND status = 'running' AND ends_at_ms <= $3 AND is_deleted = 0`,
-            [expeditionId, userId, nowMs]
+            [expeditionId, userId, effectiveNowMs]
         );
         if (lockClaim.rowCount === 0) {
             throw new AzitGameError('이미 정산 중인 원정입니다.', 409);

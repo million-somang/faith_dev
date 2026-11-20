@@ -40,53 +40,85 @@ mypage.delete('/keywords/:id', async (c) => {
     return c.json({ success: true });
 });
 
+const keywordNewsCache = new Map<
+    string,
+    { expiresAt: number; keywords: string[]; news: Array<Record<string, unknown>> }
+>();
+const KEYWORD_NEWS_CACHE_TTL_MS = 60 * 1000;
+
 mypage.get('/news/keywords', async (c) => {
     const user = c.get('user') as SessionUser;
-    const limit = parseInt(c.req.query('limit') || '20');
-    const offset = parseInt(c.req.query('offset') || '0');
+    const rawLimit = parseInt(c.req.query('limit') || '20', 10);
+    const rawOffset = parseInt(c.req.query('offset') || '0', 10);
+    const limit = Math.max(1, Math.min(50, Number.isFinite(rawLimit) ? rawLimit : 20));
+    const offset = Math.max(0, Number.isFinite(rawOffset) ? rawOffset : 0);
 
     // Get user keywords
-    let keywords = await MyPageService.getKeywords(user.id);
-    let keywordList = keywords.map((k: any) => k.keyword);
+    const keywords = (await MyPageService.getKeywords(user.id)) as Array<{ keyword: string }>;
+    let keywordList = keywords.map((k) => k.keyword).filter((k) => Boolean(k && k.trim()));
 
     // If user has no custom keywords yet, fallback to popular categories
     if (keywordList.length === 0) {
         keywordList = ['AI', '경제', 'IT', '기술', '금융'];
     }
 
+    const cacheKey = `${user.id}:${limit}:${offset}:${keywordList.join('|')}`;
+    const cached = keywordNewsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+        return c.json({
+            success: true,
+            keywords: cached.keywords,
+            news: cached.news,
+            count: cached.news.length,
+        });
+    }
+
     try {
         const { pool } = await import('@faithportal/database');
-        const ftsQuery = keywordList.map((k: string) => `"${k}"`).join(' OR ');
+        // PK(id) 역순 최근 기사만 제한 조회해 FTS + 전체 임시 정렬에 따른 이벤트 루프 블로킹 방지
+        const scanLimit = Math.min(250, Math.max(120, (limit + offset) * 15));
+        const recentRes = await pool.query(
+            `SELECT id, title, summary, category, source, link, thumbnail, published_at, created_at
+             FROM news
+             ORDER BY id DESC
+             LIMIT $1`,
+            [scanLimit]
+        );
 
-        let result = await pool.query(`
-            SELECT * FROM news 
-            WHERE id IN (
-                SELECT rowid FROM news_fts 
-                WHERE news_fts MATCH $1
-            )
-            ORDER BY published_at DESC, created_at DESC 
-            LIMIT $2 OFFSET $3
-        `, [ftsQuery, limit, offset]).catch(async () => {
-            return await pool.query(`
-                SELECT * FROM news 
-                ORDER BY published_at DESC, created_at DESC 
-                LIMIT $1 OFFSET $2
-            `, [limit, offset]);
+        const allRows = (recentRes.rows || []) as Array<Record<string, unknown>>;
+        const lowerKeywords = keywordList.map((k) => k.toLowerCase().trim()).filter(Boolean);
+        const matched = allRows.filter((row) => {
+            const hay = `${String(row.title || '')} ${String(row.summary || '')}`.toLowerCase();
+            return lowerKeywords.some((kw) => hay.includes(kw));
         });
 
-        if (!result.rows || result.rows.length === 0) {
-            result = await pool.query(`
-                SELECT * FROM news 
-                ORDER BY published_at DESC, created_at DESC 
-                LIMIT $1 OFFSET $2
-            `, [limit, offset]);
+        const selected = matched.slice(offset, offset + limit);
+        if (selected.length < limit && offset === 0) {
+            const pickedIds = new Set(selected.map((row) => row.id));
+            for (const row of allRows) {
+                if (selected.length >= limit) break;
+                if (!pickedIds.has(row.id)) {
+                    selected.push(row);
+                    pickedIds.add(row.id);
+                }
+            }
         }
 
-        return c.json({ 
-            success: true, 
+        if (keywordNewsCache.size > 200) {
+            const firstKey = keywordNewsCache.keys().next().value;
+            if (firstKey) keywordNewsCache.delete(firstKey);
+        }
+        keywordNewsCache.set(cacheKey, {
+            expiresAt: Date.now() + KEYWORD_NEWS_CACHE_TTL_MS,
             keywords: keywordList,
-            news: result.rows, 
-            count: result.rows.length 
+            news: selected,
+        });
+
+        return c.json({
+            success: true,
+            keywords: keywordList,
+            news: selected,
+            count: selected.length,
         });
     } catch (err) {
         console.error('Fetch keyword news error:', err);

@@ -228,6 +228,7 @@ export interface AzitFullGameState {
         totalExpeditionsLost: number;
     };
     veraPoints: number;
+    serverNowMs?: number;
     garden: MinihomeGardenState;
     materials: Record<AzitMaterialId, number>;
     dishes: Record<AzitRecipeId, number>;
