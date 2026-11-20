@@ -120,6 +120,9 @@ app.post('/api/news/write', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleCrea
 import mypageRoutes from './routes/mypage.routes.js';
 app.route('/api/user', mypageRoutes);
 
+import { todoRoutes } from './routes/todo.routes.js';
+app.route('/', todoRoutes);
+
 import authRoutes from './routes/auth.routes.js';
 app.route('/', authRoutes);
 

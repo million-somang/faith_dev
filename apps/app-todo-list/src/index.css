@@ -1,11 +1,67 @@
-@import "tailwindcss";
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-stone/theme.css";
+@import "@astryxdesign/core/tailwind-theme.css";
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* VeraNex Warm Stone Light Theme Override (다크모드 절대 금지, #FAF8F5 라이트 고정) */
+:root,
+html,
+html[data-theme="light"],
+[data-astryx-theme="stone"] {
+  color-scheme: light !important;
+  --color-background-body: #FAF8F5;
+  --color-background-surface: #FFFFFF;
+  --color-background-card: #FFFFFF;
+  --color-background-popover: #FFFFFF;
+  --color-background-muted: #F2EDE4;
+  --color-border: #E5DDD0;
+  --color-border-emphasized: #C9BFAE;
+  --color-text-primary: #24211D;
+  --color-text-secondary: #6C655B;
+  --color-text-disabled: #B4AC9E;
+  --color-accent: #4338CA;
+  --color-accent-muted: #EEF2FF;
+  --color-text-accent: #4338CA;
+  --color-icon-accent: #4338CA;
+  --color-on-accent: #FFFFFF;
+  --color-info: #4338CA;
+  --color-info-muted: #EEF2FF;
+  --color-text-info: #3730A3;
+  --color-success: #047857;
+  --color-success-muted: #ECFDF5;
+  --color-text-success: #065F46;
+  --color-warning: #B45309;
+  --color-warning-muted: #FFFBEB;
+  --color-text-warning: #92400E;
+  --color-error: #BE123C;
+  --color-error-muted: #FFF1F2;
+  --color-text-error: #9F1239;
+  --font-family-body: "Pretendard Variable", "Pretendard", Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-heading: "Pretendard Variable", "Pretendard", Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --radius-element: 0.625rem;
+  --radius-container: 1rem;
+  --shadow-low: 0 1px 2px rgba(36, 33, 29, 0.04), 0 4px 10px rgba(36, 33, 29, 0.05);
+  --shadow-med: 0 2px 6px rgba(36, 33, 29, 0.06), 0 8px 20px rgba(36, 33, 29, 0.08);
+}
+
+html,
+body {
+  background-color: #FAF8F5;
+  color: #24211D;
+  font-family: var(--font-family-body);
+}
 
 @keyframes float {
   0%, 100% {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-6px);
+    transform: translateY(-5px);
   }
 }
 
@@ -20,24 +76,12 @@
   }
 }
 
-@keyframes checkPop {
-  0% {
-    transform: scale(0.8);
-  }
-  50% {
-    transform: scale(1.16);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
 @keyframes pulseRing {
   0%, 100% {
-    opacity: 0.9;
+    opacity: 0.92;
   }
   50% {
-    opacity: 0.45;
+    opacity: 0.5;
   }
 }
 
@@ -46,27 +90,17 @@
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-check-pop {
-  animation: checkPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-pulse-ring {
   animation: pulseRing 1.8s ease-in-out infinite;
 }
 
-.nm-card-warm {
+.astryx-warm-shadow {
   box-shadow:
-    4px 4px 12px rgba(180, 169, 152, 0.16),
-    -4px -4px 12px rgba(255, 255, 255, 0.85);
-}
-
-.nm-inset-warm {
-  box-shadow:
-    inset 2px 2px 5px rgba(180, 169, 152, 0.18),
-    inset -2px -2px 5px rgba(255, 255, 255, 0.85);
+    0 1px 2px rgba(36, 33, 29, 0.04),
+    0 6px 16px rgba(138, 124, 102, 0.08);
 }
 
 .hide-scrollbar::-webkit-scrollbar {
@@ -88,10 +122,10 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #D9D2C7;
+  background: #D9D0C1;
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #B8B0A2;
+  background: #B8AD9B;
 }

@@ -1,44 +1,49 @@
+import { Badge } from '@astryxdesign/core/Badge';
+import { Card } from '@astryxdesign/core/Card';
+import { Collapsible, CollapsibleGroup } from '@astryxdesign/core/Collapsible';
+import { Divider } from '@astryxdesign/core/Divider';
 import { TODO_FAQ_ITEMS } from '../constants/todoMeta';
 
 export default function FaqSection() {
   return (
-    <section
-      aria-label="자주 묻는 질문"
-      className="bg-white rounded-3xl p-4 sm:p-6 border border-[#EBE6DD] shadow-xs space-y-4 animate-fade-in"
-    >
-      <div className="space-y-1 border-b border-[#F0EBE2] pb-3">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black">
-          <i className="fas fa-circle-question"></i> FAQ · DIRECT ANSWERS
-        </span>
-        <h2 className="text-base sm:text-lg font-black text-[#2D2A26]">
+    <Card padding={4} elevation="low" className="rounded-3xl bg-white border-[#E5DDD0] space-y-4 animate-fade-in">
+      <div className="space-y-1">
+        <Badge
+          variant="success"
+          icon={<i className="fas fa-circle-question text-[9px]"></i>}
+          label="FAQ · DIRECT ANSWERS"
+        />
+        <h2 className="text-base sm:text-lg font-black text-[#24211D]">
           자주 묻는 질문 (FAQ)
         </h2>
-        <p className="text-xs text-[#6B645B]">
-          데이터 보관 방식, 마이페이지 연동, 휴지통 복구 및 백업과 관련해 자주 묻는 질문입니다.
+        <p className="text-xs text-[#6C655B]">
+          DB 영구 저장, 매일·주·월·년 반복 스케줄러, 마이페이지 실시간 동기화 및 휴지통 복구 안내입니다.
         </p>
       </div>
 
-      <div className="space-y-2.5">
-        {TODO_FAQ_ITEMS.map((faq, idx) => (
-          <details
-            key={faq.question}
-            open={idx < 2}
-            className="group bg-[#FAF8F5] border border-[#EBE6DD] rounded-2xl p-3.5 [&_summary::-webkit-details-marker]:hidden"
-          >
-            <summary className="flex items-center justify-between gap-2 cursor-pointer text-xs sm:text-sm font-black text-[#2D2A26] list-none">
-              <span className="flex items-center gap-2">
-                <span className="text-indigo-600 font-black">Q{idx + 1}.</span>
-                <span>{faq.question}</span>
-              </span>
-              <i className="fas fa-chevron-down text-xs text-[#948D82] group-open:rotate-180 transition-transform shrink-0"></i>
-            </summary>
-            <p className="mt-2.5 pt-2.5 border-t border-[#E6E0D6] text-xs text-[#57514A] leading-relaxed pl-6">
-              <strong className="text-emerald-700">A. </strong>
-              {faq.answer}
-            </p>
-          </details>
-        ))}
-      </div>
-    </section>
+      <Divider variant="subtle" />
+
+      <Card padding={2} variant="muted" className="rounded-2xl">
+        <CollapsibleGroup type="multiple" defaultValue={['faq-0', 'faq-1']} hasDividers>
+          {TODO_FAQ_ITEMS.map((faq, idx) => (
+            <Collapsible
+              key={faq.question}
+              value={`faq-${idx}`}
+              trigger={
+                <span className="text-xs sm:text-sm font-black text-[#24211D] text-left">
+                  <span className="text-indigo-600 mr-1.5">Q{idx + 1}.</span>
+                  {faq.question}
+                </span>
+              }
+            >
+              <p className="text-xs text-[#4D473F] leading-relaxed py-1">
+                <strong className="text-emerald-700 mr-1">A.</strong>
+                {faq.answer}
+              </p>
+            </Collapsible>
+          ))}
+        </CollapsibleGroup>
+      </Card>
+    </Card>
   );
 }

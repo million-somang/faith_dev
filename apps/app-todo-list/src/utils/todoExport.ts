@@ -10,7 +10,7 @@ export function formatTodosAsText(
   const todayStr = getLocalDateString();
   const lines: string[] = [
     `[VeraNex 스마트 투두 리포트] (${todayStr})`,
-    `달성률: ${stats.completionRate}% (완료 ${stats.completedCount} / 전체 ${stats.totalCount}건)`,
+    `달성률: ${stats.completionRate}% (완료 ${stats.completedCount} / 전체 ${stats.totalCount}건 · 반복 ${stats.recurringCount}건)`,
     '',
   ];
 
@@ -24,8 +24,10 @@ export function formatTodosAsText(
     remaining.forEach((item) => {
       const pri = PRIORITY_MAP[item.priority].shortLabel;
       const cat = CATEGORY_MAP[item.category].label;
-      const due = item.dueDate ? ` · 마감 ${item.dueDate}` : '';
-      lines.push(`  [ ] (${pri}/${cat}) ${item.title}${due}`);
+      const rec = item.occurrence.summaryLabel ? ` · 🔁 ${item.occurrence.summaryLabel}` : '';
+      const due =
+        !item.occurrence.isRecurring && item.dueDate ? ` · 마감 ${item.dueDate}` : '';
+      lines.push(`  [ ] (${pri}/${cat}) ${item.title}${rec}${due}`);
       item.subtasks.forEach((sub) => {
         lines.push(`      ${sub.completed ? '[v]' : '[ ]'} ${sub.title}`);
       });
@@ -39,7 +41,9 @@ export function formatTodosAsText(
   } else {
     completed.forEach((item) => {
       const cat = CATEGORY_MAP[item.category].label;
-      lines.push(`  [v] (${cat}) ${item.title}`);
+      const rec = item.occurrence.summaryLabel ? ` (${item.occurrence.summaryLabel})` : '';
+      const streak = item.streakCount > 0 ? ` 🔥 ${item.streakCount}연속` : '';
+      lines.push(`  [v] (${cat}) ${item.title}${rec}${streak}`);
     });
   }
 
@@ -56,7 +60,7 @@ export function formatTodosAsMarkdown(
     `# 오늘의 TO-DO 정리 (${todayStr})`,
     '',
     `- **달성률**: ${stats.completionRate}% (${stats.completedCount}/${stats.totalCount})`,
-    `- **남은 할 일**: ${stats.activeCount}건 (지연 ${stats.overdueCount}건)`,
+    `- **남은 할 일**: ${stats.activeCount}건 (반복 루틴 ${stats.recurringCount}건 · 지연 ${stats.overdueCount}건)`,
     '',
     '## 할 일 목록',
   ];
@@ -68,8 +72,10 @@ export function formatTodosAsMarkdown(
       const mark = item.completed ? 'x' : ' ';
       const pri = PRIORITY_MAP[item.priority].shortLabel;
       const cat = CATEGORY_MAP[item.category].label;
-      const due = item.dueDate ? ` \`${item.dueDate}\`` : '';
-      lines.push(`- [${mark}] **[${pri}]** [${cat}] ${item.title}${due}`);
+      const rec = item.occurrence.summaryLabel ? ` \`🔁 ${item.occurrence.summaryLabel}\`` : '';
+      const due = !item.occurrence.isRecurring && item.dueDate ? ` \`${item.dueDate}\`` : '';
+      const streak = item.streakCount > 0 ? ` · 🔥${item.streakCount}연속` : '';
+      lines.push(`- [${mark}] **[${pri}]** [${cat}] ${item.title}${rec}${due}${streak}`);
       if (item.memo) {
         lines.push(`  - 메모: ${item.memo}`);
       }
@@ -85,7 +91,7 @@ export function formatTodosAsMarkdown(
 
 export function createBackupJson(items: readonly TodoItem[]): string {
   const payload: TodoBackupPayload = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     exportedAt: new Date().toISOString(),
     source: 'VeraNex-Todo-Planner',
     items,

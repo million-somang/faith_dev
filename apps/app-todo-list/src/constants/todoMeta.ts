@@ -1,6 +1,7 @@
-import type { TodoCategory, TodoPriority } from '../types/todo';
+import type { RecurrenceType, TodoCategory, TodoPriority, TodoRecurrenceRule } from '../types/todo';
 
 export const TODO_STORAGE_KEY = 'veranex_todo_planner_v1';
+export const TODO_MIGRATED_MARKER_KEY = 'veranex_todo_db_migrated_v1';
 export const TODO_POMODORO_STATS_KEY = 'veranex_todo_pomodoro_v1';
 export const TODO_MAX_ITEMS = 500;
 export const TODO_MAX_SUBTASKS = 30;
@@ -10,10 +11,10 @@ export interface PriorityMeta {
   readonly label: string;
   readonly shortLabel: string;
   readonly weight: number;
+  readonly badgeVariant: 'red' | 'yellow' | 'blue';
   readonly pillClass: string;
   readonly activeClass: string;
   readonly dotClass: string;
-  readonly barColorClass: string;
 }
 
 export const PRIORITY_LIST: readonly PriorityMeta[] = [
@@ -22,30 +23,30 @@ export const PRIORITY_LIST: readonly PriorityMeta[] = [
     label: '긴급 (P1)',
     shortLabel: '긴급',
     weight: 3,
+    badgeVariant: 'red',
     pillClass: 'bg-rose-50 text-rose-700 border-rose-200',
-    activeClass: 'bg-rose-600 text-white border-rose-600 shadow-xs',
+    activeClass: 'bg-rose-600 text-white border-rose-600',
     dotClass: 'bg-rose-500',
-    barColorClass: 'text-rose-500',
   },
   {
     key: 'important',
     label: '중요 (P2)',
     shortLabel: '중요',
     weight: 2,
+    badgeVariant: 'yellow',
     pillClass: 'bg-amber-50 text-amber-800 border-amber-200',
-    activeClass: 'bg-amber-500 text-white border-amber-500 shadow-xs',
+    activeClass: 'bg-amber-500 text-white border-amber-500',
     dotClass: 'bg-amber-500',
-    barColorClass: 'text-amber-500',
   },
   {
     key: 'normal',
     label: '보통 (P3)',
     shortLabel: '보통',
     weight: 1,
+    badgeVariant: 'blue',
     pillClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    activeClass: 'bg-indigo-600 text-white border-indigo-600 shadow-xs',
+    activeClass: 'bg-indigo-600 text-white border-indigo-600',
     dotClass: 'bg-indigo-500',
-    barColorClass: 'text-indigo-500',
   },
 ];
 
@@ -59,6 +60,7 @@ export interface CategoryMeta {
   readonly key: TodoCategory;
   readonly label: string;
   readonly iconClass: string;
+  readonly badgeVariant: 'purple' | 'green' | 'orange' | 'pink' | 'cyan';
   readonly badgeClass: string;
   readonly activeClass: string;
 }
@@ -68,6 +70,7 @@ export const CATEGORY_LIST: readonly CategoryMeta[] = [
     key: 'work',
     label: '업무',
     iconClass: 'fas fa-briefcase',
+    badgeVariant: 'purple',
     badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     activeClass: 'bg-indigo-600 text-white border-indigo-600',
   },
@@ -75,6 +78,7 @@ export const CATEGORY_LIST: readonly CategoryMeta[] = [
     key: 'personal',
     label: '개인',
     iconClass: 'fas fa-house-user',
+    badgeVariant: 'green',
     badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     activeClass: 'bg-emerald-600 text-white border-emerald-600',
   },
@@ -82,6 +86,7 @@ export const CATEGORY_LIST: readonly CategoryMeta[] = [
     key: 'shopping',
     label: '쇼핑',
     iconClass: 'fas fa-bag-shopping',
+    badgeVariant: 'orange',
     badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
     activeClass: 'bg-amber-600 text-white border-amber-600',
   },
@@ -89,6 +94,7 @@ export const CATEGORY_LIST: readonly CategoryMeta[] = [
     key: 'health',
     label: '건강',
     iconClass: 'fas fa-heart-pulse',
+    badgeVariant: 'pink',
     badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
     activeClass: 'bg-rose-600 text-white border-rose-600',
   },
@@ -96,6 +102,7 @@ export const CATEGORY_LIST: readonly CategoryMeta[] = [
     key: 'study',
     label: '공부',
     iconClass: 'fas fa-book-open',
+    badgeVariant: 'cyan',
     badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
     activeClass: 'bg-sky-600 text-white border-sky-600',
   },
@@ -109,6 +116,30 @@ export const CATEGORY_MAP: Record<TodoCategory, CategoryMeta> = {
   study: CATEGORY_LIST[4],
 };
 
+export interface RecurrenceOptionMeta {
+  readonly key: RecurrenceType;
+  readonly label: string;
+  readonly shortLabel: string;
+}
+
+export const RECURRENCE_LIST: readonly RecurrenceOptionMeta[] = [
+  { key: 'none', label: '반복 안함', shortLabel: '1회' },
+  { key: 'daily', label: '매일 반복', shortLabel: '매일' },
+  { key: 'weekly', label: '주단위 반복', shortLabel: '매주' },
+  { key: 'monthly', label: '월단위 반복', shortLabel: '매월' },
+  { key: 'yearly', label: '년단위 반복', shortLabel: '매년' },
+];
+
+export const WEEKDAY_OPTIONS: readonly { readonly day: number; readonly label: string }[] = [
+  { day: 1, label: '월' },
+  { day: 2, label: '화' },
+  { day: 3, label: '수' },
+  { day: 4, label: '목' },
+  { day: 5, label: '금' },
+  { day: 6, label: '토' },
+  { day: 0, label: '일' },
+];
+
 export interface QuickRoutineStarter {
   readonly id: string;
   readonly title: string;
@@ -116,6 +147,7 @@ export interface QuickRoutineStarter {
   readonly category: TodoCategory;
   readonly dueOffsetDays: number | null;
   readonly memo: string;
+  readonly recurrence?: Partial<TodoRecurrenceRule>;
 }
 
 /**
@@ -124,36 +156,40 @@ export interface QuickRoutineStarter {
  */
 export const QUICK_STARTER_ROUTINES: readonly QuickRoutineStarter[] = [
   {
-    id: 'routine-core-work',
+    id: 'routine-water-daily',
+    title: '아침 물 1잔 마시기 & 5분 스트레칭',
+    priority: 'normal',
+    category: 'health',
+    dueOffsetDays: 0,
+    memo: '매일 아침 기상 직후 수분 보충 및 목·어깨 스트레칭',
+    recurrence: { type: 'daily', interval: 1 },
+  },
+  {
+    id: 'routine-work-weekday',
     title: '오늘 핵심 업무 3가지 우선순위 정리',
     priority: 'urgent',
     category: 'work',
     dueOffsetDays: 0,
     memo: '가장 임팩트 큰 일 1개부터 25분 집중 타이머로 시작하기',
+    recurrence: { type: 'weekly', interval: 1, weekdays: [1, 2, 3, 4, 5] },
   },
   {
-    id: 'routine-water',
-    title: '물 2L 마시기 & 눈 휴식 스트레칭',
-    priority: 'normal',
+    id: 'routine-monthly-bill',
+    title: '월간 고정지출 · 공과금 & 가계부 정산',
+    priority: 'important',
+    category: 'personal',
+    dueOffsetDays: 0,
+    memo: '카드값·관리비·정기구독 내역 한눈에 점검하기',
+    recurrence: { type: 'monthly', interval: 1, monthDay: 25 },
+  },
+  {
+    id: 'routine-yearly-checkup',
+    title: '연간 건강검진 예약 & 가족 기념일 점검',
+    priority: 'important',
     category: 'health',
     dueOffsetDays: 0,
-    memo: '오전·오후 500ml씩 나누어 수분 보충',
-  },
-  {
-    id: 'routine-grocery',
-    title: '장보기 및 생필품 재고 체크',
-    priority: 'important',
-    category: 'shopping',
-    dueOffsetDays: 1,
-    memo: '계란, 우유, 샐러드 채소 등 확인',
-  },
-  {
-    id: 'routine-reading',
-    title: '관심 분야 아티클·책 20분 읽기',
-    priority: 'normal',
-    category: 'study',
-    dueOffsetDays: null,
-    memo: '핵심 인사이트 3줄 요약 기록',
+    memo: '매년 놓치기 쉬운 건강검진과 주요 일정 미리 확인',
+    recurrence: { type: 'yearly', interval: 1, yearMonth: 11, yearDay: 20 },
   },
 ];
 
@@ -167,21 +203,21 @@ export interface HowToStepItem {
 export const HOW_TO_STEPS: readonly HowToStepItem[] = [
   {
     step: 1,
-    title: '1초 빠른 할 일 등록 & 우선순위 배정',
-    desc: '입력창에 해야 할 일을 적고 긴급(P1)·중요(P2)·보통(P3) 배지와 카테고리, 오늘·내일 마감일을 고른 뒤 Enter를 누르세요.',
-    tip: '긴급한 일은 하루 최대 2~3개만 지정하면 번아웃 없이 실행력이 높아집니다.',
+    title: '할 일 입력 & 매일·주·월·년 반복 설정',
+    desc: '해야 할 일을 입력하고 우선순위(긴급/중요/보통), 카테고리, 반복 주기(반복 안함/매일/매주 요일/매월 N일/매년 M월 D일)를 한 번에 지정하세요.',
+    tip: '반복 루틴은 해당 주기를 완료하면 연속 달성 스트릭(🔥)이 쌓이고 다음 주기에 자동으로 초기화됩니다.',
   },
   {
     step: 2,
-    title: '서브태스크 세분화 & 25분 집중 타이머',
-    desc: '크거나 막막한 할 일은 카드의 [세부 단계] 버튼으로 작은 행동 단위로 나누고, 핀(📌) 아이콘을 눌러 25분 포모도로 집중 타이머를 가동하세요.',
-    tip: '작은 체크리스트 하나를 먼저 완료하면 도파민 피드백으로 다음 단계가 훨씬 수월해집니다.',
+    title: 'DB 영구 저장 · 마이페이지 실시간 동기화',
+    desc: 'VeraNex 계정으로 로그인하면 모든 할 일과 반복 이력이 데이터베이스(SQLite)에 안전하게 저장되어 PC·모바일·마이페이지 어디서나 즉시 동기화됩니다.',
+    tip: '비회원 상태에서 로컬로 작성한 목록도 로그인 후 상단 배너 클릭 한 번으로 DB에 그대로 옮길 수 있습니다.',
   },
   {
     step: 3,
-    title: '실시간 리포트 · 휴지통 복구 · 백업 연동',
-    desc: '오늘 리포트에서 달성률과 우선순위·카테고리 현황을 확인하고, 텍스트 복사나 마크다운(.md)·JSON 파일로 백업하세요. VeraNex 마이페이지에서도 실시간 동기화됩니다.',
-    tip: '실수로 지운 할 일도 하단 5초 실행취소 또는 휴지통에서 1클릭 복구가 가능합니다.',
+    title: '25분 집중 타이머 · 리포트 · 휴지통 복구',
+    desc: '카드 핀(📌)을 눌러 25분 포모도로 집중 타이머를 가동하고, 달성률 리포트를 확인하거나 마크다운(.md)·JSON으로 내보내세요.',
+    tip: '실수로 삭제한 항목도 DB Soft Delete로 보호되어 5초 실행취소 또는 휴지통에서 1클릭 복구가 가능합니다.',
   },
 ];
 
@@ -204,27 +240,27 @@ export interface FaqItem {
 
 export const TODO_FAQ_ITEMS: readonly FaqItem[] = [
   {
-    question: '입력한 할 일 데이터가 외부 서버로 전송되나요?',
-    answer: '전혀 전송되지 않습니다. VeraNex 스마트 투두 플래너는 100% 브라우저 로컬 저장소(LocalStorage)만을 사용하므로 업무 메모나 개인 일정이 외부 서버에 남지 않습니다.',
+    question: '작성한 할 일은 DB에 영구 저장되나요?',
+    answer: '네. VeraNex에 로그인한 상태에서는 모든 할 일과 매일/매주/매월/매년 반복 규칙, 완료 이력이 서버 데이터베이스(SQLite)에 영구 저장됩니다. 로그인하지 않은 상태에서는 브라우저 로컬 임시 모드로 동작하며, 로그인 시 1클릭으로 DB에 이관할 수 있습니다.',
   },
   {
-    question: '마이페이지(My Page)에서 보는 할 일과 어떻게 연동되나요?',
-    answer: '동일한 브라우저의 로컬 저장소(veranex_todo_planner_v1)를 실시간 공유합니다. 마이페이지에서 할 일을 추가하거나 완료 체크하면 투두 플래너에 즉시 반영되고, 그 반대도 실시간 동기화됩니다.',
+    question: '매일 · 주단위 · 월단위 · 년단위 반복은 어떻게 작동하나요?',
+    answer: '매일(1~365일 간격), 매주(월~일 다중 요일 선택 및 평일·주말 프리셋), 매월(1~31일 지정, 31일 지정 시 2월·4월 등 짧은 달은 말일로 자동 보정), 매년(특정 월/일 및 윤년 2/29 보정) 반복을 지원합니다. 완료 체크 시 이번 주기만 완료 처리되고 다음 주기 도래 시 자동으로 다시 활성화됩니다.',
+  },
+  {
+    question: '마이페이지(My Page)와 투두 팝업 창이 실시간으로 연동되나요?',
+    answer: '네. 동일한 DB API와 실시간 BroadcastChannel을 공유합니다. 새 창 투두 플래너에서 반복 루틴을 완료 체크하거나 추가하면 마이페이지 위젯에도 즉시 반영됩니다.',
   },
   {
     question: '실수로 완료했거나 삭제한 할 일을 되살릴 수 있나요?',
-    answer: '네. 삭제 시 영구 파기 대신 Soft Delete 방식으로 휴지통에 보관됩니다. 삭제 직후 하단 5초 실행취소(Undo) 버튼을 누르거나 우하단 휴지통 아이콘에서 언제든 복구할 수 있습니다.',
-  },
-  {
-    question: '다른 PC나 스마트폰으로 할 일 목록을 옮기려면 어떻게 하나요?',
-    answer: '리포트 영역의 [JSON 백업] 버튼을 눌러 백업 파일을 저장한 뒤, 새 기기나 다른 브라우저에서 [JSON 복원]을 선택하면 서브태스크와 마감일까지 그대로 안전하게 복구됩니다.',
+    answer: '네. 모든 삭제 요청은 DB에서 영구 파기(Hard Delete)하지 않고 Soft Delete(휴지통 보관)로 처리됩니다. 삭제 직후 5초 실행취소 또는 우하단 휴지통에서 언제든 1클릭으로 복구할 수 있습니다.',
   },
   {
     question: '포모도로 25분 집중 타이머는 어떻게 활용하면 좋나요?',
-    answer: '할 일 카드 우측의 핀(📌) 아이콘을 클릭하면 해당 할 일이 타이머에 고정됩니다. 25분 동안 그 한 가지 일에만 몰입하고 5분 휴식하는 리듬을 반복하면 집중 효율이 크게 높아집니다.',
+    answer: '할 일 카드 우측의 핀(📌) 아이콘을 클릭하면 해당 할 일이 타이머에 고정됩니다. 25분 몰입 후 5분 휴식 리듬으로 반복하면 집중 효율이 크게 높아집니다.',
   },
   {
     question: '노션(Notion)이나 카카오톡에 오늘 할 일을 깔끔하게 공유할 수 있나요?',
-    answer: '네. [리포트 복사]를 누르면 카카오톡이나 슬랙에 바로 붙여넣을 수 있는 요약본이 복사되며, [.md 저장]을 누르면 노션·옵시디언과 호환되는 마크다운 체크박스 문서가 저장됩니다.',
+    answer: '네. [리포트 복사]로 요약 텍스트를 복사하거나 [.md 저장]으로 반복 배지와 체크박스가 포함된 마크다운 문서를 다운로드할 수 있습니다.',
   },
 ];

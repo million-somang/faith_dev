@@ -1,34 +1,96 @@
 import { useState, type FormEvent, type RefObject } from 'react';
-import { CATEGORY_LIST, PRIORITY_LIST } from '../constants/todoMeta';
-import type { TodoCategory, TodoDraftInput, TodoPriority } from '../types/todo';
+import { Button } from '@astryxdesign/core/Button';
+import { Card } from '@astryxdesign/core/Card';
+import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/SegmentedControl';
+import { TextInput } from '@astryxdesign/core/TextInput';
+import { ToggleButton } from '@astryxdesign/core/ToggleButton';
+import {
+  CATEGORY_LIST,
+  PRIORITY_LIST,
+  RECURRENCE_LIST,
+  WEEKDAY_OPTIONS,
+} from '../constants/todoMeta';
+import type {
+  RecurrenceType,
+  TodoCategory,
+  TodoDraftInput,
+  TodoPriority,
+  TodoRecurrenceRule,
+} from '../types/todo';
+import { formatRecurrenceSummary, normalizeRecurrenceRule } from '../utils/recurrence';
 import { getLocalDateString, getOffsetDateString } from '../utils/todoAnalytics';
 
 interface TodoQuickAddProps {
-  readonly inputRef: RefObject<HTMLInputElement>;
+  readonly inputRef: RefObject<HTMLInputElement | null>;
   readonly onAdd: (draft: TodoDraftInput) => void;
 }
 
 export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
+  const now = new Date();
   const [title, setTitle] = useState<string>('');
   const [priority, setPriority] = useState<TodoPriority>('important');
   const [category, setCategory] = useState<TodoCategory>('work');
   const [dueDate, setDueDate] = useState<string | null>(() => getLocalDateString());
   const [showCustomDate, setShowCustomDate] = useState<boolean>(false);
 
+  // 반복(Recurrence) 상태
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none');
+  const [interval, setInterval] = useState<number>(1);
+  const [weekdays, setWeekdays] = useState<number[]>(() => [now.getDay()]);
+  const [monthDay, setMonthDay] = useState<number>(() => now.getDate());
+  const [yearMonth, setYearMonth] = useState<number>(() => now.getMonth() + 1);
+  const [yearDay, setYearDay] = useState<number>(() => now.getDate());
+  const [endDate, setEndDate] = useState<string>('');
+  const [showEndDate, setShowEndDate] = useState<boolean>(false);
+
   const todayStr = getLocalDateString();
   const tomorrowStr = getOffsetDateString(1);
+
+  const buildRecurrence = (): Partial<TodoRecurrenceRule> => {
+    if (recurrenceType === 'none') {
+      return { type: 'none' };
+    }
+    return {
+      type: recurrenceType,
+      interval,
+      weekdays: recurrenceType === 'weekly' ? weekdays : null,
+      monthDay: recurrenceType === 'monthly' ? monthDay : null,
+      yearMonth: recurrenceType === 'yearly' ? yearMonth : null,
+      yearDay: recurrenceType === 'yearly' ? yearDay : null,
+      endDate: showEndDate && endDate ? endDate : null,
+    };
+  };
+
+  const recurrencePreview =
+    recurrenceType === 'none'
+      ? ''
+      : formatRecurrenceSummary(
+          normalizeRecurrenceRule(buildRecurrence(), dueDate ?? todayStr)
+        );
+
+  const toggleWeekday = (day: number) => {
+    setWeekdays((prev) => {
+      if (prev.includes(day)) {
+        return prev.length > 1 ? prev.filter((d) => d !== day) : prev;
+      }
+      return [...prev, day].sort((a, b) => a - b);
+    });
+  };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const domValue = inputRef.current ? inputRef.current.value : '';
     const trimmed = (domValue || title).trim();
     if (!trimmed) return;
+
     onAdd({
       title: trimmed,
       priority,
       category,
-      dueDate,
+      dueDate: dueDate ?? (recurrenceType !== 'none' ? todayStr : null),
+      recurrence: buildRecurrence(),
     });
+
     setTitle('');
     if (inputRef.current) {
       inputRef.current.value = '';
@@ -36,159 +98,354 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white rounded-2xl p-3 border border-[#EBE6DD] shadow-2xs space-y-2 shrink-0"
-    >
-      {/* 1행: 1초 빠른 입력 + h-9.5 추가 버튼 */}
-      <div className="flex items-center gap-1.5">
-        <div className="relative flex-1 min-w-0">
-          <input
-            ref={inputRef}
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={160}
-            data-screenshot-input="주간 업무 리포트 정리 및 장보기"
-            placeholder="할 일을 입력하고 Enter (단축키 /)"
-            aria-label="새 할 일 제목 입력"
-            className="w-full h-9.5 pl-3 pr-2.5 bg-[#FAF8F5] border border-[#E2DDD3] focus:bg-white focus:border-indigo-500 rounded-xl text-xs font-bold text-[#2D2A26] placeholder-[#A39C90] outline-none transition-colors"
+    <Card padding={2} elevation="low" className="shrink-0 bg-white border-[#E5DDD0] rounded-2xl">
+      <form onSubmit={handleSubmit} className="space-y-2">
+        {/* 1행: Astryx TextInput + Primary Button */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex-1 min-w-0">
+            <TextInput
+              ref={inputRef}
+              label="새 할 일 제목 입력"
+              isLabelHidden
+              size="lg"
+              width="100%"
+              value={title}
+              onChange={(val) => setTitle(val.slice(0, 160))}
+              hasClear
+              data-screenshot-input="주간 업무 리포트 정리 및 매일 스트레칭"
+              placeholder="할 일을 입력하고 Enter (단축키 /)"
+            />
+          </div>
+          <Button
+            type="submit"
+            label="추가"
+            variant="primary"
+            size="lg"
+            data-screenshot-click="action"
+            icon={<i className="fas fa-plus text-[10px]"></i>}
           />
         </div>
-        <button
-          type="submit"
-          data-screenshot-click="action"
-          aria-label="할 일 추가"
-          className="h-9.5 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black flex items-center gap-1 shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
-        >
-          <i className="fas fa-plus text-[10px]"></i>
-          <span>추가</span>
-        </button>
-      </div>
 
-      {/* 2행: 우선순위 + 마감일 (오버플로우 없이 한눈에 노출) */}
-      <div className="flex items-center justify-between gap-1.5 pt-0.5">
-        <div className="flex items-center gap-1 shrink-0">
-          {PRIORITY_LIST.map((item) => {
-            const active = priority === item.key;
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setPriority(item.key)}
-                aria-label={`우선순위 ${item.shortLabel} 선택`}
-                className={`px-2 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                  active ? item.activeClass : 'bg-[#FAF8F5] text-[#6B645B] border-[#E5E0D5] hover:bg-[#F2ECE1]'
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    active ? 'bg-white' : item.dotClass
+        {/* 2행: 우선순위 + 카테고리 + 마감일 */}
+        <div className="flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-1 shrink-0">
+            {PRIORITY_LIST.map((item) => {
+              const active = priority === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setPriority(item.key)}
+                  aria-label={`우선순위 ${item.shortLabel} 선택`}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                    active
+                      ? item.activeClass
+                      : 'bg-[#FAF8F5] text-[#6C655B] border-[#E5DDD0] hover:bg-[#F2EDE4]'
                   }`}
-                ></span>
-                <span>{item.shortLabel}</span>
-              </button>
-            );
-          })}
-        </div>
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-white' : item.dotClass}`}
+                  ></span>
+                  <span>{item.shortLabel}</span>
+                </button>
+              );
+            })}
+          </div>
 
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              setDueDate(dueDate === todayStr ? null : todayStr);
-              setShowCustomDate(false);
-            }}
-            className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer shrink-0 ${
-              dueDate === todayStr
-                ? 'bg-emerald-600 text-white border-emerald-600'
-                : 'bg-[#FAF8F5] text-[#6B645B] border-[#E5E0D5] hover:bg-[#F2ECE1]'
-            }`}
-          >
-            오늘
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setDueDate(dueDate === tomorrowStr ? null : tomorrowStr);
-              setShowCustomDate(false);
-            }}
-            className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer shrink-0 ${
-              dueDate === tomorrowStr
-                ? 'bg-emerald-600 text-white border-emerald-600'
-                : 'bg-[#FAF8F5] text-[#6B645B] border-[#E5E0D5] hover:bg-[#F2ECE1]'
-            }`}
-          >
-            내일
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowCustomDate((prev) => !prev)}
-            aria-label="직접 마감일 선택"
-            className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer shrink-0 flex items-center gap-1 ${
-              showCustomDate || (dueDate !== null && dueDate !== todayStr && dueDate !== tomorrowStr)
-                ? 'bg-indigo-50 text-indigo-700 border-indigo-300'
-                : 'bg-[#FAF8F5] text-[#6B645B] border-[#E5E0D5] hover:bg-[#F2ECE1]'
-            }`}
-          >
-            <i className="far fa-calendar text-[9px]"></i>
-            <span>
-              {dueDate && dueDate !== todayStr && dueDate !== tomorrowStr
-                ? dueDate.slice(5)
-                : '날짜'}
-            </span>
-          </button>
-        </div>
-      </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as TodoCategory)}
+              aria-label="카테고리 선택"
+              className="h-[26px] px-1.5 rounded-lg bg-[#FAF8F5] border border-[#E5DDD0] text-[10px] font-bold text-[#24211D] outline-none focus:border-indigo-500 cursor-pointer"
+            >
+              {CATEGORY_LIST.map((cat) => (
+                <option key={cat.key} value={cat.key}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
 
-      {/* 3행: 카테고리 5종 균등 배치 */}
-      <div className="grid grid-cols-5 gap-1">
-        {CATEGORY_LIST.map((cat) => {
-          const active = category === cat.key;
-          return (
             <button
-              key={cat.key}
               type="button"
-              onClick={() => setCategory(cat.key)}
-              aria-label={`카테고리 ${cat.label} 선택`}
-              className={`py-1 px-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                active ? cat.activeClass : 'bg-[#FAF8F5] text-[#6B645B] border-[#E5E0D5] hover:bg-[#F2ECE1]'
+              onClick={() => {
+                setDueDate(dueDate === todayStr ? null : todayStr);
+                setShowCustomDate(false);
+              }}
+              className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer shrink-0 ${
+                dueDate === todayStr
+                  ? 'bg-emerald-700 text-white border-emerald-700'
+                  : 'bg-[#FAF8F5] text-[#6C655B] border-[#E5DDD0] hover:bg-[#F2EDE4]'
               }`}
             >
-              <i className={`${cat.iconClass} text-[9px]`}></i>
-              <span>{cat.label}</span>
+              오늘
             </button>
-          );
-        })}
-      </div>
 
-      {/* 사용자 지정 날짜 입력 (토글) */}
-      {showCustomDate && (
-        <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#F0EBE2] animate-fade-in">
-          <label className="text-[10px] font-bold text-[#7A7369] shrink-0">마감일 지정</label>
-          <div className="flex items-center gap-1.5">
-            <input
-              type="date"
-              value={dueDate || ''}
-              onChange={(e) => setDueDate(e.target.value || null)}
-              aria-label="마감일 날짜 선택"
-              className="px-2 py-1 rounded-lg bg-[#FAF8F5] border border-[#E2DDD3] text-[11px] font-bold text-[#2D2A26] outline-none focus:border-indigo-500"
-            />
-            {dueDate && (
-              <button
-                type="button"
-                onClick={() => {
-                  setDueDate(null);
-                  setShowCustomDate(false);
-                }}
-                className="px-2 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-[10px] font-bold text-stone-600 cursor-pointer"
-              >
-                없음
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setDueDate(dueDate === tomorrowStr ? null : tomorrowStr);
+                setShowCustomDate(false);
+              }}
+              className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer shrink-0 ${
+                dueDate === tomorrowStr
+                  ? 'bg-emerald-700 text-white border-emerald-700'
+                  : 'bg-[#FAF8F5] text-[#6C655B] border-[#E5DDD0] hover:bg-[#F2EDE4]'
+              }`}
+            >
+              내일
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowCustomDate((prev) => !prev)}
+              aria-label="날짜 직접 지정"
+              className={`px-1.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer shrink-0 ${
+                showCustomDate || (dueDate && dueDate !== todayStr && dueDate !== tomorrowStr)
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-[#FAF8F5] text-[#6C655B] border-[#E5DDD0] hover:bg-[#F2EDE4]'
+              }`}
+            >
+              <i className="far fa-calendar-alt"></i>
+            </button>
           </div>
         </div>
-      )}
-    </form>
+
+        {showCustomDate && (
+          <div className="flex items-center justify-between gap-2 bg-[#FAF8F5] px-2.5 py-1.5 rounded-xl border border-[#E5DDD0]">
+            <label htmlFor="quick-due-date" className="text-[10px] font-bold text-[#6C655B]">
+              {recurrenceType === 'none' ? '마감일' : '반복 시작일'}
+            </label>
+            <div className="flex items-center gap-1.5">
+              <input
+                id="quick-due-date"
+                type="date"
+                value={dueDate || ''}
+                onChange={(e) => setDueDate(e.target.value || null)}
+                className="text-[11px] font-bold text-[#24211D] bg-white border border-[#D9D0C1] rounded-lg px-2 py-0.5 outline-none focus:border-indigo-500"
+              />
+              {dueDate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDueDate(null);
+                    setShowCustomDate(false);
+                  }}
+                  className="text-[10px] font-bold text-[#8E8579] hover:text-rose-600 cursor-pointer"
+                >
+                  해제
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 3행: Astryx SegmentedControl (반복 안함 | 매일 | 매주 | 매월 | 매년) */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-black text-[#6C655B] flex items-center gap-1 shrink-0">
+              <i className="fas fa-repeat text-indigo-600 text-[9px]"></i>
+              반복
+            </span>
+            <div className="flex-1 min-w-0">
+              <SegmentedControl
+                label="반복 주기 선택"
+                layout="fill"
+                size="sm"
+                value={recurrenceType}
+                onChange={(val) => {
+                  const next = val as RecurrenceType;
+                  setRecurrenceType(next);
+                  setInterval(1);
+                }}
+              >
+                {RECURRENCE_LIST.map((opt) => (
+                  <SegmentedControlItem key={opt.key} value={opt.key} label={opt.shortLabel} />
+                ))}
+              </SegmentedControl>
+            </div>
+          </div>
+
+          {/* 4행(조건부): 세부 반복 옵션 */}
+          {recurrenceType !== 'none' && (
+            <div className="bg-[#FAF8F5] rounded-xl p-2 border border-[#E5DDD0] space-y-1.5 animate-fade-in text-[10px]">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {recurrenceType === 'daily' && (
+                    <>
+                      <span className="font-bold text-[#6C655B]">간격:</span>
+                      <select
+                        value={interval}
+                        onChange={(e) => setInterval(Number(e.target.value))}
+                        aria-label="매일 반복 간격"
+                        className="px-2 py-0.5 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                      >
+                        <option value={1}>매일 (1일)</option>
+                        <option value={2}>격일 (2일)</option>
+                        <option value={3}>3일마다</option>
+                        <option value={5}>5일마다</option>
+                        <option value={7}>7일마다</option>
+                      </select>
+                    </>
+                  )}
+
+                  {recurrenceType === 'weekly' && (
+                    <>
+                      <select
+                        value={interval}
+                        onChange={(e) => setInterval(Number(e.target.value))}
+                        aria-label="주 반복 간격"
+                        className="px-1.5 py-0.5 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                      >
+                        <option value={1}>매주</option>
+                        <option value={2}>격주(2주)</option>
+                        <option value={3}>3주마다</option>
+                        <option value={4}>4주마다</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setWeekdays([1, 2, 3, 4, 5])}
+                        className="px-1.5 py-0.5 rounded-md bg-white hover:bg-indigo-50 border border-[#D9D0C1] font-bold text-indigo-700 cursor-pointer"
+                      >
+                        평일
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWeekdays([0, 6])}
+                        className="px-1.5 py-0.5 rounded-md bg-white hover:bg-indigo-50 border border-[#D9D0C1] font-bold text-indigo-700 cursor-pointer"
+                      >
+                        주말
+                      </button>
+                    </>
+                  )}
+
+                  {recurrenceType === 'monthly' && (
+                    <>
+                      <select
+                        value={interval}
+                        onChange={(e) => setInterval(Number(e.target.value))}
+                        aria-label="월 반복 간격"
+                        className="px-1.5 py-0.5 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                      >
+                        <option value={1}>매월</option>
+                        <option value={2}>격월(2개월)</option>
+                        <option value={3}>분기(3개월)</option>
+                        <option value={6}>반기(6개월)</option>
+                      </select>
+                      <select
+                        value={monthDay}
+                        onChange={(e) => setMonthDay(Number(e.target.value))}
+                        aria-label="매월 반복 날짜"
+                        className="px-1.5 py-0.5 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                      >
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                          <option key={d} value={d}>
+                            {d}일 {d >= 29 ? '(말일 보정)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  )}
+
+                  {recurrenceType === 'yearly' && (
+                    <>
+                      <select
+                        value={interval}
+                        onChange={(e) => setInterval(Number(e.target.value))}
+                        aria-label="연 반복 간격"
+                        className="px-1.5 py-0.5 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                      >
+                        <option value={1}>매년</option>
+                        <option value={2}>2년마다</option>
+                      </select>
+                      <select
+                        value={yearMonth}
+                        onChange={(e) => setYearMonth(Number(e.target.value))}
+                        aria-label="매년 반복 월"
+                        className="px-1.5 py-0.5 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                      >
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                          <option key={m} value={m}>
+                            {m}월
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={yearDay}
+                        onChange={(e) => setYearDay(Number(e.target.value))}
+                        aria-label="매년 반복 일"
+                        className="px-1.5 py-0.5 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                      >
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                          <option key={d} value={d}>
+                            {d}일
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-md">
+                    🔁 {recurrencePreview}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowEndDate((prev) => !prev)}
+                    className="text-[10px] font-bold text-[#6C655B] hover:text-indigo-700 cursor-pointer underline"
+                  >
+                    {showEndDate ? '종료일 닫기' : '+종료일'}
+                  </button>
+                </div>
+              </div>
+
+              {recurrenceType === 'weekly' && (
+                <div className="grid grid-cols-7 gap-1 pt-0.5">
+                  {WEEKDAY_OPTIONS.map((w) => {
+                    const pressed = weekdays.includes(w.day);
+                    return (
+                      <ToggleButton
+                        key={w.day}
+                        label={w.label}
+                        size="sm"
+                        isPressed={pressed}
+                        onPressedChange={() => toggleWeekday(w.day)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
+              {showEndDate && (
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#E5DDD0]">
+                  <label htmlFor="recurrence-end-date" className="font-bold text-[#6C655B]">
+                    반복 종료일 (선택)
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      id="recurrence-end-date"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="px-2 py-0.5 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                    />
+                    {endDate && (
+                      <button
+                        type="button"
+                        onClick={() => setEndDate('')}
+                        className="text-[#8E8579] hover:text-rose-600 cursor-pointer"
+                      >
+                        지우기
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </form>
+    </Card>
   );
 }

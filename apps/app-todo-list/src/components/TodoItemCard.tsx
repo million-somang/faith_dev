@@ -1,6 +1,28 @@
 import { useState, type FormEvent } from 'react';
-import { CATEGORY_LIST, CATEGORY_MAP, PRIORITY_LIST, PRIORITY_MAP } from '../constants/todoMeta';
-import type { TodoCategory, TodoItem, TodoPatchInput, TodoPriority } from '../types/todo';
+import { Badge } from '@astryxdesign/core/Badge';
+import { Button } from '@astryxdesign/core/Button';
+import { Card } from '@astryxdesign/core/Card';
+import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
+import { IconButton } from '@astryxdesign/core/IconButton';
+import {
+  CATEGORY_LIST,
+  CATEGORY_MAP,
+  PRIORITY_LIST,
+  PRIORITY_MAP,
+  RECURRENCE_LIST,
+  WEEKDAY_OPTIONS,
+} from '../constants/todoMeta';
+import type {
+  RecurrenceType,
+  TodoCategory,
+  TodoItem,
+  TodoPatchInput,
+  TodoPriority,
+} from '../types/todo';
+import {
+  formatNextOccurrenceLabel,
+  getLocalTodayDateStr,
+} from '../utils/recurrence';
 import { getDueDateBadge } from '../utils/todoAnalytics';
 
 interface TodoItemCardProps {
@@ -34,6 +56,7 @@ export default function TodoItemCard({
   onToggleSubtask,
   onRemoveSubtask,
 }: TodoItemCardProps) {
+  const todayStr = getLocalTodayDateStr();
   const [expanded, setExpanded] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [draftTitle, setDraftTitle] = useState<string>(item.title);
@@ -41,33 +64,87 @@ export default function TodoItemCard({
   const [draftPriority, setDraftPriority] = useState<TodoPriority>(item.priority);
   const [draftCategory, setDraftCategory] = useState<TodoCategory>(item.category);
   const [draftDueDate, setDraftDueDate] = useState<string>(item.dueDate || '');
+
+  const [draftRecType, setDraftRecType] = useState<RecurrenceType>(item.recurrence.type);
+  const [draftInterval, setDraftInterval] = useState<number>(item.recurrence.interval || 1);
+  const [draftWeekdays, setDraftWeekdays] = useState<number[]>(
+    item.recurrence.weekdays ? [...item.recurrence.weekdays] : [new Date().getDay()]
+  );
+  const [draftMonthDay, setDraftMonthDay] = useState<number>(
+    item.recurrence.monthDay ?? new Date().getDate()
+  );
+  const [draftYearMonth, setDraftYearMonth] = useState<number>(
+    item.recurrence.yearMonth ?? new Date().getMonth() + 1
+  );
+  const [draftYearDay, setDraftYearDay] = useState<number>(
+    item.recurrence.yearDay ?? new Date().getDate()
+  );
+  const [draftEndDate, setDraftEndDate] = useState<string>(item.recurrence.endDate || '');
   const [subtaskInput, setSubtaskInput] = useState<string>('');
 
   const priorityMeta = PRIORITY_MAP[item.priority];
   const categoryMeta = CATEGORY_MAP[item.category];
-  const dueBadge = getDueDateBadge(item.dueDate, item.completed);
+  const isRecurring = item.occurrence.isRecurring;
+  const dueBadge = !isRecurring ? getDueDateBadge(item.dueDate, item.completed, todayStr) : null;
+  const nextOccLabel = isRecurring
+    ? formatNextOccurrenceLabel(item.occurrence.nextOccurrenceDate, todayStr, item.completed)
+    : null;
   const completedSubtasks = item.subtasks.filter((s) => s.completed).length;
 
   const handleOpenEdit = () => {
+    const now = new Date();
     setDraftTitle(item.title);
     setDraftMemo(item.memo);
     setDraftPriority(item.priority);
     setDraftCategory(item.category);
     setDraftDueDate(item.dueDate || '');
+    setDraftRecType(item.recurrence.type);
+    setDraftInterval(item.recurrence.interval || 1);
+    setDraftWeekdays(
+      item.recurrence.weekdays && item.recurrence.weekdays.length > 0
+        ? [...item.recurrence.weekdays]
+        : [now.getDay()]
+    );
+    setDraftMonthDay(item.recurrence.monthDay ?? now.getDate());
+    setDraftYearMonth(item.recurrence.yearMonth ?? now.getMonth() + 1);
+    setDraftYearDay(item.recurrence.yearDay ?? now.getDate());
+    setDraftEndDate(item.recurrence.endDate || '');
     setIsEditing(true);
     setExpanded(true);
+  };
+
+  const toggleDraftWeekday = (day: number) => {
+    setDraftWeekdays((prev) => {
+      if (prev.includes(day)) {
+        return prev.length > 1 ? prev.filter((d) => d !== day) : prev;
+      }
+      return [...prev, day].sort((a, b) => a - b);
+    });
   };
 
   const handleSaveEdit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const cleanedTitle = draftTitle.trim();
     if (!cleanedTitle) return;
+
     onUpdate(item.id, {
       title: cleanedTitle,
       memo: draftMemo.trim(),
       priority: draftPriority,
       category: draftCategory,
       dueDate: draftDueDate || null,
+      recurrence:
+        draftRecType === 'none'
+          ? { type: 'none' }
+          : {
+              type: draftRecType,
+              interval: draftInterval,
+              weekdays: draftRecType === 'weekly' ? draftWeekdays : null,
+              monthDay: draftRecType === 'monthly' ? draftMonthDay : null,
+              yearMonth: draftRecType === 'yearly' ? draftYearMonth : null,
+              yearDay: draftRecType === 'yearly' ? draftYearDay : null,
+              endDate: draftEndDate || null,
+            },
     });
     setIsEditing(false);
   };
@@ -81,138 +158,127 @@ export default function TodoItemCard({
   };
 
   return (
-    <article
-      className={`rounded-2xl border transition-all p-2.5 sm:p-3 ${
-        item.completed
-          ? 'bg-[#FAF8F5]/90 border-[#EBE6DD] opacity-85'
-          : isPinned
-          ? 'bg-indigo-50/40 border-indigo-300 shadow-xs'
-          : 'bg-white border-[#EBE6DD] hover:border-indigo-200 shadow-2xs'
-      }`}
+    <Card
+      padding={2}
+      variant={item.completed ? 'muted' : isPinned ? 'blue' : 'default'}
+      elevation={item.completed ? 'none' : isPinned ? 'low' : 'none'}
+      className="rounded-2xl transition-all"
     >
-      <div className="flex items-start gap-2.5">
-        {/* 커스텀 스프링 SVG 체크박스 */}
-        <button
-          type="button"
-          onClick={() => onToggle(item.id)}
-          aria-label={item.completed ? `${item.title} 완료 해제` : `${item.title} 완료 체크`}
-          className={`mt-0.5 w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer active:scale-90 ${
-            item.completed
-              ? 'bg-emerald-600 border-emerald-600 text-white animate-check-pop'
-              : 'bg-white border-[#CEC6B8] hover:border-indigo-500 text-transparent'
-          }`}
-        >
-          <svg viewBox="0 0 16 16" className="w-3 h-3" aria-hidden="true">
-            <path
-              d="M3.5 8.2L6.6 11.2L12.5 4.8"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+      <div className="flex items-start gap-2">
+        {/* Astryx CheckboxInput */}
+        <div className="pt-0.5 shrink-0">
+          <CheckboxInput
+            label={item.completed ? `${item.title} 완료 해제` : `${item.title} 완료 체크`}
+            isLabelHidden
+            size="sm"
+            value={item.completed}
+            onChange={() => onToggle(item.id)}
+          />
+        </div>
 
-        {/* 메인 텍스트 + 메타 뱃지 */}
+        {/* 메인 텍스트 + Astryx Badge 행 */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start justify-between gap-1.5">
             <button
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
-              className="text-left min-w-0 flex-1 cursor-pointer group"
+              className="text-left min-w-0 flex-1 cursor-pointer group pt-0.5"
             >
               <p
                 className={`text-xs sm:text-[13px] font-extrabold leading-snug break-words transition-colors ${
                   item.completed
-                    ? 'line-through text-[#948D82]'
-                    : 'text-[#2D2A26] group-hover:text-indigo-700'
+                    ? 'line-through text-[#8E8579]'
+                    : 'text-[#24211D] group-hover:text-indigo-700'
                 }`}
               >
                 {item.title}
               </p>
             </button>
 
-            {/* 우측 컴팩트 액션 버튼 */}
+            {/* 우측 Astryx IconButton 액션 */}
             <div className="flex items-center gap-0.5 shrink-0">
               {!item.completed && (
-                <button
-                  type="button"
+                <IconButton
+                  label="집중 타이머에 고정"
+                  tooltip={isPinned ? '집중 타이머 핀 해제' : '25분 집중 타이머에 고정'}
+                  variant={isPinned ? 'primary' : 'ghost'}
+                  size="sm"
                   onClick={() => onTogglePin(item.id)}
-                  title={isPinned ? '집중 타이머 핀 해제' : '25분 집중 타이머에 고정'}
-                  aria-label="집중 타이머에 고정"
-                  className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] transition-colors cursor-pointer ${
-                    isPinned
-                      ? 'bg-indigo-600 text-white shadow-2xs'
-                      : 'text-[#948D82] hover:bg-[#F5F2EB] hover:text-indigo-600'
-                  }`}
-                >
-                  <i className="fas fa-thumbtack"></i>
-                </button>
+                  icon={<i className="fas fa-thumbtack text-[10px]"></i>}
+                />
               )}
 
-              <button
-                type="button"
+              <IconButton
+                label="할 일 수정"
+                tooltip="수정 및 반복 설정"
+                variant="ghost"
+                size="sm"
                 onClick={handleOpenEdit}
-                title="할 일 수정"
-                aria-label="할 일 수정"
-                className="w-6 h-6 rounded-lg text-[#948D82] hover:bg-[#F5F2EB] hover:text-indigo-600 flex items-center justify-center text-[10px] transition-colors cursor-pointer"
-              >
-                <i className="fas fa-pen"></i>
-              </button>
+                icon={<i className="fas fa-pen text-[10px]"></i>}
+              />
 
               {canReorder && (
                 <>
-                  <button
-                    type="button"
-                    disabled={isFirst}
+                  <IconButton
+                    label="위로 이동"
+                    variant="ghost"
+                    size="sm"
+                    isDisabled={isFirst}
                     onClick={() => onMoveOrder(item.id, 'up')}
-                    title="위로 이동"
-                    aria-label="위로 이동"
-                    className="w-5 h-6 rounded-md text-[#A39C90] hover:bg-[#F5F2EB] hover:text-[#2D2A26] disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center text-[9px] cursor-pointer"
-                  >
-                    <i className="fas fa-chevron-up"></i>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isLast}
+                    icon={<i className="fas fa-chevron-up text-[9px]"></i>}
+                  />
+                  <IconButton
+                    label="아래로 이동"
+                    variant="ghost"
+                    size="sm"
+                    isDisabled={isLast}
                     onClick={() => onMoveOrder(item.id, 'down')}
-                    title="아래로 이동"
-                    aria-label="아래로 이동"
-                    className="w-5 h-6 rounded-md text-[#A39C90] hover:bg-[#F5F2EB] hover:text-[#2D2A26] disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center text-[9px] cursor-pointer"
-                  >
-                    <i className="fas fa-chevron-down"></i>
-                  </button>
+                    icon={<i className="fas fa-chevron-down text-[9px]"></i>}
+                  />
                 </>
               )}
 
-              <button
-                type="button"
+              <IconButton
+                label={`${item.title} 삭제`}
+                tooltip="휴지통으로 이동"
+                variant="ghost"
+                size="sm"
                 onClick={() => onSoftDelete(item.id)}
-                title="휴지통으로 이동"
-                aria-label={`${item.title} 삭제`}
-                className="w-6 h-6 rounded-lg text-[#948D82] hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center text-[10px] transition-colors cursor-pointer"
-              >
-                <i className="fas fa-trash-can"></i>
-              </button>
+                icon={<i className="fas fa-trash-can text-[10px] text-rose-600"></i>}
+              />
             </div>
           </div>
 
-          {/* 메타 칩 줄 */}
+          {/* Astryx Badge 메타 행 (우선순위 · 카테고리 · 반복 · 스트릭 · 예정일) */}
           <div className="flex flex-wrap items-center gap-1 mt-1.5">
-            <span
-              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9px] font-black ${priorityMeta.pillClass}`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${priorityMeta.dotClass}`}></span>
-              {priorityMeta.shortLabel}
-            </span>
+            <Badge variant={priorityMeta.badgeVariant} label={priorityMeta.shortLabel} />
+            <Badge
+              variant={categoryMeta.badgeVariant}
+              icon={<i className={`${categoryMeta.iconClass} text-[9px]`}></i>}
+              label={categoryMeta.label}
+            />
 
-            <span
-              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9px] font-bold ${categoryMeta.badgeClass}`}
-            >
-              <i className={`${categoryMeta.iconClass} text-[8px]`}></i>
-              {categoryMeta.label}
-            </span>
+            {isRecurring && item.occurrence.summaryLabel && (
+              <Badge
+                variant="info"
+                icon={<i className="fas fa-repeat text-[9px]"></i>}
+                label={item.occurrence.summaryLabel}
+              />
+            )}
+
+            {isRecurring && item.streakCount > 0 && (
+              <Badge
+                variant="success"
+                label={`🔥 ${item.streakCount}연속`}
+              />
+            )}
+
+            {nextOccLabel && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-[#E5DDD0] bg-[#FAF8F5] text-[9px] font-bold text-[#6C655B]">
+                <i className="far fa-calendar-check text-[8px]"></i>
+                {nextOccLabel}
+              </span>
+            )}
 
             {dueBadge && (
               <span
@@ -226,7 +292,7 @@ export default function TodoItemCard({
             <button
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#FAF8F5] hover:bg-[#F2ECE1] border border-[#E5E0D5] text-[9px] font-bold text-[#6B645B] cursor-pointer"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#FAF8F5] hover:bg-[#F2EDE4] border border-[#E5DDD0] text-[9px] font-bold text-[#6C655B] cursor-pointer"
             >
               <i className="fas fa-list-ul text-[8px]"></i>
               <span>
@@ -242,25 +308,27 @@ export default function TodoItemCard({
             </button>
           </div>
 
-          {/* 메모 요약 (접힘 상태일 때 한 줄 미리보기) */}
           {!expanded && item.memo && (
-            <p className="text-[10px] text-[#7A7369] mt-1 truncate">{item.memo}</p>
+            <p className="text-[10px] text-[#6C655B] mt-1 truncate">{item.memo}</p>
           )}
         </div>
       </div>
 
-      {/* 확장 아코디언: 편집 폼 또는 메모 + 서브태스크 체크리스트 */}
+      {/* 확장 영역: 인라인 수정(반복 규칙 포함) + 서브태스크 */}
       {expanded && (
-        <div className="mt-2.5 pt-2.5 border-t border-[#F0EBE2] pl-7 space-y-2.5 animate-fade-in">
+        <div className="mt-2.5 pt-2.5 border-t border-[#EAE3D7] pl-6 space-y-2.5 animate-fade-in">
           {isEditing ? (
-            <form onSubmit={handleSaveEdit} className="space-y-2 bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EBE6DD]">
+            <form
+              onSubmit={handleSaveEdit}
+              className="space-y-2 bg-[#FAF8F5] p-2.5 rounded-xl border border-[#E5DDD0]"
+            >
               <input
                 type="text"
                 value={draftTitle}
                 onChange={(e) => setDraftTitle(e.target.value)}
                 maxLength={160}
                 aria-label="할 일 제목 수정"
-                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#DFD9CE] focus:border-indigo-500 text-xs font-bold text-[#2D2A26] outline-none"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#D9D0C1] focus:border-indigo-500 text-xs font-bold text-[#24211D] outline-none"
               />
               <textarea
                 value={draftMemo}
@@ -269,14 +337,15 @@ export default function TodoItemCard({
                 rows={2}
                 placeholder="상세 메모 (선택)"
                 aria-label="할 일 메모 수정"
-                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#DFD9CE] focus:border-indigo-500 text-[11px] font-medium text-[#2D2A26] outline-none resize-none"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#D9D0C1] focus:border-indigo-500 text-[11px] font-medium text-[#24211D] outline-none resize-none"
               />
+
               <div className="flex flex-wrap items-center gap-1.5">
                 <select
                   value={draftPriority}
                   onChange={(e) => setDraftPriority(e.target.value as TodoPriority)}
                   aria-label="우선순위 수정"
-                  className="px-2 py-1 rounded-lg bg-white border border-[#DFD9CE] text-[10px] font-bold text-[#2D2A26]"
+                  className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] text-[10px] font-bold text-[#24211D]"
                 >
                   {PRIORITY_LIST.map((p) => (
                     <option key={p.key} value={p.key}>
@@ -288,7 +357,7 @@ export default function TodoItemCard({
                   value={draftCategory}
                   onChange={(e) => setDraftCategory(e.target.value as TodoCategory)}
                   aria-label="카테고리 수정"
-                  className="px-2 py-1 rounded-lg bg-white border border-[#DFD9CE] text-[10px] font-bold text-[#2D2A26]"
+                  className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] text-[10px] font-bold text-[#24211D]"
                 >
                   {CATEGORY_LIST.map((c) => (
                     <option key={c.key} value={c.key}>
@@ -301,28 +370,143 @@ export default function TodoItemCard({
                   value={draftDueDate}
                   onChange={(e) => setDraftDueDate(e.target.value)}
                   aria-label="마감일 수정"
-                  className="px-2 py-1 rounded-lg bg-white border border-[#DFD9CE] text-[10px] font-bold text-[#2D2A26]"
+                  className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] text-[10px] font-bold text-[#24211D]"
                 />
               </div>
-              <div className="flex items-center justify-end gap-1.5">
-                <button
-                  type="button"
+
+              {/* 반복 규칙 수정 */}
+              <div className="space-y-1.5 pt-1 border-t border-[#E5DDD0] text-[10px]">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-black text-[#6C655B]">반복 설정:</span>
+                  <select
+                    value={draftRecType}
+                    onChange={(e) => {
+                      setDraftRecType(e.target.value as RecurrenceType);
+                      setDraftInterval(1);
+                    }}
+                    aria-label="반복 유형 수정"
+                    className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                  >
+                    {RECURRENCE_LIST.map((r) => (
+                      <option key={r.key} value={r.key}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  {draftRecType !== 'none' && (
+                    <select
+                      value={draftInterval}
+                      onChange={(e) => setDraftInterval(Number(e.target.value))}
+                      aria-label="반복 간격 수정"
+                      className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                    >
+                      <option value={1}>매 1주기</option>
+                      <option value={2}>매 2주기</option>
+                      <option value={3}>매 3주기</option>
+                      <option value={4}>매 4주기</option>
+                    </select>
+                  )}
+
+                  {draftRecType === 'monthly' && (
+                    <select
+                      value={draftMonthDay}
+                      onChange={(e) => setDraftMonthDay(Number(e.target.value))}
+                      aria-label="월간 반복 일 수정"
+                      className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                    >
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                        <option key={d} value={d}>
+                          {d}일
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  {draftRecType === 'yearly' && (
+                    <>
+                      <select
+                        value={draftYearMonth}
+                        onChange={(e) => setDraftYearMonth(Number(e.target.value))}
+                        aria-label="연간 반복 월 수정"
+                        className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                      >
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                          <option key={m} value={m}>
+                            {m}월
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={draftYearDay}
+                        onChange={(e) => setDraftYearDay(Number(e.target.value))}
+                        aria-label="연간 반복 일 수정"
+                        className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                      >
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                          <option key={d} value={d}>
+                            {d}일
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  )}
+                </div>
+
+                {draftRecType === 'weekly' && (
+                  <div className="flex flex-wrap gap-1">
+                    {WEEKDAY_OPTIONS.map((w) => {
+                      const active = draftWeekdays.includes(w.day);
+                      return (
+                        <button
+                          key={w.day}
+                          type="button"
+                          onClick={() => toggleDraftWeekday(w.day)}
+                          className={`w-6 h-6 rounded-md font-black border cursor-pointer ${
+                            active
+                              ? 'bg-indigo-600 text-white border-indigo-600'
+                              : 'bg-white text-[#6C655B] border-[#D9D0C1]'
+                          }`}
+                        >
+                          {w.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {draftRecType !== 'none' && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#6C655B] font-bold">종료일:</span>
+                    <input
+                      type="date"
+                      value={draftEndDate}
+                      onChange={(e) => setDraftEndDate(e.target.value)}
+                      aria-label="반복 종료일 수정"
+                      className="px-2 py-0.5 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-1.5 pt-1">
+                <Button
+                  label="취소"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setIsEditing(false)}
-                  className="px-2.5 py-1 rounded-lg bg-stone-200 hover:bg-stone-300 text-[10px] font-bold text-stone-700 cursor-pointer"
-                >
-                  취소
-                </button>
-                <button
+                />
+                <Button
                   type="submit"
-                  className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black cursor-pointer"
-                >
-                  저장
-                </button>
+                  label="저장"
+                  variant="primary"
+                  size="sm"
+                />
               </div>
             </form>
           ) : (
             item.memo && (
-              <p className="text-[11px] text-[#57514A] bg-[#FAF8F5] px-2.5 py-1.5 rounded-xl border border-[#EBE6DD] leading-relaxed">
+              <p className="text-[11px] text-[#4D473F] bg-[#FAF8F5] px-2.5 py-1.5 rounded-xl border border-[#E5DDD0] leading-relaxed">
                 {item.memo}
               </p>
             )
@@ -333,38 +517,23 @@ export default function TodoItemCard({
             {item.subtasks.map((sub) => (
               <div
                 key={sub.id}
-                className="flex items-center justify-between gap-2 bg-[#FAF8F5] px-2.5 py-1.5 rounded-xl border border-[#EFEAE0]"
+                className="flex items-center justify-between gap-2 bg-[#FAF8F5] px-2.5 py-1.5 rounded-xl border border-[#EAE3D7]"
               >
-                <button
-                  type="button"
-                  onClick={() => onToggleSubtask(item.id, sub.id)}
-                  className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
-                >
-                  <span
-                    className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 text-[8px] ${
-                      sub.completed
-                        ? 'bg-emerald-600 border-emerald-600 text-white'
-                        : 'bg-white border-[#CEC6B8] text-transparent'
-                    }`}
-                  >
-                    <i className="fas fa-check"></i>
-                  </span>
-                  <span
-                    className={`text-[11px] font-semibold truncate ${
-                      sub.completed ? 'line-through text-[#A39C90]' : 'text-[#2D2A26]'
-                    }`}
-                  >
-                    {sub.title}
-                  </span>
-                </button>
-                <button
-                  type="button"
+                <div className="flex-1 min-w-0">
+                  <CheckboxInput
+                    label={sub.title}
+                    size="sm"
+                    value={sub.completed}
+                    onChange={() => onToggleSubtask(item.id, sub.id)}
+                  />
+                </div>
+                <IconButton
+                  label="세부 단계 삭제"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => onRemoveSubtask(item.id, sub.id)}
-                  aria-label="세부 단계 삭제"
-                  className="text-[10px] text-[#A39C90] hover:text-rose-600 px-1 cursor-pointer"
-                >
-                  <i className="fas fa-times"></i>
-                </button>
+                  icon={<i className="fas fa-times text-[10px]"></i>}
+                />
               </div>
             ))}
 
@@ -376,18 +545,18 @@ export default function TodoItemCard({
                 maxLength={120}
                 placeholder="세부 단계 추가 후 Enter..."
                 aria-label="세부 단계 입력"
-                className="flex-1 h-7 px-2.5 rounded-lg bg-[#FAF8F5] border border-[#E5E0D5] focus:bg-white focus:border-indigo-500 text-[11px] font-medium text-[#2D2A26] outline-none"
+                className="flex-1 h-7 px-2.5 rounded-lg bg-[#FAF8F5] border border-[#E5DDD0] focus:bg-white focus:border-indigo-500 text-[11px] font-medium text-[#24211D] outline-none"
               />
-              <button
+              <Button
                 type="submit"
-                className="h-7 px-2.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[10px] font-black cursor-pointer shrink-0"
-              >
-                + 단계
-              </button>
+                label="+ 단계"
+                variant="secondary"
+                size="sm"
+              />
             </form>
           </div>
         </div>
       )}
-    </article>
+    </Card>
   );
 }

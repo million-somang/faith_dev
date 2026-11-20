@@ -5,10 +5,13 @@ import Link from 'next/link';
 import { useAppLauncher } from '@/hooks/useAppLauncher';
 import {
   getTodayLocalDateStr,
-  useLocalTodos,
   type LocalTodoCategory,
   type LocalTodoPriority,
 } from '@/hooks/useLocalTodos';
+import {
+  usePortalTodos,
+  type PortalRecurrenceType,
+} from '@/hooks/usePortalTodos';
 
 interface MypageTodoCardProps {
   readonly variant?: 'full' | 'compact';
@@ -38,6 +41,14 @@ const PRIORITY_BADGE: Record<
   },
 };
 
+const RECURRENCE_PILLS: readonly { readonly key: PortalRecurrenceType; readonly label: string }[] = [
+  { key: 'none', label: '1회' },
+  { key: 'daily', label: '매일' },
+  { key: 'weekly', label: '매주' },
+  { key: 'monthly', label: '매월' },
+  { key: 'yearly', label: '매년' },
+];
+
 const CATEGORY_LABEL: Record<LocalTodoCategory, string> = {
   work: '업무',
   personal: '개인',
@@ -46,7 +57,11 @@ const CATEGORY_LABEL: Record<LocalTodoCategory, string> = {
   study: '공부',
 };
 
-function getCompactDueLabel(dueDate: string | null, completed: boolean, todayStr: string): {
+function getCompactDueLabel(
+  dueDate: string | null,
+  completed: boolean,
+  todayStr: string
+): {
   text: string;
   isOverdue: boolean;
 } | null {
@@ -66,18 +81,22 @@ function getCompactDueLabel(dueDate: string | null, completed: boolean, todayStr
 export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
   const { launchApp } = useAppLauncher();
   const {
+    source,
     hydrated,
     todos,
     stats,
     lastDeleted,
+    pendingLocalCount,
     addQuickTodo,
     toggleTodo,
     softDeleteTodo,
     undoSoftDelete,
-  } = useLocalTodos();
+    migrateLocalToDb,
+  } = usePortalTodos();
 
   const [quickTitle, setQuickTitle] = useState<string>('');
   const [quickPriority, setQuickPriority] = useState<LocalTodoPriority>('important');
+  const [quickRecurrence, setQuickRecurrence] = useState<PortalRecurrenceType>('none');
   const [showCompleted, setShowCompleted] = useState<boolean>(false);
 
   const todayStr = getTodayLocalDateStr();
@@ -91,37 +110,56 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
     e.preventDefault();
     const trimmed = quickTitle.trim();
     if (!trimmed) return;
-    addQuickTodo(trimmed, quickPriority, true);
+    addQuickTodo(trimmed, quickPriority, true, quickRecurrence);
     setQuickTitle('');
   };
 
   return (
     <section
       aria-label="마이페이지 TO-DO 할일 보드"
-      className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-4"
+      className="bg-[#FAF8F5] rounded-3xl border border-[#E5DDD0] shadow-sm p-5 sm:p-6 space-y-4"
     >
-      {/* 상단 헤더 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+      {/* 상단 Astryx Warm Stone 헤더 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#EAE3D7] pb-3.5">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-emerald-500 text-white flex items-center justify-center shadow-sm shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-sm shrink-0">
             <i className="fas fa-list-check text-base"></i>
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+              <h2 className="text-base sm:text-lg font-black text-[#24211D] tracking-tight">
                 나의 TO-DO (할일 정리)
               </h2>
+              <span
+                className={`text-[10px] font-black px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${
+                  source === 'db'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    source === 'db' ? 'bg-emerald-600' : 'bg-amber-500'
+                  }`}
+                ></span>
+                {source === 'db' ? 'DB 영구 저장' : '로컬 임시 모드'}
+              </span>
               <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 tabular-nums">
                 완료 {stats.completedCount} / {stats.totalCount}건 · {stats.completionRate}%
               </span>
+              {stats.recurringCount > 0 && (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white text-indigo-700 border border-[#E5DDD0]">
+                  🔁 반복 {stats.recurringCount}건
+                </span>
+              )}
               {stats.overdueCount > 0 && (
                 <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
                   지연 {stats.overdueCount}건
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              생활도구 투두 플래너와 실시간 동기화됩니다. 마이페이지에서 바로 추가·완료 체크하세요.
+            <p className="text-xs text-[#6C655B] mt-0.5">
+              매일·매주·매월·매년 반복 루틴과 새 창 플래너 팝업이 DB로 실시간 동기화됩니다.
             </p>
           </div>
         </div>
@@ -129,7 +167,7 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
         <div className="flex items-center gap-2 shrink-0">
           <Link
             href="/tools/todo-list"
-            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold flex items-center gap-1.5 transition-colors"
+            className="px-3 py-2 rounded-xl bg-white hover:bg-[#F2EDE4] border border-[#E5DDD0] text-[#4D473F] text-xs font-extrabold flex items-center gap-1.5 transition-colors"
           >
             <i className="fas fa-book-open text-[10px]"></i>
             <span>사용 가이드</span>
@@ -145,6 +183,22 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
         </div>
       </div>
 
+      {/* 기존 로컬 할 일 1클릭 DB 이관 배너 */}
+      {source === 'db' && pendingLocalCount > 0 && (
+        <div className="rounded-2xl bg-indigo-50 border border-indigo-200 px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <span className="text-xs font-bold text-indigo-950">
+            이 브라우저에 임시 저장되어 있던 할 일 {pendingLocalCount}건이 있습니다. 계정 DB에 저장할까요?
+          </span>
+          <button
+            type="button"
+            onClick={() => void migrateLocalToDb()}
+            className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black shrink-0 cursor-pointer"
+          >
+            내 계정에 저장하기
+          </button>
+        </div>
+      )}
+
       {/* SVG 달성률 프로그레스 바 */}
       <div className="space-y-1">
         <svg
@@ -157,51 +211,80 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
           aria-valuemax={100}
           aria-label="전체 할 일 달성률"
         >
-          <rect x="0" y="0" width="100" height="4" rx="2" fill="#E2E8F0" />
+          <rect x="0" y="0" width="100" height="4" rx="2" fill="#E5DDD0" />
           <rect
             x="0"
             y="0"
             width={stats.completionRate}
             height="4"
             rx="2"
-            fill={stats.completionRate === 100 && stats.totalCount > 0 ? '#059669' : '#4F46E5'}
+            fill={stats.completionRate === 100 && stats.totalCount > 0 ? '#047857' : '#4338CA'}
           />
         </svg>
       </div>
 
-      {/* 1줄 빠른 추가 폼 */}
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-        <div className="flex items-center gap-1 shrink-0">
-          {(['urgent', 'important', 'normal'] as const).map((priKey) => {
-            const meta = PRIORITY_BADGE[priKey];
-            const active = quickPriority === priKey;
-            return (
-              <button
-                key={priKey}
-                type="button"
-                onClick={() => setQuickPriority(priKey)}
-                className={`px-2.5 py-2 rounded-xl text-[11px] font-black border transition-all cursor-pointer flex items-center gap-1 ${
-                  active
-                    ? meta.chip
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-white' : meta.dot}`}></span>
-                <span>{meta.label}</span>
-              </button>
-            );
-          })}
+      {/* Astryx Warm Stone 빠른 추가 폼 (우선순위 + 반복 주기 포함) */}
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded-2xl border border-[#E5DDD0] p-3 space-y-2.5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1">
+            {(['urgent', 'important', 'normal'] as const).map((priKey) => {
+              const meta = PRIORITY_BADGE[priKey];
+              const active = quickPriority === priKey;
+              return (
+                <button
+                  key={priKey}
+                  type="button"
+                  onClick={() => setQuickPriority(priKey)}
+                  className={`px-2.5 py-1.5 rounded-xl text-[11px] font-black border transition-all cursor-pointer flex items-center gap-1 ${
+                    active
+                      ? meta.chip
+                      : 'bg-[#FAF8F5] text-[#6C655B] border-[#E5DDD0] hover:bg-[#F2EDE4]'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-white' : meta.dot}`}></span>
+                  <span>{meta.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-1 bg-[#FAF8F5] p-1 rounded-xl border border-[#E5DDD0]">
+            <span className="text-[10px] font-black text-[#6C655B] px-1.5 flex items-center gap-1">
+              <i className="fas fa-repeat text-indigo-600 text-[9px]"></i>
+              반복
+            </span>
+            {RECURRENCE_PILLS.map((rec) => {
+              const active = quickRecurrence === rec.key;
+              return (
+                <button
+                  key={rec.key}
+                  type="button"
+                  onClick={() => setQuickRecurrence(rec.key)}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                    active
+                      ? 'bg-[#24211D] text-white shadow-sm'
+                      : 'text-[#6C655B] hover:text-[#24211D]'
+                  }`}
+                >
+                  {rec.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="flex items-center gap-2">
           <input
             type="text"
             value={quickTitle}
             onChange={(e) => setQuickTitle(e.target.value)}
             maxLength={160}
-            placeholder="오늘 할 일을 빠르게 입력하고 Enter..."
+            placeholder="오늘 할 일 또는 반복 루틴을 입력하고 Enter..."
             aria-label="마이페이지 빠른 할 일 입력"
-            className="flex-1 min-w-0 h-[38px] px-3.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 text-xs font-bold text-slate-900 placeholder-slate-400 outline-none transition-colors"
+            className="flex-1 min-w-0 h-[38px] px-3.5 rounded-xl bg-[#FAF8F5] border border-[#E5DDD0] focus:bg-white focus:border-indigo-500 text-xs font-bold text-[#24211D] placeholder-[#8E8579] outline-none transition-colors"
           />
           <button
             type="submit"
@@ -215,23 +298,21 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
 
       {/* 할 일 목록 또는 정직한 Empty State */}
       {!hydrated ? (
-        <div className="py-6 text-center text-xs font-bold text-slate-400">
+        <div className="py-6 text-center text-xs font-bold text-[#8E8579]">
           할 일 목록을 불러오는 중입니다...
         </div>
       ) : todos.length === 0 ? (
-        <div className="rounded-2xl bg-slate-50/90 border border-dashed border-slate-200 p-5 text-center space-y-2">
-          <div className="w-10 h-10 mx-auto rounded-xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center text-sm">
+        <div className="rounded-2xl bg-white/90 border border-dashed border-[#D9D0C1] p-5 text-center space-y-2">
+          <div className="w-10 h-10 mx-auto rounded-xl bg-[#FAF8F5] border border-[#E5DDD0] text-[#8E8579] flex items-center justify-center text-sm">
             <i className="fas fa-clipboard-list"></i>
           </div>
-          <p className="text-xs font-extrabold text-slate-700">
-            아직 등록된 할 일이 없습니다.
-          </p>
-          <p className="text-[11px] text-slate-500">
-            위 입력창에 할 일을 바로 추가하거나, 전체 플래너에서 우선순위·집중 타이머와 함께 정리해 보세요.
+          <p className="text-xs font-extrabold text-[#24211D]">아직 등록된 할 일이 없습니다.</p>
+          <p className="text-[11px] text-[#6C655B]">
+            위 입력창에 바로 추가하거나 전체 플래너 팝업에서 세부 반복 주기와 집중 타이머를 설정해 보세요.
           </p>
         </div>
       ) : visibleList.length === 0 ? (
-        <div className="rounded-2xl bg-emerald-50/70 border border-emerald-200/80 p-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="rounded-2xl bg-emerald-50/80 border border-emerald-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-900">
             <i className="fas fa-circle-check text-emerald-600 text-sm"></i>
             <span>진행 중인 모든 할 일을 완료했습니다! ({stats.completedCount}건 완료)</span>
@@ -249,15 +330,19 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {visibleList.map((item) => {
               const pri = PRIORITY_BADGE[item.priority];
-              const due = getCompactDueLabel(item.dueDate, item.completed, todayStr);
+              const isRecurring = item.recurrence.type !== 'none';
+              const due = !isRecurring
+                ? getCompactDueLabel(item.dueDate, item.completed, todayStr)
+                : null;
               const subDone = item.subtasks.filter((s) => s.completed).length;
+
               return (
                 <div
                   key={item.id}
                   className={`flex items-center justify-between gap-2.5 p-3 rounded-2xl border transition-all ${
                     item.completed
-                      ? 'bg-slate-50 border-slate-200/80 opacity-80'
-                      : 'bg-white border-slate-200 hover:border-indigo-200 shadow-sm'
+                      ? 'bg-[#F2EDE4]/70 border-[#E5DDD0] opacity-80'
+                      : 'bg-white border-[#E5DDD0] hover:border-indigo-300 shadow-sm'
                   }`}
                 >
                   <div className="flex items-start gap-2.5 min-w-0 flex-1">
@@ -268,7 +353,7 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                       className={`mt-0.5 w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
                         item.completed
                           ? 'bg-emerald-600 border-emerald-600 text-white'
-                          : 'bg-white border-slate-300 hover:border-indigo-500 text-transparent'
+                          : 'bg-white border-[#C9BFAE] hover:border-indigo-500 text-transparent'
                       }`}
                     >
                       <i className="fas fa-check text-[10px]"></i>
@@ -277,7 +362,7 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                     <div className="min-w-0 flex-1">
                       <p
                         className={`text-xs sm:text-sm font-extrabold truncate ${
-                          item.completed ? 'line-through text-slate-400' : 'text-slate-900'
+                          item.completed ? 'line-through text-[#8E8579]' : 'text-[#24211D]'
                         }`}
                       >
                         {item.title}
@@ -286,9 +371,19 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                         <span className={`px-1.5 py-0.5 rounded border font-black ${pri.badge}`}>
                           {pri.label}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">
+                        <span className="px-1.5 py-0.5 rounded bg-[#FAF8F5] border border-[#E5DDD0] text-[#6C655B] font-bold">
                           {CATEGORY_LABEL[item.category]}
                         </span>
+                        {isRecurring && item.occurrence.summaryLabel && (
+                          <span className="px-1.5 py-0.5 rounded border bg-indigo-50 text-indigo-700 border-indigo-200 font-black">
+                            🔁 {item.occurrence.summaryLabel}
+                          </span>
+                        )}
+                        {isRecurring && item.streakCount > 0 && (
+                          <span className="px-1.5 py-0.5 rounded border bg-emerald-50 text-emerald-700 border-emerald-200 font-black">
+                            🔥 {item.streakCount}연속
+                          </span>
+                        )}
                         {due && (
                           <span
                             className={`px-1.5 py-0.5 rounded border font-bold ${
@@ -301,7 +396,7 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                           </span>
                         )}
                         {item.subtasks.length > 0 && (
-                          <span className="text-slate-500 font-mono font-bold">
+                          <span className="text-[#6C655B] font-mono font-bold">
                             단계 {subDone}/{item.subtasks.length}
                           </span>
                         )}
@@ -314,7 +409,7 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                     onClick={() => softDeleteTodo(item.id)}
                     title="휴지통으로 이동"
                     aria-label={`${item.title} 삭제`}
-                    className="w-7 h-7 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center text-xs shrink-0 transition-colors cursor-pointer"
+                    className="w-7 h-7 rounded-xl text-[#8E8579] hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center text-xs shrink-0 transition-colors cursor-pointer"
                   >
                     <i className="fas fa-trash-can"></i>
                   </button>
@@ -323,7 +418,7 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
             })}
           </div>
 
-          <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500">
+          <div className="flex items-center justify-between pt-1 text-[11px] text-[#6C655B]">
             <div className="flex items-center gap-3">
               {stats.completedCount > 0 && (
                 <button
@@ -340,7 +435,7 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                 <button
                   type="button"
                   onClick={() => launchApp('/app/todo-list/', 'todo-list')}
-                  className="font-bold text-slate-500 hover:text-indigo-600 cursor-pointer"
+                  className="font-bold text-[#6C655B] hover:text-indigo-600 cursor-pointer"
                 >
                   +{todos.length - maxVisible}건 더 보기 (새 창) →
                 </button>
@@ -348,7 +443,7 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
             </div>
 
             {lastDeleted && (
-              <div className="flex items-center gap-2 bg-slate-900 text-white px-2.5 py-1 rounded-xl text-[11px] font-bold">
+              <div className="flex items-center gap-2 bg-[#24211D] text-white px-2.5 py-1 rounded-xl text-[11px] font-bold">
                 <span className="truncate max-w-[140px]">&apos;{lastDeleted.title}&apos; 삭제됨</span>
                 <button
                   type="button"

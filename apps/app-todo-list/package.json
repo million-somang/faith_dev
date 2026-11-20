@@ -10,16 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@faithportal/mini-app-sdk": "^1.0.0",
+    "@astryxdesign/core": "0.7.16",
+    "@astryxdesign/theme-stone": "0.7.16",
+    "@stylexjs/stylex": "^0.19.0",
     "@tailwindcss/vite": "^4.2.0",
     "lucide-react": "^0.575.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^5.1.1",
     "tailwindcss": "^4.2.0",
     "typescript": "~5.9.3",

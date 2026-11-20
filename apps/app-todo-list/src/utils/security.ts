@@ -1,9 +1,14 @@
 import { TODO_MAX_ITEMS, TODO_MAX_SUBTASKS } from '../constants/todoMeta';
-import type { TodoCategory, TodoItem, TodoPriority, TodoSubtask } from '../types/todo';
+import type { TodoCategory, TodoItem, TodoPriority, TodoRecurrenceRule, TodoSubtask } from '../types/todo';
+import {
+  evaluateTodoOccurrence,
+  getLocalTodayDateStr,
+  isValidDateStr,
+  normalizeRecurrenceRule,
+} from './recurrence';
 
 const VALID_PRIORITIES = new Set<TodoPriority>(['urgent', 'important', 'normal']);
 const VALID_CATEGORIES = new Set<TodoCategory>(['work', 'personal', 'shopping', 'health', 'study']);
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * 제어문자를 제거하고 허용 길이를 제한하여 안전한 평문 문자열로 정제합니다.
@@ -27,23 +32,7 @@ export function escapeHtml(str: string): string {
 }
 
 export function isValidDateString(value: unknown): value is string {
-  if (typeof value !== 'string' || !DATE_PATTERN.test(value)) {
-    return false;
-  }
-  const parts = value.split('-').map((part) => Number(part));
-  const [year, month, day] = parts;
-  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
-    return false;
-  }
-  if (month < 1 || month > 12 || day < 1 || day > 31) {
-    return false;
-  }
-  const dateObj = new Date(year, month - 1, day);
-  return (
-    dateObj.getFullYear() === year &&
-    dateObj.getMonth() === month - 1 &&
-    dateObj.getDate() === day
-  );
+  return typeof value === 'string' && isValidDateStr(value);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -71,6 +60,8 @@ export function sanitizeTodoRecord(raw: unknown, fallbackOrder: number): TodoIte
   if (!title) return null;
 
   const nowIso = new Date().toISOString();
+  const todayStr = getLocalTodayDateStr();
+
   const id =
     typeof raw.id === 'string' && raw.id.trim().length > 0
       ? sanitizeText(raw.id, 64)
@@ -88,13 +79,6 @@ export function sanitizeTodoRecord(raw: unknown, fallbackOrder: number): TodoIte
 
   const memo = typeof raw.memo === 'string' ? sanitizeText(raw.memo, 400) : '';
   const dueDate = isValidDateString(raw.dueDate) ? raw.dueDate : null;
-  const completed = Boolean(raw.completed);
-  const completedAt =
-    completed && typeof raw.completedAt === 'string' && raw.completedAt.length <= 40
-      ? raw.completedAt
-      : completed
-      ? nowIso
-      : null;
 
   const subtasks: TodoSubtask[] = [];
   if (Array.isArray(raw.subtasks)) {
@@ -104,19 +88,52 @@ export function sanitizeTodoRecord(raw: unknown, fallbackOrder: number): TodoIte
     }
   }
 
-  const order =
-    typeof raw.order === 'number' && Number.isFinite(raw.order) ? raw.order : fallbackOrder;
+  const order = typeof raw.order === 'number' && Number.isFinite(raw.order) ? raw.order : fallbackOrder;
   const createdAt =
     typeof raw.createdAt === 'string' && raw.createdAt.length <= 40 ? raw.createdAt : nowIso;
   const updatedAt =
     typeof raw.updatedAt === 'string' && raw.updatedAt.length <= 40 ? raw.updatedAt : nowIso;
+
+  const anchorCandidate = dueDate ?? createdAt.slice(0, 10);
+  const anchorDate = isValidDateStr(anchorCandidate) ? anchorCandidate : todayStr;
+
+  const rawRecurrence = isRecord(raw.recurrence) ? (raw.recurrence as Partial<TodoRecurrenceRule>) : null;
+  const recurrence = normalizeRecurrenceRule(rawRecurrence, anchorDate);
+
+  const lastCompletedPeriod =
+    typeof raw.lastCompletedPeriod === 'string' && raw.lastCompletedPeriod.trim()
+      ? sanitizeText(raw.lastCompletedPeriod, 20)
+      : null;
+
+  const streakCount =
+    typeof raw.streakCount === 'number' && Number.isFinite(raw.streakCount)
+      ? Math.max(0, Math.trunc(raw.streakCount))
+      : 0;
+
+  const oneOffCompleted = Boolean(raw.completed);
+  const occurrence = evaluateTodoOccurrence({
+    rule: recurrence,
+    anchorDate,
+    lastCompletedPeriod,
+    completed: oneOffCompleted,
+    targetDate: todayStr,
+  });
+
+  const effectiveCompleted = occurrence.isRecurring ? occurrence.isCompletedForPeriod : oneOffCompleted;
+  const completedAt =
+    effectiveCompleted && typeof raw.completedAt === 'string' && raw.completedAt.length <= 40
+      ? raw.completedAt
+      : effectiveCompleted
+        ? nowIso
+        : null;
+
   const isDeleted = Boolean(raw.isDeleted);
   const deletedAt =
     isDeleted && typeof raw.deletedAt === 'string' && raw.deletedAt.length <= 40
       ? raw.deletedAt
       : isDeleted
-      ? nowIso
-      : null;
+        ? nowIso
+        : null;
 
   return {
     id,
@@ -125,10 +142,14 @@ export function sanitizeTodoRecord(raw: unknown, fallbackOrder: number): TodoIte
     priority,
     category,
     dueDate,
-    completed,
+    completed: effectiveCompleted,
     completedAt,
     subtasks,
     order,
+    recurrence,
+    lastCompletedPeriod,
+    streakCount,
+    occurrence,
     createdAt,
     updatedAt,
     isDeleted,
@@ -164,11 +185,11 @@ export function parseValidatedBackupPayload(rawJson: string): TodoItem[] | null 
 
   const sanitized: TodoItem[] = [];
   for (let i = 0; i < rawItems.length && sanitized.length < TODO_MAX_ITEMS; i += 1) {
-    const item = sanitizeTodoRecord(rawItems[i], i);
-    if (item) {
-      sanitized.push(item);
+    const cleaned = sanitizeTodoRecord(rawItems[i], i);
+    if (cleaned) {
+      sanitized.push(cleaned);
     }
   }
 
-  return sanitized;
+  return sanitized.length > 0 ? sanitized : null;
 }

@@ -5,16 +5,18 @@ import type {
   TodoItem,
   TodoStatsReport,
 } from '../types/todo';
-
-function padTwo(num: number): string {
-  return num < 10 ? `0${num}` : String(num);
-}
+import {
+  evaluateTodoOccurrence,
+  getLocalTodayDateStr,
+  isValidDateStr,
+} from './recurrence';
 
 /**
  * 로컬 타임존 기준 'YYYY-MM-DD' 문자열을 반환합니다.
  */
 export function getLocalDateString(date: Date = new Date()): string {
-  return `${date.getFullYear()}-${padTwo(date.getMonth() + 1)}-${padTwo(date.getDate())}`;
+  const pad = (num: number) => (num < 10 ? `0${num}` : String(num));
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 export function getOffsetDateString(offsetDays: number): string {
@@ -93,6 +95,35 @@ export function getDueDateBadge(
   };
 }
 
+export function hydrateTodoOccurrence(
+  item: TodoItem,
+  targetDate: string = getLocalTodayDateStr()
+): TodoItem {
+  const anchorCandidate = item.dueDate ?? item.createdAt.slice(0, 10);
+  const anchorDate = isValidDateStr(anchorCandidate) ? anchorCandidate : targetDate;
+  const occurrence = evaluateTodoOccurrence({
+    rule: item.recurrence,
+    anchorDate,
+    lastCompletedPeriod: item.lastCompletedPeriod,
+    completed: item.completed,
+    targetDate,
+  });
+
+  if (!occurrence.isRecurring) {
+    return {
+      ...item,
+      occurrence,
+    };
+  }
+
+  return {
+    ...item,
+    completed: occurrence.isCompletedForPeriod,
+    completedAt: occurrence.isCompletedForPeriod ? item.completedAt : null,
+    occurrence,
+  };
+}
+
 export function roundPercent(numerator: number, denominator: number): number {
   if (denominator <= 0 || numerator <= 0) return 0;
   return Math.min(100, Math.round((numerator * 100) / denominator));
@@ -108,14 +139,24 @@ export function computeTodoStats(
   const totalCount = activeList.length;
   const completedCount = activeList.filter((item) => item.completed).length;
   const activeCount = totalCount - completedCount;
+  const recurringCount = activeList.filter((item) => item.recurrence.type !== 'none').length;
+  const maxStreak = activeList.reduce((acc, item) => Math.max(acc, item.streakCount), 0);
 
   const overdueCount = activeList.filter(
-    (item) => !item.completed && item.dueDate !== null && item.dueDate < todayStr
+    (item) =>
+      !item.completed &&
+      item.recurrence.type === 'none' &&
+      item.dueDate !== null &&
+      item.dueDate < todayStr
   ).length;
 
-  const todayDueCount = activeList.filter(
-    (item) => !item.completed && item.dueDate === todayStr
-  ).length;
+  const todayDueCount = activeList.filter((item) => {
+    if (item.completed) return false;
+    if (item.recurrence.type !== 'none') {
+      return item.occurrence.isDueToday;
+    }
+    return item.dueDate === todayStr;
+  }).length;
 
   const byPriority: PriorityBreakdown[] = PRIORITY_LIST.map((meta) => {
     const subset = activeList.filter((item) => item.priority === meta.key);
@@ -143,6 +184,8 @@ export function computeTodoStats(
     totalCount,
     completedCount,
     activeCount,
+    recurringCount,
+    maxStreak,
     overdueCount,
     todayDueCount,
     trashCount,
