@@ -107,7 +107,7 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
               ref={inputRef}
               label="새 할 일 제목 입력"
               isLabelHidden
-              size="lg"
+              size="md"
               width="100%"
               value={title}
               onChange={(val) => setTitle(val.slice(0, 160))}
@@ -120,7 +120,7 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
             type="submit"
             label="추가"
             variant="primary"
-            size="lg"
+            size="md"
             data-screenshot-click="action"
             icon={<i className="fas fa-plus text-[10px]"></i>}
           />

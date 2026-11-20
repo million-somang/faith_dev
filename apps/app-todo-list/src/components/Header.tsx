@@ -33,7 +33,7 @@ export default function Header({
           className="flex items-center gap-2 hover:opacity-85 transition-opacity cursor-pointer group shrink-0"
           title="VeraNex 포털 홈으로 이동"
         >
-          <div className="w-7 h-7 rounded-lg bg-[#FAF8F5] border border-[#E5DDD0] flex items-center justify-center p-0.5">
+          <div className="w-8 h-8 rounded-xl bg-[#FAF8F5] border border-[#E5DDD0] flex items-center justify-center p-1">
             {!logoError ? (
               <img
                 src="https://veranex.app/logo-192.png"
@@ -42,14 +42,14 @@ export default function Header({
                 onError={() => setLogoError(true)}
               />
             ) : (
-              <span className="text-xs font-black text-indigo-600">V</span>
+              <span className="text-sm font-black text-indigo-600">V</span>
             )}
           </div>
           <div className="flex flex-col text-left">
-            <span className="font-black text-xs sm:text-sm tracking-wider text-[#24211D] leading-none group-hover:text-indigo-600 transition-colors">
+            <span className="font-black text-[15px] sm:text-base tracking-tight text-[#24211D] leading-none group-hover:text-indigo-600 transition-colors">
               V<span className="text-indigo-600">ERANEX</span>
             </span>
-            <span className="text-[8px] font-bold text-[#8E8579] leading-tight">
+            <span className="text-[9px] font-bold tracking-wider text-[#8E8579] leading-tight mt-0.5">
               SMART TO-DO
             </span>
           </div>
@@ -57,7 +57,7 @@ export default function Header({
 
         <div className="flex items-center gap-1.5 min-w-0">
           <div className="hidden sm:block text-right min-w-0 mr-1">
-            <h1 className="text-xs sm:text-sm font-black text-[#24211D] leading-tight truncate">
+            <h1 className="text-[13px] font-extrabold text-[#24211D] leading-tight truncate">
               스마트 투두(TO-DO) 플래너
             </h1>
           </div>
@@ -96,17 +96,17 @@ export default function Header({
         <Tab
           value="todo"
           label="할일 정리"
-          icon={<i className="fas fa-check-double text-[11px]"></i>}
+          icon={<i className="fas fa-check-double text-[10px]"></i>}
         />
         <Tab
           value="howto"
           label="사용방법"
-          icon={<i className="fas fa-book-open text-[11px]"></i>}
+          icon={<i className="fas fa-book-open text-[10px]"></i>}
         />
         <Tab
           value="faq"
           label="FAQ"
-          icon={<i className="fas fa-circle-question text-[11px]"></i>}
+          icon={<i className="fas fa-circle-question text-[10px]"></i>}
         />
       </TabList>
     </header>

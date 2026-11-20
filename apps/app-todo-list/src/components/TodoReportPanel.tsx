@@ -324,7 +324,7 @@ export default function TodoReportPanel({
             <Button
               label={pomodoroRunning ? '일시정지' : '집중 시작'}
               variant={pomodoroRunning ? 'secondary' : 'primary'}
-              size="md"
+              size="sm"
               onClick={onTogglePomodoroRun}
               icon={<i className={`fas ${pomodoroRunning ? 'fa-pause' : 'fa-play'} text-[10px]`}></i>}
             />
@@ -332,7 +332,7 @@ export default function TodoReportPanel({
               label="초기화"
               isIconOnly
               variant="secondary"
-              size="md"
+              size="sm"
               onClick={onResetPomodoro}
               icon={<i className="fas fa-rotate-left text-xs"></i>}
             />
