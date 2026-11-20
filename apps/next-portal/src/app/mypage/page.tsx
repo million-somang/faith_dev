@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { t } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
@@ -13,6 +13,8 @@ import { DriveVideoPlayerSection } from '@/components/mypage/DriveVideoPlayerSec
 import { useUserPreferenceContext } from '@/context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '@/types/homepage.types';
 import { useMinihome } from '@/hooks/useMinihome';
+import { useAzitGame } from '@/hooks/useAzitGame';
+import type { MinihomeGardenState } from '@/types/minihome.types';
 import { IsometricRoomCanvas } from '@/components/minihome/IsometricRoomCanvas';
 import { MinihomeShopDrawer } from '@/components/minihome/MinihomeShopDrawer';
 import { MinihomeGuestbook } from '@/components/minihome/MinihomeGuestbook';
@@ -142,6 +144,7 @@ function urlBase64ToUint8Array(base64String: string) {
 export default function MyPage() {
     const { user, logout, isLoading, updateUser } = useAuth();
     const router = useRouter();
+    const azitRefreshRef = useRef<(() => void) | null>(null);
 
     const {
         profile: minihomeProfile,
@@ -188,8 +191,11 @@ export default function MyPage() {
         handleAddGuestbook: handleMinihomeAddGuestbook,
         handleReplyGuestbook: handleMinihomeReplyGuestbook,
         handleSoftDeleteGuestbook: handleMinihomeSoftDeleteGuestbook,
+        syncAzitState,
         showToast: showMinihomeToast,
-    } = useMinihome('me');
+    } = useMinihome('me', {
+        onGardenSynced: () => azitRefreshRef.current?.(),
+    });
 
     const [showSurfModal, setShowSurfModal] = useState<boolean>(false);
     const activeMoodId = minihomeEditMode ? minihomeDraftMood : (minihomeProfile?.statusMood || 'happy');
@@ -408,6 +414,29 @@ export default function MyPage() {
         attendanceRatio: 0,
         activityRatio: 0
     });
+
+    const handleSyncAzitToMypage = useCallback(
+        (veraPoints: number, garden?: MinihomeGardenState) => {
+            syncAzitState(veraPoints, garden);
+            setVeraPointsData((prev) => ({
+                ...prev,
+                points: veraPoints,
+            }));
+        },
+        [syncAzitState]
+    );
+
+    const azitGame = useAzitGame({
+        enabled: Boolean(user),
+        onSyncState: handleSyncAzitToMypage,
+        onToast: showMinihomeToast,
+    });
+
+    useEffect(() => {
+        azitRefreshRef.current = () => {
+            azitGame.refreshState().catch(() => {});
+        };
+    }, [azitGame.refreshState]);
 
     const [bizAgenda, setBizAgenda] = useState<{ id: number | string; schedule_date?: string; end_date?: string; schedule_time?: string; end_time?: string; time?: string; schedule_text?: string; text?: string; color?: string }[]>([]);
     const todayStr = useMemo(() => new Date().toISOString().substring(0, 10), []);
@@ -1150,7 +1179,7 @@ export default function MyPage() {
                                                                     <span>💎 베라포인트(P)</span>
                                                                 </div>
                                                                 <div className="text-xs font-black text-amber-900 mt-0.5 font-mono truncate">
-                                                                    {(minihomeProfile.veraPoints || veraPointsData.points).toLocaleString()} P
+                                                                    {(azitGame.state?.veraPoints ?? minihomeProfile.veraPoints ?? veraPointsData.points).toLocaleString()} P
                                                                 </div>
                                                             </div>
                                                             <div
@@ -1293,6 +1322,7 @@ export default function MyPage() {
                                                     onWaterPlot={handleMinihomeWaterPlot}
                                                     onHarvestPlot={handleMinihomeHarvestPlot}
                                                     onClearPlot={handleMinihomeClearPlot}
+                                                    azitGame={azitGame}
                                                 />
                                             </div>
                                         </div>
@@ -1305,7 +1335,7 @@ export default function MyPage() {
                                                 isOpen={minihomeShopModalOpen}
                                                 onClose={() => setMinihomeShopModalOpen(false)}
                                                 ownedItemIds={minihomeProfile.ownedItemIds}
-                                                veraPoints={minihomeProfile.veraPoints}
+                                                veraPoints={azitGame.state?.veraPoints ?? minihomeProfile.veraPoints}
                                                 draftLayout={minihomeDraftLayout}
                                                 isBuyingItemId={minihomeBuyingItemId}
                                                 onApplyItem={(item) => {
@@ -1358,7 +1388,7 @@ export default function MyPage() {
                                         onDeleteKeyword={handleDeleteKeyword}
                                         veraPointsData={{
                                             ...veraPointsData,
-                                            points: minihomeProfile?.veraPoints ?? veraPointsData.points,
+                                            points: azitGame.state?.veraPoints ?? minihomeProfile?.veraPoints ?? veraPointsData.points,
                                         }}
                                         shoppingItems={shoppingItems}
                                         onNavigateSection={(sec) => setActiveSection(sec)}

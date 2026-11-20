@@ -980,7 +980,7 @@ export const GardenPlotActionBubble: React.FC<GardenPlotActionBubbleProps> = ({
                                 }}
                                 className="w-full py-1 rounded-lg text-[10px] font-bold text-emerald-300 hover:text-emerald-200 hover:bg-slate-800/80 transition-colors cursor-pointer"
                             >
-                                🎁 다른 씨앗 0원 받기
+                                🌱 씨앗 상점 열기
                             </button>
                         )}
                     </div>
@@ -996,7 +996,7 @@ export const GardenPlotActionBubble: React.FC<GardenPlotActionBubbleProps> = ({
                                 }}
                                 className="w-full py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black transition-all cursor-pointer shadow-sm"
                             >
-                                🎁 씨앗 상점 열기 (0원)
+                                🌱 씨앗 상점 열기
                             </button>
                         )}
                     </div>
@@ -1093,6 +1093,7 @@ interface GardenControlPanelProps {
     isRainWeather: boolean;
     onOpenSeedShop?: () => void;
     onOpenWarehouse?: () => void;
+    onOpenMarket?: () => void;
 }
 
 /**
@@ -1104,6 +1105,7 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
     isRainWeather,
     onOpenSeedShop,
     onOpenWarehouse,
+    onOpenMarket,
 }) => {
     const [nowMs, setNowMs] = useState<number>(() => Date.now());
     const [isPushSubscribed, setIsPushSubscribed] = useState<boolean>(false);
@@ -1291,7 +1293,16 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                             onClick={onOpenSeedShop}
                             className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
                         >
-                            <span>🎁 씨앗 상점 (0원)</span>
+                            <span>🌱 씨앗 상점</span>
+                        </button>
+                    )}
+                    {isOwner && onOpenMarket && (
+                        <button
+                            type="button"
+                            onClick={onOpenMarket}
+                            className="px-2.5 py-1 rounded-lg bg-orange-400 hover:bg-orange-300 text-slate-950 text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                        >
+                            <span>💰 작물 판매</span>
                         </button>
                     )}
                     {isOwner && onOpenWarehouse && (

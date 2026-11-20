@@ -298,7 +298,7 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
 export function useAvatarLifeSim(params: {
     layout: MinihomeRoomLayout;
     isEditMode: boolean;
-    activeZone?: 'indoor' | 'garden';
+    activeZone?: 'indoor' | 'garden' | 'kitchen' | 'camp';
     forcedGardenAction?: ForcedGardenActionTrigger | null;
 }): AvatarLifeSimState {
     const { layout, isEditMode, activeZone = 'indoor', forcedGardenAction = null } = params;
@@ -479,7 +479,7 @@ export function useAvatarLifeSim(params: {
     }, [forcedGardenAction, activeZone, isEditMode]);
 
     useEffect(() => {
-        if (isEditMode || waypoints.length === 0) {
+        if (isEditMode || activeZone === 'kitchen' || activeZone === 'camp' || waypoints.length === 0) {
             setSimState({
                 animX: layout.minimiX,
                 animY: layout.minimiY,

@@ -237,18 +237,7 @@ export class MyPageService {
             );
         }
 
-        let data = res.rows[0] || { points: 0, pending_amount: 0, attendance_points: 0, activity_points: 0 };
-        
-        // 기존 더미데이터(1250, 12500 등) 감지 시 0으로 초기화 리셋
-        if (data.points === 1250 || data.pending_amount === 12500) {
-            await pool.query(
-                `UPDATE user_points 
-                 SET points = 0, pending_amount = 0, attendance_points = 0, activity_points = 0 
-                 WHERE user_id = $1`,
-                [userId]
-            );
-            data = { points: 0, pending_amount: 0, attendance_points: 0, activity_points: 0 };
-        }
+        const data = res.rows[0] || { points: 0, pending_amount: 0, attendance_points: 0, activity_points: 0 };
 
         const total = (data.attendance_points || 0) + (data.activity_points || 0);
         const attendanceRatio = total > 0 ? Math.round(((data.attendance_points || 0) / total) * 100) : 0;

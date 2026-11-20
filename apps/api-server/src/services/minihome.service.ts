@@ -281,14 +281,6 @@ export class MinihomeService {
             return 0;
         }
         const row = res.rows[0];
-        // 과거 더미 초기값(500P)이 자동 주입된 레코드가 있다면 0으로 초기화
-        if (Number(row.points) === 500 && Number(row.attendance_points) === 500 && Number(row.activity_points) === 0) {
-            await pool.query(
-                `UPDATE user_points SET points = 0, attendance_points = 0 WHERE user_id = $1`,
-                [userId]
-            );
-            return 0;
-        }
         return Number(row.points || 0);
     }
 
@@ -528,7 +520,32 @@ export class MinihomeService {
         const nextMood = params.statusMood !== undefined ? params.statusMood : current.status_mood;
         const nextMessage = params.statusMessage !== undefined ? params.statusMessage.trim().slice(0, 120) : current.status_message;
         const nextBgm = params.bgmTrackId !== undefined ? params.bgmTrackId : current.bgm_track_id;
-        const nextLayoutJson = params.layout !== undefined ? JSON.stringify(params.layout) : current.layout_json;
+
+        let sanitizedLayout = params.layout;
+        if (sanitizedLayout !== undefined) {
+            const ownerUserId = current.user_id ?? params.userId;
+            if (ownerUserId) {
+                try {
+                    const profRes = await pool.query(
+                        'SELECT garden_migrated FROM azit_profiles WHERE user_id = $1',
+                        [ownerUserId]
+                    );
+                    if (Number(profRes.rows[0]?.garden_migrated ?? 0) === 1) {
+                        const existingLayout = JSON.parse(current.layout_json || '{}') as MinihomeRoomLayout;
+                        if (existingLayout.garden) {
+                            sanitizedLayout = {
+                                ...sanitizedLayout,
+                                garden: existingLayout.garden,
+                            };
+                        }
+                    }
+                } catch (_) {
+                    // azit_profiles 테이블 미생성 상태는 무시
+                }
+            }
+        }
+
+        const nextLayoutJson = sanitizedLayout !== undefined ? JSON.stringify(sanitizedLayout) : current.layout_json;
         const nextOwnerName = params.ownerName !== undefined && params.ownerName.trim() ? params.ownerName.trim() : current.owner_name;
 
         await pool.query(

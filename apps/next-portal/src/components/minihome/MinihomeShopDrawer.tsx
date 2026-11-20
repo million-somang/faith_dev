@@ -27,9 +27,18 @@ interface MinihomeShopDrawerProps {
     initialCategory?: 'all' | MinihomeItemCategory;
 }
 
+const SEED_POINT_PRICE_MAP: Record<GardenCropId, number> = {
+    'crop-carrot': 0,
+    'crop-pepper': 12,
+    'crop-tomato': 18,
+    'crop-lettuce': 24,
+    'crop-potato': 30,
+    'crop-strawberry': 45,
+};
+
 const CATEGORY_TABS: Array<{ id: 'all' | MinihomeItemCategory; label: string; icon: string }> = [
     { id: 'all', label: '전체', icon: 'fa-border-all' },
-    { id: 'seed', label: '텃밭 씨앗 (0원)', icon: 'fa-seedling' },
+    { id: 'seed', label: '텃밭 씨앗', icon: 'fa-seedling' },
     { id: 'wall', label: '벽지', icon: 'fa-paint-roller' },
     { id: 'floor', label: '바닥', icon: 'fa-layer-group' },
     { id: 'furniture', label: '가구', icon: 'fa-couch' },
@@ -270,7 +279,7 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                         </span>
                                     </div>
                                     <p className="text-[11px] sm:text-xs font-semibold text-slate-600">
-                                        상점에서 0원에 구매한 씨앗과 앞마당 텃밭에서 수확한 싱싱한 농작물이 이곳 창고에 보관됩니다.
+                                        당근 씨앗(0P 무료)과 고급 씨앗(베라포인트)을 구매해 앞마당 텃밭에서 재배해 보세요.
                                     </p>
                                 </div>
                                 <button
@@ -281,7 +290,7 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                     }}
                                     className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs transition-all cursor-pointer shrink-0"
                                 >
-                                    🌱 씨앗 상점 코너 (0원)
+                                    🌱 씨앗 상점 코너
                                 </button>
                             </div>
 
@@ -302,6 +311,9 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3">
                                     {GARDEN_CROP_CATALOG.map((crop) => {
                                         const seedQty = garden.seedCounts[crop.cropId] || 0;
+                                        const seedPrice = SEED_POINT_PRICE_MAP[crop.cropId] ?? 0;
+                                        const canBuyOne = seedPrice === 0 || veraPoints >= seedPrice;
+                                        const canBuyFive = seedPrice === 0 || veraPoints >= seedPrice * 5;
                                         return (
                                             <div
                                                 key={`warehouse-seed-${crop.cropId}`}
@@ -325,29 +337,37 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black shrink-0">
-                                                        0원 무료
+                                                    <span
+                                                        className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
+                                                            seedPrice === 0
+                                                                ? 'bg-emerald-100 text-emerald-800'
+                                                                : 'bg-amber-100 text-amber-800'
+                                                        }`}
+                                                    >
+                                                        {seedPrice === 0 ? '0P 무료' : `${seedPrice}P`}
                                                     </span>
                                                 </div>
 
                                                 <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-1.5">
-                                                    <span className="text-[11px] font-black text-emerald-700">
-                                                        판매가 0원
+                                                    <span className="text-[11px] font-black text-slate-700">
+                                                        {seedPrice === 0 ? '무료' : `${seedPrice}P/개`}
                                                     </span>
                                                     <div className="flex items-center gap-1.5">
                                                         <button
                                                             type="button"
+                                                            disabled={!canBuyOne}
                                                             onClick={() => onBuySeed?.(crop.cropId, 1)}
-                                                            className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold transition-all cursor-pointer"
+                                                            className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                                         >
-                                                            +1 구매 (0원)
+                                                            {seedPrice === 0 ? '+1 무료' : `+1 (${seedPrice}P)`}
                                                         </button>
                                                         <button
                                                             type="button"
+                                                            disabled={!canBuyFive}
                                                             onClick={() => onBuySeed?.(crop.cropId, 5)}
-                                                            className="px-2 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[11px] font-extrabold transition-all cursor-pointer"
+                                                            className="px-2 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[11px] font-extrabold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                                         >
-                                                            +5 묶음
+                                                            +5
                                                         </button>
                                                     </div>
                                                 </div>
@@ -500,7 +520,15 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
 
                                         <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2 min-w-0">
                                             <span className="text-[12px] sm:text-xs font-black text-slate-800 flex items-center gap-1.5 min-w-0">
-                                                {!VERA_POINT_SHOP_ENABLED || item.price === 0 ? (
+                                                {isSeed && item.cropId ? (
+                                                    (SEED_POINT_PRICE_MAP[item.cropId] ?? 0) === 0 ? (
+                                                        <span className="text-emerald-600">0P (무료)</span>
+                                                    ) : (
+                                                        <span className="text-amber-600">
+                                                            🪙 {SEED_POINT_PRICE_MAP[item.cropId]} P
+                                                        </span>
+                                                    )
+                                                ) : !VERA_POINT_SHOP_ENABLED || item.price === 0 ? (
                                                     <>
                                                         <span className="text-emerald-600">0원 (무료)</span>
                                                         {item.pointPrice && item.pointPrice > 0 ? (
@@ -519,23 +547,32 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                             </span>
 
                                             {isSeed && item.cropId ? (
-                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onBuySeed?.(item.cropId!, 1)}
-                                                        className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer shadow-2xs"
-                                                    >
-                                                        +1 씨앗 구매
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onBuySeed?.(item.cropId!, 5)}
-                                                        className="px-2 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[11px] font-extrabold transition-all cursor-pointer"
-                                                        title="5개 묶음 무료 구매"
-                                                    >
-                                                        +5
-                                                    </button>
-                                                </div>
+                                                (() => {
+                                                    const sPrice = SEED_POINT_PRICE_MAP[item.cropId] ?? 0;
+                                                    const canOne = sPrice === 0 || veraPoints >= sPrice;
+                                                    const canFive = sPrice === 0 || veraPoints >= sPrice * 5;
+                                                    return (
+                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                disabled={!canOne}
+                                                                onClick={() => onBuySeed?.(item.cropId!, 1)}
+                                                                className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
+                                                            >
+                                                                {sPrice === 0 ? '+1 무료' : `+1 (${sPrice}P)`}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={!canFive}
+                                                                onClick={() => onBuySeed?.(item.cropId!, 5)}
+                                                                className="px-2 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[11px] font-extrabold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                title={sPrice === 0 ? '5개 묶음 무료 구매' : `5개 묶음 (${sPrice * 5}P)`}
+                                                            >
+                                                                +5
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })()
                                             ) : isOwned ? (
                                                 <button
                                                     type="button"

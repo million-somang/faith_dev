@@ -35,8 +35,14 @@ interface RoomResponsePayload {
     surf: MinihomeSurfData;
 }
 
-export function useMinihome(routeHandle: string) {
+export function useMinihome(
+    routeHandle: string,
+    options?: {
+        onGardenSynced?: () => void;
+    }
+) {
     const { user, isLoading: isAuthLoading } = useAuth();
+    const onGardenSynced = options?.onGardenSynced;
 
     const [profile, setProfile] = useState<MinihomeProfileData | null>(null);
     const [guestbook, setGuestbook] = useState<MinihomeGuestbookEntry[]>([]);
@@ -407,11 +413,72 @@ export function useMinihome(routeHandle: string) {
         [isEditMode, draftLayout, profile, showToast, handleSaveMinihome]
     );
 
+    const postAzitGardenEndpoint = useCallback(
+        async (endpoint: string, body: Record<string, unknown>): Promise<boolean> => {
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(body),
+                });
+                const json = (await res.json()) as ApiStandardResponse<{
+                    message?: string;
+                    state?: {
+                        veraPoints?: number;
+                        garden?: MinihomeGardenState;
+                    };
+                }>;
+                if (!res.ok || !json.success || !json.data) {
+                    showToast(`⚠️ ${json.error?.message || '텃밭 요청 처리에 실패했습니다.'}`);
+                    return false;
+                }
+                const srvState = json.data.state;
+                if (srvState?.garden) {
+                    const nextGarden = ensureGardenState(srvState.garden);
+                    setDraftLayout((prev) => ({ ...prev, garden: nextGarden }));
+                    setProfile((prev) =>
+                        prev
+                            ? {
+                                  ...prev,
+                                  veraPoints:
+                                      typeof srvState.veraPoints === 'number'
+                                          ? srvState.veraPoints
+                                          : prev.veraPoints,
+                                  layout: {
+                                      ...prev.layout,
+                                      garden: nextGarden,
+                                  },
+                              }
+                            : null
+                    );
+                }
+                if (json.data.message) {
+                    showToast(json.data.message);
+                }
+                onGardenSynced?.();
+                return true;
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : '네트워크 오류가 발생했습니다.';
+                showToast(`⚠️ ${msg}`);
+                return false;
+            }
+        },
+        [showToast, onGardenSynced]
+    );
+
     const handleBuySeed = useCallback(
         (cropId: GardenCropId, quantity = 1) => {
             const cropMeta = getGardenCropById(cropId);
             if (!cropMeta) return;
             const addQty = Math.max(1, quantity);
+            if (user && profile?.isOwner) {
+                postAzitGardenEndpoint('/api/azit-game/garden/buy-seed', {
+                    cropId,
+                    quantity: addQty,
+                }).catch(() => {});
+                return;
+            }
             const baseLayout = isEditMode ? draftLayout : (profile?.layout || draftLayout);
             const currentGarden = ensureGardenState(baseLayout.garden);
             const nextCount = (currentGarden.seedCounts[cropId] || 0) + addQty;
@@ -424,10 +491,10 @@ export function useMinihome(routeHandle: string) {
                         [cropId]: (garden.seedCounts[cropId] || 0) + addQty,
                     },
                 }),
-                `🌱 [${cropMeta.emoji} ${cropMeta.name} 씨앗] ${addQty}봉지를 0원에 구매하여 농장 창고에 넣었습니다! (창고 보유: ${nextCount}개)`
+                `🌱 [${cropMeta.emoji} ${cropMeta.name} 씨앗] ${addQty}봉지를 구매하여 농장 창고에 넣었습니다! (창고 보유: ${nextCount}개)`
             );
         },
-        [isEditMode, draftLayout, profile, commitGardenState]
+        [user, isEditMode, draftLayout, profile, commitGardenState, postAzitGardenEndpoint]
     );
 
     const handlePlantCrop = useCallback(
@@ -440,8 +507,16 @@ export function useMinihome(routeHandle: string) {
             const ownedSeedCount = currentGarden.seedCounts[cropId] || 0;
 
             if (ownedSeedCount <= 0) {
-                showToast(`🌱 창고에 [${cropMeta.emoji} ${cropMeta.shortName}] 씨앗이 없습니다! 상점에서 0원으로 씨앗을 구매해 주세요.`);
+                showToast(`🌱 창고에 [${cropMeta.emoji} ${cropMeta.shortName}] 씨앗이 없습니다! 씨앗 상점에서 구매해 주세요.`);
                 handleOpenShopModal('shop', 'seed');
+                return;
+            }
+
+            if (user && profile?.isOwner) {
+                postAzitGardenEndpoint('/api/azit-game/garden/plant', {
+                    plotIndex,
+                    cropId,
+                }).catch(() => {});
                 return;
             }
 
@@ -472,7 +547,7 @@ export function useMinihome(routeHandle: string) {
                 `🌱 창고에서 [${cropMeta.emoji} ${cropMeta.name}] 씨앗을 심고 첫 물을 주었습니다! (8시간 후 2차 물주기 알림이 울립니다 · 창고 잔여: ${remainingSeeds}개)`
             );
         },
-        [isEditMode, draftLayout, profile, commitGardenState, showToast, handleOpenShopModal]
+        [user, isEditMode, draftLayout, profile, commitGardenState, showToast, handleOpenShopModal, postAzitGardenEndpoint]
     );
 
     const handleWaterPlot = useCallback(
@@ -494,6 +569,13 @@ export function useMinihome(routeHandle: string) {
                     `⏳ 아직 땅이 촉촉해요! [${cropMeta?.emoji || ''} ${cropMeta?.shortName || '작물'}] 다음 물주기까지 ${waterStatus.remainingLabel} 남았습니다. (하루 3번 · 8시간 간격)`
                 );
                 return false;
+            }
+
+            if (user && profile?.isOwner) {
+                postAzitGardenEndpoint('/api/azit-game/garden/water', {
+                    plotIndex,
+                }).catch(() => {});
+                return true;
             }
 
             const nextStage = Math.min(3, targetPlot.stage + 1) as 1 | 2 | 3;
@@ -520,7 +602,7 @@ export function useMinihome(routeHandle: string) {
             );
             return true;
         },
-        [isEditMode, draftLayout, profile, commitGardenState, showToast]
+        [user, isEditMode, draftLayout, profile, commitGardenState, showToast, postAzitGardenEndpoint]
     );
 
     const handleHarvestPlot = useCallback(
@@ -529,6 +611,13 @@ export function useMinihome(routeHandle: string) {
             const garden = ensureGardenState(baseLayout.garden);
             const targetPlot = garden.plots.find((p) => p.plotIndex === plotIndex);
             if (!targetPlot || !targetPlot.cropId || targetPlot.stage < 3) return;
+
+            if (user && profile?.isOwner) {
+                postAzitGardenEndpoint('/api/azit-game/garden/harvest', {
+                    plotIndex,
+                }).catch(() => {});
+                return;
+            }
 
             const harvestedCropId = targetPlot.cropId;
             const cropMeta = getGardenCropById(harvestedCropId);
@@ -563,11 +652,17 @@ export function useMinihome(routeHandle: string) {
                 `🏚️ 싱싱한 [${cropMeta?.emoji} ${cropMeta?.name}] 수확 완료! 농장 창고에 넣었습니다. (창고 보유: ${nextCropCount}개)`
             );
         },
-        [isEditMode, draftLayout, profile, commitGardenState]
+        [user, isEditMode, draftLayout, profile, commitGardenState, postAzitGardenEndpoint]
     );
 
     const handleClearPlot = useCallback(
         (plotIndex: number) => {
+            if (user && profile?.isOwner) {
+                postAzitGardenEndpoint('/api/azit-game/garden/clear', {
+                    plotIndex,
+                }).catch(() => {});
+                return;
+            }
             commitGardenState(
                 (prevGarden) => ({
                     ...prevGarden,
@@ -588,8 +683,32 @@ export function useMinihome(routeHandle: string) {
                 `🌿 ${plotIndex + 1}번 텃밭 이랑을 깨끗하게 정리했습니다. 새 씨앗을 심어보세요!`
             );
         },
-        [commitGardenState]
+        [user, profile?.isOwner, commitGardenState, postAzitGardenEndpoint]
     );
+
+    const syncAzitState = useCallback((veraPoints: number, garden?: MinihomeGardenState) => {
+        const normalizedGarden = garden ? ensureGardenState(garden) : undefined;
+        if (normalizedGarden) {
+            setDraftLayout((prev) => ({
+                ...prev,
+                garden: normalizedGarden,
+            }));
+        }
+        setProfile((prev) =>
+            prev
+                ? {
+                      ...prev,
+                      veraPoints,
+                      layout: normalizedGarden
+                          ? {
+                                ...prev.layout,
+                                garden: normalizedGarden,
+                            }
+                          : prev.layout,
+                  }
+                : null
+        );
+    }, []);
 
     // ==================== 상점 구매 핸들러 ====================
     const handlePurchaseItem = useCallback(async (itemId: string) => {
@@ -768,6 +887,7 @@ export function useMinihome(routeHandle: string) {
         handleAddGuestbook,
         handleReplyGuestbook,
         handleSoftDeleteGuestbook,
+        syncAzitState,
         refreshMinihome: fetchMinihome,
         showToast,
     };

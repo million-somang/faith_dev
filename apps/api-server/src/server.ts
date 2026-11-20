@@ -155,6 +155,8 @@ app.route('/', loungeRoutes);
 
 import { minihomeRoutes } from './routes/minihome.routes.js';
 app.route('/', minihomeRoutes);
+import { azitGameRoutes } from './routes/azit-game.routes.js';
+app.route('/', azitGameRoutes);
 
 // 배너 업로드 이미지 정적 서빙
 app.use('/uploads/*', serveStatic({ root: './public' }));

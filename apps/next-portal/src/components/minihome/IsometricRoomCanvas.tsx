@@ -14,6 +14,20 @@ import {
     GardenPlotIsoNode,
     MinihomeGardenControlPanel,
 } from '@/components/minihome/MinihomeGardenLayer';
+import type { AzitZoneType, UseAzitGameController } from '@/types/azit-game.types';
+import { AzitLevelHeaderBadge } from '@/components/minihome/AzitLevelHeaderBadge';
+import {
+    AzitKitchenIsoScene,
+    AzitKitchenControlPanel,
+    KitchenStoveActionBubble,
+} from '@/components/minihome/AzitKitchenLayer';
+import {
+    AzitCampIsoScene,
+    AzitCampControlPanel,
+    CampActionBubble,
+    type CampNodeType,
+} from '@/components/minihome/AzitCampLayer';
+import { AzitGameModals, type AzitModalKind } from '@/components/minihome/AzitGameModals';
 
 interface IsometricRoomCanvasProps {
     layout: MinihomeRoomLayout;
@@ -49,6 +63,7 @@ interface IsometricRoomCanvasProps {
     onWaterPlot?: (plotIndex: number) => boolean | void;
     onHarvestPlot?: (plotIndex: number) => void;
     onClearPlot?: (plotIndex: number) => void;
+    azitGame?: UseAzitGameController;
 }
 
 const ORIGIN_X = 400;
@@ -121,9 +136,13 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     onWaterPlot,
     onHarvestPlot,
     onClearPlot,
+    azitGame,
 }) => {
-    const [activeZone, setActiveZone] = useState<'indoor' | 'garden'>('indoor');
+    const [activeZone, setActiveZone] = useState<AzitZoneType>('indoor');
     const [openBubblePlotIndex, setOpenBubblePlotIndex] = useState<number | null>(null);
+    const [openKitchenSlotIndex, setOpenKitchenSlotIndex] = useState<number | null>(null);
+    const [openCampNode, setOpenCampNode] = useState<CampNodeType | null>(null);
+    const [activeAzitModal, setActiveAzitModal] = useState<AzitModalKind>(null);
     const [forcedGardenAction, setForcedGardenAction] = useState<ForcedGardenActionTrigger | null>(null);
 
     // ─── 무손실 스마트 줌 (100% ~ 200% 안전 배율) & 드래그 팬(Pan) 상태 ───
@@ -159,27 +178,38 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     };
 
     useEffect(() => {
-        if (isEditMode && activeZone === 'garden') {
+        if (isEditMode && activeZone !== 'indoor') {
             setActiveZone('indoor');
         }
         if (isEditMode || activeZone !== 'garden') {
             setOpenBubblePlotIndex(null);
         }
+        if (isEditMode || activeZone !== 'kitchen') {
+            setOpenKitchenSlotIndex(null);
+        }
+        if (isEditMode || activeZone !== 'camp') {
+            setOpenCampNode(null);
+        }
     }, [isEditMode, activeZone]);
 
     useEffect(() => {
-        if (openBubblePlotIndex === null) return;
+        if (openBubblePlotIndex === null && openKitchenSlotIndex === null && openCampNode === null) return;
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 setOpenBubblePlotIndex(null);
+                setOpenKitchenSlotIndex(null);
+                setOpenCampNode(null);
             }
         };
         const handlePointerDown = (e: PointerEvent) => {
             const target = e.target;
             if (!(target instanceof Element)) return;
-            if (target.closest('[data-garden-bubble="true"]')) return;
-            if (target.closest('[data-garden-plot]')) return;
+            if (target.closest('[data-garden-bubble="true"]') || target.closest('[data-garden-plot]')) return;
+            if (target.closest('[data-kitchen-bubble="true"]') || target.closest('[data-kitchen-stove]')) return;
+            if (target.closest('[data-camp-bubble="true"]') || target.closest('[data-camp-node]')) return;
             setOpenBubblePlotIndex(null);
+            setOpenKitchenSlotIndex(null);
+            setOpenCampNode(null);
         };
         document.addEventListener('keydown', handleKeyDown);
         document.addEventListener('pointerdown', handlePointerDown);
@@ -187,7 +217,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
             document.removeEventListener('keydown', handleKeyDown);
             document.removeEventListener('pointerdown', handlePointerDown);
         };
-    }, [openBubblePlotIndex]);
+    }, [openBubblePlotIndex, openKitchenSlotIndex, openCampNode]);
 
     const { weather } = useWeather();
     const avatarSim = useAvatarLifeSim({ layout, isEditMode, activeZone, forcedGardenAction });
@@ -210,6 +240,18 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         openBubblePlotIndex !== null
             ? gardenState.plots.find((p) => p.plotIndex === openBubblePlotIndex) || null
             : null;
+    const openKitchenSlot =
+        openKitchenSlotIndex !== null && azitGame?.state
+            ? azitGame.state.kitchenSlots.find((s) => s.slotIndex === openKitchenSlotIndex) || null
+            : null;
+    const kitchenReadyCount = azitGame?.state
+        ? azitGame.state.kitchenSlots.filter(
+              (s) => s.status === 'cooking' && s.endsAtMs !== null && s.endsAtMs <= gardenTickMs
+          ).length
+        : 0;
+    const campReadyCount = azitGame?.state
+        ? azitGame.state.activeExpeditions.filter((e) => e.endsAtMs <= gardenTickMs).length
+        : 0;
 
     const handleGardenPlantCrop = (plotIdx: number, cropId: GardenCropId) => {
         if (onPlantCrop) {
@@ -745,80 +787,133 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         </div>
                     </div>
                 ) : (
-                    <div className="w-full flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                        {/* 좌측: 실내 아지트 ↔ 앞마당 텃밭 공간 전환 스위치 */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                            <div className="inline-flex items-center p-0.5 rounded-full bg-slate-100 border border-slate-200/90">
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveZone('indoor')}
-                                    className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
-                                        activeZone === 'indoor'
-                                            ? 'bg-indigo-600 text-white shadow-2xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <span>🏠 실내 아지트</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveZone('garden')}
-                                    data-screenshot-click="action"
-                                    className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
-                                        activeZone === 'garden'
-                                            ? 'bg-emerald-600 text-white shadow-2xs'
-                                            : 'text-emerald-700 hover:bg-emerald-50'
-                                    }`}
-                                >
-                                    <span>🌿 앞마당 텃밭</span>
-                                    {needWaterCount > 0 && (
-                                        <span className="px-1.5 py-0.2 rounded-full bg-sky-400 text-slate-950 text-[10px] font-black animate-pulse">
-                                            💧 물주기 {needWaterCount}
-                                        </span>
+                    <div className="w-full space-y-2 pt-2 border-t border-slate-100">
+                        {isOwner && azitGame?.state && (
+                            <AzitLevelHeaderBadge
+                                gameState={azitGame.state}
+                                onOpenMarketModal={() => setActiveAzitModal('market')}
+                                onOpenChefModal={() => setActiveAzitModal('chefs')}
+                                onOpenMercModal={() => setActiveAzitModal('mercs')}
+                            />
+                        )}
+                        <div className="w-full flex flex-wrap items-center justify-between gap-2">
+                            {/* 좌측: 4구역 공간 전환 스위치 (실내 / 텃밭 / 주방 / 용병 캠프) */}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <div className="inline-flex flex-wrap items-center p-0.5 rounded-2xl sm:rounded-full bg-slate-100 border border-slate-200/90 gap-0.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveZone('indoor')}
+                                        className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                            activeZone === 'indoor'
+                                                ? 'bg-indigo-600 text-white shadow-2xs'
+                                                : 'text-slate-600 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        <span>🏠 실내</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveZone('garden')}
+                                        data-screenshot-click="action"
+                                        className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                            activeZone === 'garden'
+                                                ? 'bg-emerald-600 text-white shadow-2xs'
+                                                : 'text-emerald-700 hover:bg-emerald-50'
+                                        }`}
+                                    >
+                                        <span>🌿 텃밭</span>
+                                        {needWaterCount > 0 && (
+                                            <span className="px-1.5 py-0.2 rounded-full bg-sky-400 text-slate-950 text-[10px] font-black animate-pulse">
+                                                💧 {needWaterCount}
+                                            </span>
+                                        )}
+                                        {readyHarvestCount > 0 && (
+                                            <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
+                                                수확 {readyHarvestCount}
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    {isOwner && azitGame?.state && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveZone('kitchen')}
+                                                className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                                    activeZone === 'kitchen'
+                                                        ? 'bg-orange-500 text-white shadow-2xs'
+                                                        : 'text-orange-700 hover:bg-orange-50'
+                                                }`}
+                                            >
+                                                <span>👨‍🍳 주방</span>
+                                                {kitchenReadyCount > 0 && (
+                                                    <span className="px-1.5 py-0.2 rounded-full bg-amber-300 text-slate-950 text-[10px] font-black animate-pulse">
+                                                        완성 {kitchenReadyCount}
+                                                    </span>
+                                                )}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveZone('camp')}
+                                                className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                                    activeZone === 'camp'
+                                                        ? 'bg-rose-600 text-white shadow-2xs'
+                                                        : 'text-rose-700 hover:bg-rose-50'
+                                                }`}
+                                            >
+                                                <span>⚔️ 용병 캠프</span>
+                                                {campReadyCount > 0 && (
+                                                    <span className="px-1.5 py-0.2 rounded-full bg-amber-300 text-slate-950 text-[10px] font-black animate-pulse">
+                                                        정산 {campReadyCount}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        </>
                                     )}
-                                    {readyHarvestCount > 0 && (
-                                        <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
-                                            수확 {readyHarvestCount}
-                                        </span>
-                                    )}
-                                </button>
+                                </div>
+
+                                <span className="hidden xl:inline text-[11px] text-slate-400 font-bold">
+                                    {activeZone === 'indoor'
+                                        ? `· 가구 ${layout.placedItems.length}개`
+                                        : activeZone === 'garden'
+                                          ? `· 수확 누적 ${gardenState.totalHarvested}개`
+                                          : activeZone === 'kitchen' && azitGame?.state
+                                            ? `· 요리사 ${azitGame.state.chefs.length}명`
+                                            : azitGame?.state
+                                              ? `· 용병 ${azitGame.state.mercenaries.length}명`
+                                              : ''}
+                                </span>
                             </div>
 
-                            <span className="hidden sm:inline text-[11px] text-slate-400 font-bold">
-                                {activeZone === 'indoor'
-                                    ? `· 가구 ${layout.placedItems.length}개`
-                                    : `· 수확 누적 ${gardenState.totalHarvested}개`}
-                            </span>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                            {onOpenGuestbookModal && (
-                                <button
-                                    type="button"
-                                    onClick={onOpenGuestbookModal}
-                                    className="px-2.5 sm:px-3 py-1 rounded-full bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
-                                >
-                                    <span>📖 방명록 ({guestbookCount})</span>
-                                </button>
-                            )}
-                            {onOpenWarehouseModal && (
-                                <button
-                                    type="button"
-                                    onClick={onOpenWarehouseModal}
-                                    className="px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
-                                >
-                                    <span>🏚️ 농장 창고</span>
-                                </button>
-                            )}
-                            {onOpenShopModal && (
-                                <button
-                                    type="button"
-                                    onClick={onOpenShopModal}
-                                    className="px-2.5 sm:px-3 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
-                                >
-                                    <span>🎁 상점·보관함 (0원)</span>
-                                </button>
-                            )}
+                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                {onOpenGuestbookModal && (
+                                    <button
+                                        type="button"
+                                        onClick={onOpenGuestbookModal}
+                                        className="px-2.5 sm:px-3 py-1 rounded-full bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
+                                    >
+                                        <span>📖 방명록 ({guestbookCount})</span>
+                                    </button>
+                                )}
+                                {onOpenWarehouseModal && (
+                                    <button
+                                        type="button"
+                                        onClick={onOpenWarehouseModal}
+                                        className="px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
+                                    >
+                                        <span>🏚️ 농장 창고</span>
+                                    </button>
+                                )}
+                                {onOpenShopModal && (
+                                    <button
+                                        type="button"
+                                        onClick={onOpenShopModal}
+                                        className="px-2.5 sm:px-3 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
+                                    >
+                                        <span>🎁 상점·보관함 (0원)</span>
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1295,6 +1390,27 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                 );
                             })}
                         </>
+                    ) : activeZone === 'kitchen' && isOwner && azitGame?.state ? (
+                        <AzitKitchenIsoScene
+                            gameState={azitGame.state}
+                            nowMs={azitGame.nowMs}
+                            selectedSlotIndex={openKitchenSlotIndex}
+                            onSelectSlot={(slotIdx) =>
+                                setOpenKitchenSlotIndex((prev) => (prev === slotIdx ? null : slotIdx))
+                            }
+                            onEnterIndoor={() => setActiveZone('indoor')}
+                            onOpenChefModal={() => setActiveAzitModal('chefs')}
+                            onOpenMarketModal={() => setActiveAzitModal('market')}
+                        />
+                    ) : activeZone === 'camp' && isOwner && azitGame?.state ? (
+                        <AzitCampIsoScene
+                            gameState={azitGame.state}
+                            nowMs={azitGame.nowMs}
+                            selectedNode={openCampNode}
+                            onSelectNode={(node) => setOpenCampNode((prev) => (prev === node ? null : node))}
+                            onEnterIndoor={() => setActiveZone('indoor')}
+                            onEnterKitchen={() => setActiveZone('kitchen')}
+                        />
                     ) : (
                         <>
                             {/* ==================== 1. 3D 디오라마 외벽 두께 & 좌/우 벽면 ==================== */}
@@ -1628,6 +1744,37 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             onOpenSeedShop={onOpenSeedShopModal || onOpenShopModal}
                         />
                     )}
+
+                    {/* 주방 화구 클릭 시 조리/수령 액션 말풍선 */}
+                    {activeZone === 'kitchen' && !isEditMode && isOwner && azitGame?.state && openKitchenSlot && (
+                        <KitchenStoveActionBubble
+                            slot={openKitchenSlot}
+                            gameState={azitGame.state}
+                            nowMs={azitGame.nowMs}
+                            isZoomed={zoomLevel > 1}
+                            isActing={azitGame.isActing}
+                            onClose={() => setOpenKitchenSlotIndex(null)}
+                            onStartCooking={azitGame.startCooking}
+                            onClaimCooking={azitGame.claimCooking}
+                            onOpenChefModal={() => setActiveAzitModal('chefs')}
+                            onGoToGarden={() => setActiveZone('garden')}
+                        />
+                    )}
+
+                    {/* 용병 캠프 텐트/관문 클릭 시 출정/영입 액션 말풍선 */}
+                    {activeZone === 'camp' && !isEditMode && isOwner && azitGame?.state && openCampNode && (
+                        <CampActionBubble
+                            node={openCampNode}
+                            gameState={azitGame.state}
+                            nowMs={azitGame.nowMs}
+                            isZoomed={zoomLevel > 1}
+                            isActing={azitGame.isActing}
+                            onClose={() => setOpenCampNode(null)}
+                            onOpenMercModal={() => setActiveAzitModal('mercs')}
+                            onOpenExpeditionModal={() => setActiveAzitModal('expedition')}
+                            onClaimExpedition={azitGame.claimExpedition}
+                        />
+                    )}
                 </div>
 
                 {/* 앞마당 텃밭 모드일 때 하단 안내·알림·창고 현황 패널 */}
@@ -1638,6 +1785,45 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         isRainWeather={isRainWeather}
                         onOpenSeedShop={onOpenSeedShopModal || onOpenShopModal}
                         onOpenWarehouse={onOpenWarehouseModal || onOpenShopModal}
+                        onOpenMarket={isOwner && azitGame?.state ? () => setActiveAzitModal('market') : undefined}
+                    />
+                )}
+
+                {/* 아지트 주방 하단 제어·보유 요리·재료 패널 */}
+                {activeZone === 'kitchen' && !isEditMode && isOwner && azitGame?.state && (
+                    <AzitKitchenControlPanel
+                        gameState={azitGame.state}
+                        nowMs={azitGame.nowMs}
+                        isActing={azitGame.isActing}
+                        onClaimCooking={azitGame.claimCooking}
+                        onOpenChefModal={() => setActiveAzitModal('chefs')}
+                        onOpenMarketModal={() => setActiveAzitModal('market')}
+                        onGoToCamp={() => setActiveZone('camp')}
+                    />
+                )}
+
+                {/* 용병 캠프 하단 진행중 원정대·전투력 요약 패널 */}
+                {activeZone === 'camp' && !isEditMode && isOwner && azitGame?.state && (
+                    <AzitCampControlPanel
+                        gameState={azitGame.state}
+                        nowMs={azitGame.nowMs}
+                        isActing={azitGame.isActing}
+                        onClaimExpedition={azitGame.claimExpedition}
+                        onOpenMercModal={() => setActiveAzitModal('mercs')}
+                        onOpenExpeditionModal={() => setActiveAzitModal('expedition')}
+                        onGoToKitchen={() => setActiveZone('kitchen')}
+                    />
+                )}
+
+                {/* 아지트 타이쿤 게임 모달 (장터 / 요리사 길드 / 용병 길드 / 원정 출정 / 전투 결과) */}
+                {isOwner && azitGame?.state && (
+                    <AzitGameModals
+                        activeModal={activeAzitModal}
+                        onCloseModal={() => setActiveAzitModal(null)}
+                        gameState={azitGame.state}
+                        azitGame={azitGame}
+                        onGoToKitchen={() => setActiveZone('kitchen')}
+                        onOpenMercModal={() => setActiveAzitModal('mercs')}
                     />
                 )}
 
