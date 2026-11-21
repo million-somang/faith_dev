@@ -332,6 +332,26 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
                     </>
                   )}
 
+                  {recurrenceType === 'workday' && (
+                    <>
+                      <span className="font-bold text-[#6C655B]">간격:</span>
+                      <select
+                        value={interval}
+                        onChange={(e) => setInterval(Number(e.target.value))}
+                        aria-label="영업일 반복 간격"
+                        className="px-2 py-0.5 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                      >
+                        <option value={1}>영업일 매일</option>
+                        <option value={2}>2영업일마다</option>
+                        <option value={3}>3영업일마다</option>
+                        <option value={5}>5영업일마다</option>
+                      </select>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 font-bold">
+                        토·일·공휴일 자동 제외
+                      </span>
+                    </>
+                  )}
+
                   {recurrenceType === 'weekly' && (
                     <>
                       <select

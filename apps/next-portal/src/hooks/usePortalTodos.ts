@@ -9,7 +9,7 @@ import {
   type LocalTodoSubtask,
 } from '@/hooks/useLocalTodos';
 
-export type PortalRecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type PortalRecurrenceType = 'none' | 'daily' | 'workday' | 'weekly' | 'monthly' | 'yearly';
 
 export interface PortalTodoRecurrence {
   readonly type: PortalRecurrenceType;
@@ -72,6 +72,220 @@ const PRIORITY_WEIGHT: Record<LocalTodoPriority, number> = {
 };
 const WEEKDAY_KOREAN = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
+// 대한민국 법정 공휴일 · 대체공휴일 · 선거일 (2026~2030 KASI 기준)
+const PORTAL_KOREAN_HOLIDAYS: Readonly<Record<string, string>> = {
+  // 2026
+  '2026-01-01': '신정',
+  '2026-02-16': '설날 연휴',
+  '2026-02-17': '설날',
+  '2026-02-18': '설날 연휴',
+  '2026-03-01': '삼일절',
+  '2026-03-02': '삼일절 대체공휴일',
+  '2026-05-05': '어린이날',
+  '2026-05-24': '부처님오신날',
+  '2026-05-25': '부처님오신날 대체공휴일',
+  '2026-06-03': '전국동시지방선거',
+  '2026-06-06': '현충일',
+  '2026-07-17': '제헌절',
+  '2026-08-15': '광복절',
+  '2026-08-17': '광복절 대체공휴일',
+  '2026-09-24': '추석 연휴',
+  '2026-09-25': '추석',
+  '2026-09-26': '추석 연휴',
+  '2026-10-03': '개천절',
+  '2026-10-05': '개천절 대체공휴일',
+  '2026-10-09': '한글날',
+  '2026-12-25': '성탄절',
+  // 2027
+  '2027-01-01': '신정',
+  '2027-02-06': '설날 연휴',
+  '2027-02-07': '설날',
+  '2027-02-08': '설날 연휴',
+  '2027-02-09': '설날 대체공휴일',
+  '2027-03-01': '삼일절',
+  '2027-05-05': '어린이날',
+  '2027-05-13': '부처님오신날',
+  '2027-06-06': '현충일',
+  '2027-07-17': '제헌절',
+  '2027-07-19': '제헌절 대체공휴일',
+  '2027-08-15': '광복절',
+  '2027-08-16': '광복절 대체공휴일',
+  '2027-09-14': '추석 연휴',
+  '2027-09-15': '추석',
+  '2027-09-16': '추석 연휴',
+  '2027-10-03': '개천절',
+  '2027-10-04': '개천절 대체공휴일',
+  '2027-10-09': '한글날',
+  '2027-10-11': '한글날 대체공휴일',
+  '2027-12-25': '성탄절',
+  '2027-12-27': '성탄절 대체공휴일',
+  // 2028
+  '2028-01-01': '신정',
+  '2028-01-26': '설날 연휴',
+  '2028-01-27': '설날',
+  '2028-01-28': '설날 연휴',
+  '2028-03-01': '삼일절',
+  '2028-04-12': '국회의원 선거',
+  '2028-05-02': '부처님오신날',
+  '2028-05-05': '어린이날',
+  '2028-06-06': '현충일',
+  '2028-07-17': '제헌절',
+  '2028-08-15': '광복절',
+  '2028-10-02': '추석 연휴',
+  '2028-10-03': '추석 · 개천절',
+  '2028-10-04': '추석 연휴',
+  '2028-10-05': '추석 · 개천절 대체공휴일',
+  '2028-10-09': '한글날',
+  '2028-12-25': '성탄절',
+  // 2029
+  '2029-01-01': '신정',
+  '2029-02-12': '설날 연휴',
+  '2029-02-13': '설날',
+  '2029-02-14': '설날 연휴',
+  '2029-03-01': '삼일절',
+  '2029-05-05': '어린이날',
+  '2029-05-07': '어린이날 대체공휴일',
+  '2029-05-20': '부처님오신날',
+  '2029-05-21': '부처님오신날 대체공휴일',
+  '2029-06-06': '현충일',
+  '2029-07-17': '제헌절',
+  '2029-08-15': '광복절',
+  '2029-09-21': '추석 연휴',
+  '2029-09-22': '추석',
+  '2029-09-23': '추석 연휴',
+  '2029-09-24': '추석 대체공휴일',
+  '2029-10-03': '개천절',
+  '2029-10-09': '한글날',
+  '2029-12-25': '성탄절',
+  // 2030
+  '2030-01-01': '신정',
+  '2030-02-02': '설날 연휴',
+  '2030-02-03': '설날',
+  '2030-02-04': '설날 연휴',
+  '2030-02-05': '설날 대체공휴일',
+  '2030-03-01': '삼일절',
+  '2030-05-05': '어린이날',
+  '2030-05-06': '어린이날 대체공휴일',
+  '2030-05-09': '부처님오신날',
+  '2030-06-06': '현충일',
+  '2030-06-12': '전국동시지방선거',
+  '2030-07-17': '제헌절',
+  '2030-08-15': '광복절',
+  '2030-09-11': '추석 연휴',
+  '2030-09-12': '추석',
+  '2030-09-13': '추석 연휴',
+  '2030-10-03': '개천절',
+  '2030-10-09': '한글날',
+  '2030-12-25': '성탄절',
+};
+
+const PORTAL_FIXED_HOLIDAYS: Readonly<Record<string, string>> = {
+  '01-01': '신정',
+  '03-01': '삼일절',
+  '05-05': '어린이날',
+  '06-06': '현충일',
+  '07-17': '제헌절',
+  '08-15': '광복절',
+  '10-03': '개천절',
+  '10-09': '한글날',
+  '12-25': '성탄절',
+};
+
+function addPortalDays(dateStr: string, delta: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + delta));
+  const mm = dt.getUTCMonth() + 1;
+  const dd = dt.getUTCDate();
+  return `${dt.getUTCFullYear()}-${mm < 10 ? `0${mm}` : mm}-${dd < 10 ? `0${dd}` : dd}`;
+}
+
+function getPortalWeekday(dateStr: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+function getPortalHolidayName(dateStr: string): string | null {
+  if (PORTAL_KOREAN_HOLIDAYS[dateStr]) return PORTAL_KOREAN_HOLIDAYS[dateStr];
+  const year = Number(dateStr.slice(0, 4));
+  if (year < 2026 || year > 2030) {
+    return PORTAL_FIXED_HOLIDAYS[dateStr.slice(5)] ?? null;
+  }
+  return null;
+}
+
+function isPortalWorkday(dateStr: string): boolean {
+  const weekday = getPortalWeekday(dateStr);
+  if (weekday === 0 || weekday === 6) return false;
+  return getPortalHolidayName(dateStr) === null;
+}
+
+function getPortalNonWorkdayReason(dateStr: string): string | null {
+  const holiday = getPortalHolidayName(dateStr);
+  if (holiday) return holiday;
+  const weekday = getPortalWeekday(dateStr);
+  if (weekday === 0) return '일요일';
+  if (weekday === 6) return '토요일';
+  return null;
+}
+
+function findPortalNextWorkday(startDate: string): string {
+  for (let i = 0; i <= 60; i += 1) {
+    const candidate = i === 0 ? startDate : addPortalDays(startDate, i);
+    if (isPortalWorkday(candidate)) return candidate;
+  }
+  return startDate;
+}
+
+function evaluatePortalWorkday(
+  interval: number,
+  anchorDate: string,
+  targetDate: string,
+  completedForPeriod: boolean
+): { readonly isDueToday: boolean; readonly nextOccurrenceDate: string } {
+  const safeInterval = Math.max(1, interval);
+  const firstWorkday = findPortalNextWorkday(anchorDate || targetDate);
+  const todayIsWorkday = isPortalWorkday(targetDate);
+
+  let isDueToday = false;
+  if (todayIsWorkday && targetDate >= firstWorkday) {
+    if (safeInterval === 1) {
+      isDueToday = true;
+    } else {
+      let elapsed = 0;
+      let cursor = firstWorkday;
+      for (let i = 0; i < 3650 && cursor < targetDate; i += 1) {
+        cursor = addPortalDays(cursor, 1);
+        if (isPortalWorkday(cursor)) elapsed += 1;
+      }
+      isDueToday = elapsed % safeInterval === 0;
+    }
+  }
+
+  const scanStart = completedForPeriod
+    ? addPortalDays(targetDate, 1)
+    : targetDate < firstWorkday
+      ? firstWorkday
+      : targetDate;
+
+  let nextOccurrenceDate = findPortalNextWorkday(scanStart);
+  if (safeInterval > 1) {
+    let elapsed = 0;
+    let cursor = firstWorkday;
+    for (let i = 0; i < 3650 && cursor < nextOccurrenceDate; i += 1) {
+      cursor = addPortalDays(cursor, 1);
+      if (isPortalWorkday(cursor)) elapsed += 1;
+    }
+    let guard = 0;
+    while (elapsed % safeInterval !== 0 && guard < 1500) {
+      nextOccurrenceDate = findPortalNextWorkday(addPortalDays(nextOccurrenceDate, 1));
+      elapsed += 1;
+      guard += 1;
+    }
+  }
+
+  return { isDueToday, nextOccurrenceDate };
+}
+
 function sanitizeText(raw: string, maxLen: number): string {
   // eslint-disable-next-line no-control-regex
   return raw.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, maxLen);
@@ -87,6 +301,8 @@ function formatSummary(rule: PortalTodoRecurrence): string {
       return '';
     case 'daily':
       return rule.interval <= 1 ? '매일' : `${rule.interval}일마다`;
+    case 'workday':
+      return rule.interval <= 1 ? '영업일 매일' : `${rule.interval}영업일마다`;
     case 'weekly': {
       const days = rule.weekdays && rule.weekdays.length > 0 ? rule.weekdays : [];
       const key = days.join(',');
@@ -109,6 +325,7 @@ function buildDefaultRecurrence(type: PortalRecurrenceType, todayStr: string): P
   const [y, m, d] = todayStr.split('-').map(Number);
   const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
   if (type === 'daily') return { type: 'daily', interval: 1 };
+  if (type === 'workday') return { type: 'workday', interval: 1 };
   if (type === 'weekly') return { type: 'weekly', interval: 1, weekdays: [weekday] };
   if (type === 'monthly') return { type: 'monthly', interval: 1, monthDay: d };
   return { type: 'yearly', interval: 1, yearMonth: m, yearDay: d };
@@ -116,7 +333,7 @@ function buildDefaultRecurrence(type: PortalRecurrenceType, todayStr: string): P
 
 function getLocalPeriodKey(type: PortalRecurrenceType, todayStr: string): string | null {
   if (type === 'none') return null;
-  if (type === 'daily' || type === 'weekly') return todayStr;
+  if (type === 'daily' || type === 'workday' || type === 'weekly') return todayStr;
   if (type === 'monthly') return todayStr.slice(0, 7);
   return todayStr.slice(0, 4);
 }
@@ -145,6 +362,7 @@ function normalizeLocalRecord(raw: unknown, idx: number, todayStr: string): Port
     recObj &&
     (recObj.type === 'none' ||
       recObj.type === 'daily' ||
+      recObj.type === 'workday' ||
       recObj.type === 'weekly' ||
       recObj.type === 'monthly' ||
       recObj.type === 'yearly')
@@ -173,27 +391,42 @@ function normalizeLocalRecord(raw: unknown, idx: number, todayStr: string): Port
     recType === 'none' ? Boolean(raw.completed) : Boolean(periodKey && lastCompletedPeriod === periodKey);
 
   const occObj = isRecord(raw.occurrence) ? raw.occurrence : null;
-  const occurrence: PortalTodoOccurrence = occObj
+  const dueStr = typeof raw.dueDate === 'string' ? raw.dueDate : null;
+  const workdayEval =
+    recType === 'workday'
+      ? evaluatePortalWorkday(recurrence.interval, dueStr || todayStr, todayStr, completed)
+      : null;
+
+  const occurrence: PortalTodoOccurrence = workdayEval
     ? {
-        isRecurring: recType !== 'none',
+        isRecurring: true,
         isCompletedForPeriod: completed,
-        isDueToday: Boolean(occObj.isDueToday),
+        isDueToday: workdayEval.isDueToday,
         currentPeriodKey: periodKey,
-        nextOccurrenceDate:
-          typeof occObj.nextOccurrenceDate === 'string' ? occObj.nextOccurrenceDate : null,
-        summaryLabel:
-          typeof occObj.summaryLabel === 'string' && occObj.summaryLabel
-            ? occObj.summaryLabel
-            : formatSummary(recurrence),
-      }
-    : {
-        isRecurring: recType !== 'none',
-        isCompletedForPeriod: completed,
-        isDueToday: raw.dueDate === todayStr,
-        currentPeriodKey: periodKey,
-        nextOccurrenceDate: null,
+        nextOccurrenceDate: workdayEval.nextOccurrenceDate,
         summaryLabel: formatSummary(recurrence),
-      };
+      }
+    : occObj
+      ? {
+          isRecurring: recType !== 'none',
+          isCompletedForPeriod: completed,
+          isDueToday: Boolean(occObj.isDueToday),
+          currentPeriodKey: periodKey,
+          nextOccurrenceDate:
+            typeof occObj.nextOccurrenceDate === 'string' ? occObj.nextOccurrenceDate : null,
+          summaryLabel:
+            typeof occObj.summaryLabel === 'string' && occObj.summaryLabel
+              ? occObj.summaryLabel
+              : formatSummary(recurrence),
+        }
+      : {
+          isRecurring: recType !== 'none',
+          isCompletedForPeriod: completed,
+          isDueToday: raw.dueDate === todayStr,
+          currentPeriodKey: periodKey,
+          nextOccurrenceDate: null,
+          summaryLabel: formatSummary(recurrence),
+        };
 
   const subtasks: LocalTodoSubtask[] = [];
   if (Array.isArray(raw.subtasks)) {
@@ -457,6 +690,10 @@ export function usePortalTodos() {
 
       const nowIso = new Date().toISOString();
       const minOrder = itemsRef.current.reduce((min, item) => Math.min(min, item.order), 0);
+      const workdayEval =
+        recurrenceType === 'workday'
+          ? evaluatePortalWorkday(recurrence.interval, dueDate || todayStr, todayStr, false)
+          : null;
       const newItem: PortalTodoItem = {
         id: `todo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         title,
@@ -474,9 +711,9 @@ export function usePortalTodos() {
         occurrence: {
           isRecurring: recurrenceType !== 'none',
           isCompletedForPeriod: false,
-          isDueToday: dueDate === todayStr,
+          isDueToday: workdayEval ? workdayEval.isDueToday : dueDate === todayStr,
           currentPeriodKey: getLocalPeriodKey(recurrenceType, todayStr),
-          nextOccurrenceDate: dueDate,
+          nextOccurrenceDate: workdayEval ? workdayEval.nextOccurrenceDate : dueDate,
           summaryLabel: formatSummary(recurrence),
         },
         isDeleted: false,
@@ -660,8 +897,27 @@ export function usePortalTodos() {
 
   const activeItems = useMemo(() => items.filter((item) => !item.isDeleted), [items]);
 
+  const { visibleItems, hiddenWorkdayCount, nonWorkdayReason } = useMemo(() => {
+    const todayStr = getTodayLocalDateStr();
+    const reason = getPortalNonWorkdayReason(todayStr);
+    const visible: PortalTodoItem[] = [];
+    let hidden = 0;
+    for (const item of activeItems) {
+      if (item.recurrence.type === 'workday' && !item.occurrence.isDueToday) {
+        hidden += 1;
+        continue;
+      }
+      visible.push(item);
+    }
+    return {
+      visibleItems: visible,
+      hiddenWorkdayCount: hidden,
+      nonWorkdayReason: reason,
+    };
+  }, [activeItems]);
+
   const sortedTodos = useMemo(() => {
-    return [...activeItems].sort((a, b) => {
+    return [...visibleItems].sort((a, b) => {
       if (a.completed !== b.completed) return a.completed ? 1 : -1;
       const pDiff = PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority];
       if (pDiff !== 0) return pDiff;
@@ -672,28 +928,28 @@ export function usePortalTodos() {
       if (!aDate && bDate) return 1;
       return a.order - b.order;
     });
-  }, [activeItems]);
+  }, [visibleItems]);
 
   const stats: PortalTodoStats = useMemo(() => {
     const todayStr = getTodayLocalDateStr();
-    const totalCount = activeItems.length;
-    const completedCount = activeItems.filter((item) => item.completed).length;
+    const totalCount = visibleItems.length;
+    const completedCount = visibleItems.filter((item) => item.completed).length;
     const activeCount = totalCount - completedCount;
     const recurringCount = activeItems.filter((item) => item.recurrence.type !== 'none').length;
     const maxStreak = activeItems.reduce((acc, item) => Math.max(acc, item.streakCount), 0);
-    const todayDueCount = activeItems.filter((item) => {
+    const todayDueCount = visibleItems.filter((item) => {
       if (item.completed) return false;
       if (item.recurrence.type !== 'none') return item.occurrence.isDueToday;
       return item.dueDate === todayStr;
     }).length;
-    const overdueCount = activeItems.filter(
+    const overdueCount = visibleItems.filter(
       (item) =>
         !item.completed &&
         item.recurrence.type === 'none' &&
         item.dueDate !== null &&
         item.dueDate < todayStr
     ).length;
-    const trashCount = items.length - totalCount;
+    const trashCount = items.length - activeItems.length;
     const completionRate =
       totalCount > 0 ? Math.min(100, Math.round((completedCount * 100) / totalCount)) : 0;
 
@@ -708,7 +964,7 @@ export function usePortalTodos() {
       trashCount,
       completionRate,
     };
-  }, [activeItems, items.length]);
+  }, [activeItems, items.length, visibleItems]);
 
   return {
     source,
@@ -716,6 +972,8 @@ export function usePortalTodos() {
     isLoading,
     todos: sortedTodos,
     stats,
+    hiddenWorkdayCount,
+    nonWorkdayReason,
     lastDeleted,
     pendingLocalCount: pendingLocalItems.length,
     addQuickTodo,

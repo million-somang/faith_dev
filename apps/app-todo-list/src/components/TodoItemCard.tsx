@@ -412,7 +412,24 @@ export default function TodoItemCard({
                     ))}
                   </select>
 
-                  {draftRecType !== 'none' && (
+                  {draftRecType === 'workday' ? (
+                    <>
+                      <select
+                        value={draftInterval}
+                        onChange={(e) => setDraftInterval(Number(e.target.value))}
+                        aria-label="영업일 반복 간격 수정"
+                        className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                      >
+                        <option value={1}>영업일 매일</option>
+                        <option value={2}>2영업일마다</option>
+                        <option value={3}>3영업일마다</option>
+                        <option value={5}>5영업일마다</option>
+                      </select>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 font-bold">
+                        토·일·공휴일 제외
+                      </span>
+                    </>
+                  ) : draftRecType !== 'none' ? (
                     <select
                       value={draftInterval}
                       onChange={(e) => setDraftInterval(Number(e.target.value))}
@@ -424,7 +441,7 @@ export default function TodoItemCard({
                       <option value={3}>매 3주기</option>
                       <option value={4}>매 4주기</option>
                     </select>
-                  )}
+                  ) : null}
 
                   {draftRecType === 'monthly' && (
                     <select

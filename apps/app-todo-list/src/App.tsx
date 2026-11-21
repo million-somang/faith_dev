@@ -74,6 +74,11 @@ export function App() {
     filteredTodos,
     trashItems,
     stats,
+    visibleTotalCount,
+    visibleActiveCount,
+    visibleCompletedCount,
+    hiddenWorkdayCount,
+    nonWorkdayReason,
     filter,
     setFilter,
     resetFilters,
@@ -192,6 +197,15 @@ export function App() {
       const { added } = addTodo(draft);
       if (added) {
         audio.playAdd();
+        if (added.recurrence.type === 'workday' && !added.occurrence.isDueToday) {
+          const nextLabel = added.occurrence.nextOccurrenceDate
+            ? added.occurrence.nextOccurrenceDate.slice(5).replace('-', '/')
+            : '다음 영업일';
+          showToast(
+            `영업일 반복 등록 완료 — 휴무일 제외되어 ${nextLabel}에 자동 노출됩니다.`
+          );
+          return;
+        }
         const recSuffix = added.occurrence.summaryLabel
           ? ` (${added.occurrence.summaryLabel})`
           : '';
@@ -454,13 +468,17 @@ export function App() {
                               오늘의 할 일
                             </h2>
                             <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black tabular-nums">
-                              진행중 {stats.activeCount}건
+                              진행중 {visibleActiveCount}건
                             </span>
                           </div>
                           <div className="text-[10px] font-bold text-[#6C655B] truncate">
                             {formatTodayKoreanLabel()} · 완료{' '}
-                            <strong className="text-indigo-700">{stats.completedCount}</strong>/
-                            {stats.totalCount} ({stats.completionRate}%)
+                            <strong className="text-indigo-700">{visibleCompletedCount}</strong>/
+                            {visibleTotalCount} (
+                            {visibleTotalCount > 0
+                              ? Math.round((visibleCompletedCount / visibleTotalCount) * 100)
+                              : 0}
+                            %)
                             {stats.recurringCount > 0 && ` · 반복 ${stats.recurringCount}건`}
                             {isLoadingRemote && (
                               <span className="ml-1 text-indigo-600">동기화 중...</span>
@@ -506,15 +524,34 @@ export function App() {
                     <TodoFilterBar
                       filter={filter}
                       onChangeFilter={setFilter}
-                      activeCount={stats.activeCount}
-                      completedCount={stats.completedCount}
+                      activeCount={visibleActiveCount}
+                      completedCount={visibleCompletedCount}
                       recurringCount={stats.recurringCount}
                       todayCount={stats.todayDueCount}
-                      totalCount={stats.totalCount}
+                      totalCount={visibleTotalCount}
                     />
 
                     {/* 메인 할 일 리스트 (내부 중첩 스크롤 금지 -> 브라우저 단일 스크롤로 자연 확장) */}
                     <div className="flex-1 min-h-[260px] md:min-h-[420px] p-2.5 space-y-2 bg-[#FAF8F5]/50">
+                      {hiddenWorkdayCount > 0 && filter.status !== 'recurring' && (
+                        <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
+                          <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
+                            <i className="fas fa-calendar-xmark text-amber-600 text-[11px] shrink-0"></i>
+                            <span className="truncate">
+                              {nonWorkdayReason
+                                ? `${nonWorkdayReason} 휴무로 영업일 반복 ${hiddenWorkdayCount}건 자동 숨김`
+                                : `오늘 예정이 아닌 영업일 반복 ${hiddenWorkdayCount}건 숨김`}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setFilter({ ...filter, status: 'recurring' })}
+                            className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
+                          >
+                            반복 탭 보기 →
+                          </button>
+                        </div>
+                      )}
                       {filteredTodos.length > 0 ? (
                         filteredTodos.map((item, idx) => {
                           const prevItem = idx > 0 ? filteredTodos[idx - 1] : null;

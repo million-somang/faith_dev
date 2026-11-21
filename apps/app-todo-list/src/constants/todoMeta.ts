@@ -125,6 +125,7 @@ export interface RecurrenceOptionMeta {
 export const RECURRENCE_LIST: readonly RecurrenceOptionMeta[] = [
   { key: 'none', label: '반복 안함', shortLabel: '1회' },
   { key: 'daily', label: '매일 반복', shortLabel: '매일' },
+  { key: 'workday', label: '영업일 (토·일·공휴일 제외)', shortLabel: '영업일' },
   { key: 'weekly', label: '주단위 반복', shortLabel: '매주' },
   { key: 'monthly', label: '월단위 반복', shortLabel: '매월' },
   { key: 'yearly', label: '년단위 반복', shortLabel: '매년' },

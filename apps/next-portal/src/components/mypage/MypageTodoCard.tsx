@@ -44,6 +44,7 @@ const PRIORITY_BADGE: Record<
 const RECURRENCE_PILLS: readonly { readonly key: PortalRecurrenceType; readonly label: string }[] = [
   { key: 'none', label: '1회' },
   { key: 'daily', label: '매일' },
+  { key: 'workday', label: '영업일' },
   { key: 'weekly', label: '매주' },
   { key: 'monthly', label: '매월' },
   { key: 'yearly', label: '매년' },
@@ -85,6 +86,8 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
     hydrated,
     todos,
     stats,
+    hiddenWorkdayCount,
+    nonWorkdayReason,
     lastDeleted,
     pendingLocalCount,
     addQuickTodo,
@@ -296,7 +299,7 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
               })}
             </div>
 
-            <div className="flex items-center gap-1 bg-[#FAF8F5] p-1 rounded-xl border border-[#E5DDD0]">
+            <div className="flex flex-wrap items-center gap-1 bg-[#FAF8F5] p-1 rounded-xl border border-[#E5DDD0]">
               <span className="text-[10px] font-black text-[#6C655B] px-1.5 flex items-center gap-1">
                 <i className="fas fa-repeat text-indigo-600 text-[9px]"></i>
                 반복
@@ -318,6 +321,11 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                   </button>
                 );
               })}
+              {quickRecurrence === 'workday' && (
+                <span className="px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-[9px] font-bold text-amber-800">
+                  토·일·공휴일 자동 제외
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -360,7 +368,27 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
           </div>
         </div>
 
-        <div className="p-3 sm:p-3.5 bg-[#FAF8F5]/45">
+        <div className="p-3 sm:p-3.5 bg-[#FAF8F5]/45 space-y-2.5">
+          {hydrated && hiddenWorkdayCount > 0 && (
+            <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
+              <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
+                <i className="fas fa-calendar-xmark text-amber-600 text-[11px] shrink-0"></i>
+                <span className="truncate">
+                  {nonWorkdayReason
+                    ? `${nonWorkdayReason} 휴무로 영업일 반복 ${hiddenWorkdayCount}건 자동 숨김`
+                    : `오늘 예정이 아닌 영업일 반복 ${hiddenWorkdayCount}건 숨김`}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => launchApp('/app/todo-list/', 'todo-list')}
+                className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
+              >
+                스마트 TODO에서 보기 →
+              </button>
+            </div>
+          )}
+
           {!hydrated ? (
             <div className="py-6 text-center text-xs font-bold text-[#8E8579]">
               할 일 목록을 불러오는 중입니다...
@@ -370,9 +398,15 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
               <div className="w-10 h-10 mx-auto rounded-xl bg-[#FAF8F5] border border-[#E5DDD0] text-[#8E8579] flex items-center justify-center text-sm">
                 <i className="fas fa-clipboard-list"></i>
               </div>
-              <p className="text-xs font-extrabold text-[#24211D]">아직 등록된 할 일이 없습니다.</p>
+              <p className="text-xs font-extrabold text-[#24211D]">
+                {hiddenWorkdayCount > 0
+                  ? '오늘은 휴무일이라 예정된 할 일이 없습니다.'
+                  : '아직 등록된 할 일이 없습니다.'}
+              </p>
               <p className="text-[11px] text-[#6C655B]">
-                위 입력창에 바로 추가하거나 전체 플래너 팝업에서 세부 반복 주기와 집중 타이머를 설정해 보세요.
+                {hiddenWorkdayCount > 0
+                  ? `영업일 반복 할 일 ${hiddenWorkdayCount}건은 다음 영업일에 자동 표시되며, 전체 플래너의 반복 탭에서 언제든 확인할 수 있습니다.`
+                  : '위 입력창에 바로 추가하거나 전체 플래너 팝업에서 세부 반복 주기와 집중 타이머를 설정해 보세요.'}
               </p>
             </div>
           ) : visibleList.length === 0 ? (

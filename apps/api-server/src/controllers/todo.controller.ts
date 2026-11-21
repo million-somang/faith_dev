@@ -17,7 +17,7 @@ import {
 
 const VALID_PRIORITIES = new Set<TodoPriority>(['urgent', 'important', 'normal']);
 const VALID_CATEGORIES = new Set<TodoCategory>(['work', 'personal', 'shopping', 'health', 'study']);
-const VALID_RECURRENCE_TYPES = new Set<RecurrenceType>(['none', 'daily', 'weekly', 'monthly', 'yearly']);
+const VALID_RECURRENCE_TYPES = new Set<RecurrenceType>(['none', 'daily', 'workday', 'weekly', 'monthly', 'yearly']);
 
 function getAuthUserId(c: Context): number | null {
   const user = c.get('user') as SessionUser | undefined;

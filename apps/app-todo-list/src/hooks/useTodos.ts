@@ -22,6 +22,7 @@ import type {
 import {
   evaluateTodoOccurrence,
   getLocalTodayDateStr,
+  getNonWorkdayReason,
   getPreviousPeriodKey,
   normalizeRecurrenceRule,
 } from '../utils/recurrence';
@@ -847,6 +848,13 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
     const query = filter.searchQuery.trim().toLowerCase();
 
     const filtered = activeItems.filter((item) => {
+      if (
+        filter.status !== 'recurring' &&
+        item.recurrence.type === 'workday' &&
+        !item.occurrence.isDueToday
+      ) {
+        return false;
+      }
       if (filter.status === 'active' && item.completed) return false;
       if (filter.status === 'completed' && !item.completed) return false;
       if (filter.status === 'recurring' && item.recurrence.type === 'none') return false;
@@ -898,12 +906,51 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
 
   const stats = useMemo(() => computeTodoStats(items), [items]);
 
+  const {
+    visibleTotalCount,
+    visibleActiveCount,
+    visibleCompletedCount,
+    hiddenWorkdayCount,
+    nonWorkdayReason,
+  } = useMemo(() => {
+    const todayStr = getLocalTodayDateStr();
+    const reason = getNonWorkdayReason(todayStr);
+    let visibleTotal = 0;
+    let visibleActive = 0;
+    let visibleCompleted = 0;
+    let hiddenWorkday = 0;
+    for (const item of activeItems) {
+      if (item.recurrence.type === 'workday' && !item.occurrence.isDueToday) {
+        hiddenWorkday += 1;
+        continue;
+      }
+      visibleTotal += 1;
+      if (item.completed) {
+        visibleCompleted += 1;
+      } else {
+        visibleActive += 1;
+      }
+    }
+    return {
+      visibleTotalCount: visibleTotal,
+      visibleActiveCount: visibleActive,
+      visibleCompletedCount: visibleCompleted,
+      hiddenWorkdayCount: hiddenWorkday,
+      nonWorkdayReason: reason,
+    };
+  }, [activeItems]);
+
   return {
     allItems: items,
     activeItems,
     filteredTodos,
     trashItems,
     stats,
+    visibleTotalCount,
+    visibleActiveCount,
+    visibleCompletedCount,
+    hiddenWorkdayCount,
+    nonWorkdayReason,
     filter,
     setFilter,
     resetFilters,
