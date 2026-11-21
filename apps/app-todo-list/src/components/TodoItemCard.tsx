@@ -83,6 +83,7 @@ export default function TodoItemCard({
 
   const priorityMeta = PRIORITY_MAP[item.priority];
   const categoryMeta = CATEGORY_MAP[item.category];
+  const isUrgentActive = !item.completed && item.priority === 'urgent';
   const isRecurring = item.occurrence.isRecurring;
   const dueBadge = !isRecurring ? getDueDateBadge(item.dueDate, item.completed, todayStr) : null;
   const nextOccLabel = isRecurring
@@ -160,19 +161,27 @@ export default function TodoItemCard({
     <article
       className={`group relative overflow-hidden rounded-xl border transition-all ${
         item.completed
-          ? 'bg-[#F6F3EC] border-[#EAE3D7] opacity-80'
-          : isPinned
-            ? 'bg-indigo-50/45 border-indigo-300 ring-1 ring-indigo-300 shadow-sm'
-            : 'bg-white border-[#E4DBD0] hover:border-indigo-300 shadow-[0_1px_3px_rgba(36,33,29,0.06)] hover:shadow-md'
+          ? 'bg-[#F6F3EC] border-[#EAE3D7] opacity-75'
+          : isPinned && isUrgentActive
+            ? 'bg-gradient-to-r from-rose-50/75 via-indigo-50/45 to-white border-indigo-300 ring-1 ring-indigo-300 shadow-[0_3px_12px_rgba(225,29,72,0.12)]'
+            : isPinned
+              ? 'bg-indigo-50/45 border-indigo-300 ring-1 ring-indigo-300 shadow-sm'
+              : isUrgentActive
+                ? 'bg-gradient-to-r from-rose-50/85 via-white to-white border-rose-200/90 hover:border-rose-300 shadow-[0_3px_12px_rgba(225,29,72,0.12),0_1px_2px_rgba(36,33,29,0.06)] hover:shadow-[0_6px_18px_rgba(225,29,72,0.18)]'
+                : 'bg-white border-[#E4DBD0] hover:border-indigo-300 shadow-[0_2px_6px_rgba(36,33,29,0.06)] hover:shadow-md'
       }`}
     >
       <span
         aria-hidden="true"
-        className={`absolute inset-y-0 left-0 w-1.5 ${
-          item.completed ? 'bg-stone-300' : priorityMeta.dotClass
+        className={`absolute inset-y-0 left-0 ${
+          item.completed
+            ? 'w-1.5 bg-stone-300'
+            : isUrgentActive
+              ? 'w-2 bg-gradient-to-b from-rose-500 to-rose-600'
+              : `w-1.5 ${priorityMeta.dotClass}`
         }`}
       />
-      <div className="pl-3.5 pr-2.5 py-2.5 sm:pl-4 sm:pr-3 sm:py-3">
+      <div className="pl-4 pr-2.5 py-2.5 sm:pl-4 sm:pr-3 sm:py-3">
         <div className="flex items-start gap-2.5">
           {/* Astryx CheckboxInput */}
           <div className="pt-0.5 shrink-0">

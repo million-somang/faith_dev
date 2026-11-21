@@ -516,24 +516,37 @@ export function App() {
                     {/* 메인 할 일 리스트 (내부 중첩 스크롤 금지 -> 브라우저 단일 스크롤로 자연 확장) */}
                     <div className="flex-1 min-h-[260px] md:min-h-[420px] p-2.5 space-y-2 bg-[#FAF8F5]/50">
                       {filteredTodos.length > 0 ? (
-                        filteredTodos.map((item, idx) => (
-                          <TodoItemCard
-                            key={item.id}
-                            item={item}
-                            isPinned={pomodoro.pinnedTodoId === item.id}
-                            canReorder={canReorder}
-                            isFirst={idx === 0}
-                            isLast={idx === filteredTodos.length - 1}
-                            onToggle={handleToggleTodo}
-                            onUpdate={updateTodo}
-                            onSoftDelete={softDeleteTodo}
-                            onMoveOrder={moveTodoOrder}
-                            onTogglePin={pomodoro.togglePinTodo}
-                            onAddSubtask={addSubtask}
-                            onToggleSubtask={toggleSubtask}
-                            onRemoveSubtask={removeSubtask}
-                          />
-                        ))
+                        filteredTodos.map((item, idx) => {
+                          const prevItem = idx > 0 ? filteredTodos[idx - 1] : null;
+                          const nextItem =
+                            idx < filteredTodos.length - 1 ? filteredTodos[idx + 1] : null;
+                          const isFirstInGroup =
+                            !prevItem ||
+                            prevItem.completed !== item.completed ||
+                            prevItem.priority !== item.priority;
+                          const isLastInGroup =
+                            !nextItem ||
+                            nextItem.completed !== item.completed ||
+                            nextItem.priority !== item.priority;
+                          return (
+                            <TodoItemCard
+                              key={item.id}
+                              item={item}
+                              isPinned={pomodoro.pinnedTodoId === item.id}
+                              canReorder={canReorder}
+                              isFirst={isFirstInGroup}
+                              isLast={isLastInGroup}
+                              onToggle={handleToggleTodo}
+                              onUpdate={updateTodo}
+                              onSoftDelete={softDeleteTodo}
+                              onMoveOrder={moveTodoOrder}
+                              onTogglePin={pomodoro.togglePinTodo}
+                              onAddSubtask={addSubtask}
+                              onToggleSubtask={toggleSubtask}
+                              onRemoveSubtask={removeSubtask}
+                            />
+                          );
+                        })
                       ) : (
                         <TodoEmptyState
                           isFiltered={isFiltered}

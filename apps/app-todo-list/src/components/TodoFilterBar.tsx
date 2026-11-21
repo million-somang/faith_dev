@@ -111,9 +111,8 @@ export default function TodoFilterBar({
             aria-label="정렬 기준 선택"
             className="h-7 px-1 rounded-lg bg-white border border-[#E5DDD0] text-[10px] font-bold text-[#4D473F] outline-none focus:border-indigo-500 cursor-pointer"
           >
-            <option value="manual">기본순</option>
-            <option value="priority">중요순</option>
-            <option value="dueDate">예정순</option>
+            <option value="manual">우선순위순</option>
+            <option value="dueDate">예정일순</option>
             <option value="createdAt">최신순</option>
           </select>
 

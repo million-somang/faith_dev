@@ -630,21 +630,61 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
 
   const moveTodoOrder = useCallback(
     (id: string, direction: 'up' | 'down') => {
+      const target = itemsRef.current.find((item) => item.id === id && !item.isDeleted);
+      if (!target) return;
+
       const nowIso = new Date().toISOString();
-      const activeSorted = itemsRef.current
-        .filter((item) => !item.isDeleted)
-        .sort((a, b) => a.order - b.order);
-      const index = activeSorted.findIndex((item) => item.id === id);
+      const sortWithinGroup = (a: TodoItem, b: TodoItem): number => {
+        const orderDiff = a.order - b.order;
+        if (orderDiff !== 0) return orderDiff;
+        return b.createdAt.localeCompare(a.createdAt);
+      };
+
+      const groupSorted = itemsRef.current
+        .filter(
+          (item) =>
+            !item.isDeleted &&
+            item.completed === target.completed &&
+            item.priority === target.priority
+        )
+        .sort(sortWithinGroup);
+
+      const index = groupSorted.findIndex((item) => item.id === id);
       if (index < 0) return;
       const swapIndex = direction === 'up' ? index - 1 : index + 1;
-      if (swapIndex < 0 || swapIndex >= activeSorted.length) return;
+      if (swapIndex < 0 || swapIndex >= groupSorted.length) return;
 
-      const reordered = [...activeSorted];
-      const [moved] = reordered.splice(index, 1);
-      reordered.splice(swapIndex, 0, moved);
+      const reorderedGroup = [...groupSorted];
+      const [moved] = reorderedGroup.splice(index, 1);
+      reorderedGroup.splice(swapIndex, 0, moved);
+
+      const buckets: ReadonlyArray<readonly [boolean, TodoItem['priority']]> = [
+        [false, 'urgent'],
+        [false, 'important'],
+        [false, 'normal'],
+        [true, 'urgent'],
+        [true, 'important'],
+        [true, 'normal'],
+      ];
+
+      const flattened: TodoItem[] = [];
+      for (const [doneState, priKey] of buckets) {
+        if (doneState === target.completed && priKey === target.priority) {
+          flattened.push(...reorderedGroup);
+        } else {
+          flattened.push(
+            ...itemsRef.current
+              .filter(
+                (item) =>
+                  !item.isDeleted && item.completed === doneState && item.priority === priKey
+              )
+              .sort(sortWithinGroup)
+          );
+        }
+      }
 
       const orderMap = new Map<string, number>();
-      reordered.forEach((item, idx) => {
+      flattened.forEach((item, idx) => {
         orderMap.set(item.id, idx);
       });
 
@@ -659,13 +699,15 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
         return;
       }
 
+      const changed = flattened.filter((item, idx) => item.order !== idx);
       const next = applyOrder(itemsRef.current);
       itemsRef.current = next;
       setItems(next);
-      const changed = reordered.filter((item, idx) => item.order !== idx);
       void (async () => {
         try {
-          await Promise.all(changed.map((item) => todoApi.update(item.id, { order: orderMap.get(item.id) })));
+          await Promise.all(
+            changed.map((item) => todoApi.update(item.id, { order: orderMap.get(item.id) }))
+          );
           broadcastTodoSync();
         } catch {
           void refreshFromDb();
@@ -823,15 +865,15 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
     });
 
     return [...filtered].sort((a, b) => {
-      if (filter.sortBy === 'priority') {
-        if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        const diff = PRIORITY_MAP[b.priority].weight - PRIORITY_MAP[a.priority].weight;
-        if (diff !== 0) return diff;
-        return a.order - b.order;
-      }
+      // 1차: 진행중 상단, 완료 하단
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
 
+      // 2차: 긴급(3) -> 중요(2) -> 보통(1) 항상 최우선 정렬
+      const priorityDiff = PRIORITY_MAP[b.priority].weight - PRIORITY_MAP[a.priority].weight;
+      if (priorityDiff !== 0) return priorityDiff;
+
+      // 3차: 동일 (완료여부, 우선순위) 그룹 내 보조 정렬
       if (filter.sortBy === 'dueDate') {
-        if (a.completed !== b.completed) return a.completed ? 1 : -1;
         const aTarget = a.occurrence.nextOccurrenceDate ?? a.dueDate;
         const bTarget = b.occurrence.nextOccurrenceDate ?? b.dueDate;
         if (aTarget && bTarget && aTarget !== bTarget) {
@@ -839,14 +881,18 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
         }
         if (aTarget && !bTarget) return -1;
         if (!aTarget && bTarget) return 1;
-        return a.order - b.order;
+        const orderDiff = a.order - b.order;
+        return orderDiff !== 0 ? orderDiff : b.createdAt.localeCompare(a.createdAt);
       }
 
       if (filter.sortBy === 'createdAt') {
-        return b.createdAt.localeCompare(a.createdAt);
+        const createdDiff = b.createdAt.localeCompare(a.createdAt);
+        return createdDiff !== 0 ? createdDiff : a.order - b.order;
       }
 
-      return a.order - b.order;
+      const orderDiff = a.order - b.order;
+      if (orderDiff !== 0) return orderDiff;
+      return b.createdAt.localeCompare(a.createdAt);
     });
   }, [activeItems, filter]);
 
