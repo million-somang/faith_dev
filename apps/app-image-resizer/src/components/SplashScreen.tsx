@@ -6,6 +6,7 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ onComplete, onFinish }: SplashScreenProps) {
+  const [logoError, setLogoError] = useState(false);
   const handleDone = () => {
     if (onComplete) onComplete();
     if (onFinish) onFinish();
@@ -38,39 +39,57 @@ export function SplashScreen({ onComplete, onFinish }: SplashScreenProps) {
       {/* 중앙 브랜드 엠블럼 및 인트로 */}
       <div className="flex flex-col items-center max-w-sm w-full text-center">
         <div className="w-20 h-20 mb-6 rounded-3xl bg-white shadow-md border border-[#EBE6DD] flex items-center justify-center p-3 animate-float">
-          <img
-            src="https://veranex.app/logo-192.png"
-            alt="VERA Logo"
-            className="w-full h-full object-contain"
-            onError={(e) => {
-              // 로컬 로고 폴백
-              (e.target as HTMLElement).style.display = 'none';
-            }}
-          />
+          {!logoError ? (
+            <img
+              src="https://veranex.app/logo-192.png"
+              alt="VeraNex Logo"
+              className="w-full h-full object-contain"
+              onError={() => setLogoError(true)}
+            />
+          ) : (
+            <span className="text-2xl font-black text-indigo-600">V</span>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 mb-1.5">
           <span className="text-2xl font-black tracking-tight text-[#2D2A26]">V</span>
           <span className="text-2xl font-black tracking-tight text-indigo-600">ERANEX</span>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 ml-1">
-            IMAGE RESIZER PRO
+            IMAGE UPSCALER PRO
           </span>
         </div>
 
         <p className="text-xs text-stone-500 mb-8 font-medium">
-          브라우저 100% 로컬 초고속 무손실 일괄 리사이저
+          브라우저 100% 로컬 AI 초해상도 · 포맷 변환기
         </p>
 
         {/* 1% ~ 100% 게이지 및 카운터 */}
         <div className="w-full bg-[#EBE6DD] h-2.5 rounded-full overflow-hidden p-0.5 shadow-inner mb-3">
-          <div
-            className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full transition-all duration-75 ease-out"
-            style={{ width: `${progress}%` }}
-          ></div>
+          <svg
+            viewBox="0 0 100 4"
+            preserveAspectRatio="none"
+            className="w-full h-full rounded-full block"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="upscaleSplashGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#6366F1" />
+                <stop offset="100%" stopColor="#9333EA" />
+              </linearGradient>
+            </defs>
+            <rect
+              x="0"
+              y="0"
+              width={progress}
+              height="4"
+              rx="2"
+              fill="url(#upscaleSplashGrad)"
+            />
+          </svg>
         </div>
 
         <div className="flex justify-between w-full text-xs font-mono font-bold text-stone-400">
-          <span>INITIALIZING CANVAS ENGINE...</span>
+          <span>INITIALIZING CSR AI &amp; LANCZOS ENGINE...</span>
           <span className="text-indigo-600">{progress}%</span>
         </div>
       </div>

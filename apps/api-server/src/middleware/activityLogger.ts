@@ -116,7 +116,7 @@ const MINIAPP_NAMES: Record<string, string> = {
     'base64-converter': 'Base64 인코더/디코더',
     'svg-converter': 'SVG 이미지 변환기',
     'webp-converter': 'WebP 이미지 변환기',
-    'image-resizer': '이미지 리사이저',
+    'image-resizer': '이미지 업스케일 & 포맷 변환기',
     'ocr': 'AI 이미지 텍스트 추출(OCR)',
     'severance-calc': '퇴직금 계산기',
     'interest-calc': '예적금·대출 이자 계산기',

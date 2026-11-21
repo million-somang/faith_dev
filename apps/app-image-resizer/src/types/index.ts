@@ -1,4 +1,13 @@
-export type ResizeUnit = 'pixel' | 'percent' | 'longest' | 'target_kb';
+export type ResizeUnit = 'upscale' | 'pixel' | 'percent' | 'longest' | 'target_kb';
+
+export type UpscaleEngine = 'ai-esrgan' | 'lanczos3';
+
+export type UpscaleTargetMode = '2x' | '3x' | '4x' | 'fhd' | '4k';
+
+export type SharpenLevel = 'none' | 'natural' | 'crisp';
+
+export const MAX_AI_LONG_EDGE = 4096;
+export const MAX_LANCZOS_LONG_EDGE = 8192;
 
 export type FitMode = 'cover' | 'contain' | 'stretch';
 
@@ -6,6 +15,9 @@ export type OutputFormat = 'original' | 'image/webp' | 'image/jpeg' | 'image/png
 
 export interface ResizeSettings {
   unit: ResizeUnit;
+  upscaleEngine: UpscaleEngine;
+  upscaleTarget: UpscaleTargetMode;
+  sharpenLevel: SharpenLevel;
   width: number;
   height: number;
   percent: number;
@@ -15,7 +27,7 @@ export interface ResizeSettings {
   lockAspectRatio: boolean;
   preventUpscale: boolean;
   format: OutputFormat;
-  quality: number; // 0.1 ~ 1.0 (기본 0.85)
+  quality: number; // 0.1 ~ 1.0 (기본 0.95)
   filenameSuffix: string;
 }
 
@@ -29,6 +41,9 @@ export interface ImageFileItem {
   previewUrl: string;
   status: 'idle' | 'processing' | 'done' | 'error';
   progress: number;
+  statusText?: string;
+  wasCappedForMemory?: boolean;
+  usedEngine?: UpscaleEngine | 'canvas';
   resizedBlob?: Blob;
   resizedUrl?: string;
   resizedWidth?: number;

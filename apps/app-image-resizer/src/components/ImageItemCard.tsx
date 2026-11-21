@@ -7,6 +7,14 @@ interface ImageItemCardProps {
   settings: ResizeSettings;
   onRemove: (id: string) => void;
   onDownloadSingle: (item: ImageFileItem) => void;
+  onCompare?: (id: string) => void;
+  isComparing?: boolean;
+}
+
+function getEngineBadgeLabel(engine?: ImageFileItem['usedEngine']): string | null {
+  if (engine === 'ai-esrgan') return 'AI ESRGAN';
+  if (engine === 'lanczos3') return 'Lanczos-3';
+  return null;
 }
 
 export const ImageItemCard: React.FC<ImageItemCardProps> = ({
@@ -14,10 +22,13 @@ export const ImageItemCard: React.FC<ImageItemCardProps> = ({
   settings,
   onRemove,
   onDownloadSingle,
+  onCompare,
+  isComparing = false,
 }) => {
   const isDone = item.status === 'done';
   const isProcessing = item.status === 'processing';
   const isError = item.status === 'error';
+  const engineBadge = getEngineBadgeLabel(item.usedEngine);
 
   // 계산된 절감률
   let savedRatio = 0;
@@ -53,6 +64,16 @@ export const ImageItemCard: React.FC<ImageItemCardProps> = ({
             <span>{formatBytes(item.originalSize)}</span>
           </div>
 
+          {/* 처리 중 실시간 진행 상태 */}
+          {isProcessing && (
+            <div className="mt-1.5 flex items-center gap-2 text-[11px] font-bold text-indigo-700">
+              <span className="px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-200 font-mono">
+                {item.progress}%
+              </span>
+              <span className="truncate">{item.statusText || '업스케일 처리 중...'}</span>
+            </div>
+          )}
+
           {/* 에러 메시지 표시 */}
           {isError && (
             <p className="text-xs text-rose-500 font-medium mt-1">
@@ -63,24 +84,34 @@ export const ImageItemCard: React.FC<ImageItemCardProps> = ({
 
           {/* 변환 완료 상세 정보 */}
           {isDone && item.resizedWidth && item.resizedHeight && item.resizedSize !== undefined && (
-            <div className="flex flex-wrap items-center gap-2 text-xs mt-1.5">
-              <span className="text-indigo-600 font-medium flex items-center gap-1 font-mono">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs mt-1.5">
+              <span className="text-indigo-600 font-bold flex items-center gap-1 font-mono">
                 <i className="fa-solid fa-arrow-right text-[10px]"></i>
                 {item.resizedWidth} × {item.resizedHeight}
               </span>
               <span className="font-semibold text-slate-700">
                 {formatBytes(item.resizedSize)}
               </span>
+              {engineBadge && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-black border border-indigo-200">
+                  {engineBadge}
+                </span>
+              )}
+              {item.wasCappedForMemory && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 font-bold border border-amber-200">
+                  4K 안전 최적화
+                </span>
+              )}
               {savedRatio > 0 ? (
-                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-bold border border-emerald-200">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
                   ↓ {savedRatio}% 절감
                 </span>
               ) : savedRatio < 0 ? (
-                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium border border-amber-200">
-                  ↑ {Math.abs(savedRatio)}% 증가
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-600 font-medium border border-stone-200">
+                  고해상도 +{Math.abs(savedRatio)}%
                 </span>
               ) : (
-                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
                   동일
                 </span>
               )}
@@ -90,12 +121,27 @@ export const ImageItemCard: React.FC<ImageItemCardProps> = ({
       </div>
 
       {/* 액션 버튼 */}
-      <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+      <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+        {isDone && onCompare && (
+          <button
+            type="button"
+            onClick={() => onCompare(item.id)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer border ${
+              isComparing
+                ? 'bg-[#2D2A26] text-white border-[#2D2A26]'
+                : 'bg-[#FAF8F5] text-stone-700 border-[#DFD9CE] hover:bg-stone-100'
+            }`}
+          >
+            <i className="fa-solid fa-columns text-[10px]"></i>
+            비교 보기
+          </button>
+        )}
+
         {isDone && (
           <button
             type="button"
             onClick={() => onDownloadSingle(item)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-200/60"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-200/60 cursor-pointer"
             title={getOutputFilename(item.name, settings)}
           >
             <i className="fa-solid fa-download"></i>
@@ -106,7 +152,7 @@ export const ImageItemCard: React.FC<ImageItemCardProps> = ({
         <button
           type="button"
           onClick={() => onRemove(item.id)}
-          className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+          className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
           title="삭제"
         >
           <i className="fa-regular fa-trash-can text-sm"></i>

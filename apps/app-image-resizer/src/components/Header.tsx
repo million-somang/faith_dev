@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface HeaderProps {
   activeTab: 'app' | 'guide' | 'faq';
@@ -6,6 +6,8 @@ interface HeaderProps {
 }
 
 export default function Header({ activeTab, onChangeTab }: HeaderProps) {
+  const [logoError, setLogoError] = useState(false);
+
   return (
     <header className="w-full bg-[#EFECE6] border border-[#DFD9CE] rounded-2xl p-3.5 sm:p-4 mb-5 shadow-2xs space-y-3.5">
       {/* 1열 공식 브랜드 내비게이션 바 */}
@@ -16,14 +18,16 @@ export default function Header({ activeTab, onChangeTab }: HeaderProps) {
           className="flex items-center gap-2 group transition-opacity hover:opacity-90"
         >
           <div className="w-7 h-7 rounded-lg bg-white shadow-2xs border border-[#DFD9CE] flex items-center justify-center p-1">
-            <img
-              src="https://veranex.app/logo-192.png"
-              alt="VERA Logo"
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
+            {!logoError ? (
+              <img
+                src="https://veranex.app/logo-192.png"
+                alt="VeraNex Logo"
+                className="w-full h-full object-contain"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <span className="text-xs font-black text-indigo-600">V</span>
+            )}
           </div>
           <div>
             <div className="flex items-center text-xs sm:text-sm font-black tracking-tight text-[#2D2A26]">
@@ -39,7 +43,7 @@ export default function Header({ activeTab, onChangeTab }: HeaderProps) {
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white text-stone-700 text-[10px] font-bold border border-[#DFD9CE]">
             <i className="fas fa-lock text-emerald-600 text-[9px]"></i>
-            <span>로컬 보안 100%</span>
+            <span>로컬 보안 100% (CSR)</span>
           </span>
         </div>
       </div>
@@ -48,19 +52,19 @@ export default function Header({ activeTab, onChangeTab }: HeaderProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-[#2D2A26] text-white flex items-center justify-center text-base shrink-0 shadow-2xs">
-            <i className="fas fa-expand-arrows-alt"></i>
+            <i className="fas fa-wand-magic-sparkles"></i>
           </div>
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
               <h1 className="text-lg sm:text-xl font-black text-[#2D2A26] tracking-tight leading-tight">
-                이미지 크기 조정 &amp; 포맷 변환기
+                이미지 업스케일 &amp; 포맷 변환기
               </h1>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100/90 text-emerald-800 border border-emerald-300/80">
-                최대 50장 일괄 변환
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-100/90 text-indigo-800 border border-indigo-300/80">
+                AI 초해상도 · 최대 50장
               </span>
             </div>
             <p className="text-[11px] text-stone-600 mt-0.5 font-medium">
-              서버 전송 없이 사진 크기(픽셀·비율·용량)와 파일 형식(JPG·PNG·WebP)을 한 번에 변환합니다.
+              서버 전송 없이 100% 브라우저에서 AI 초해상도(2~4배)·Lanczos-3 확대와 WebP·JPG·PNG 변환을 한 번에 처리합니다.
             </p>
           </div>
         </div>

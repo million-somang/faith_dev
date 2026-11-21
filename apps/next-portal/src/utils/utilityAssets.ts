@@ -34,9 +34,9 @@ export const UTILITY_VISUAL_MAP: Record<string, UtilityVisualMeta> = {
         visualBg: 'from-indigo-50 via-purple-50/80 to-pink-50',
         borderHover: 'hover:border-indigo-300',
         buttonStyle: 'bg-indigo-600 hover:bg-indigo-500 text-white',
-        shortDesc: 'SNS 권장 규격 및 픽셀·비율·용량(KB) 단위로 최대 50장의 이미지를 일괄 리사이즈 & WebP/JPG/PNG 변환',
+        shortDesc: '100% 브라우저 로컬 AI 초해상도(2~4배)·Lanczos-3 업스케일 및 SNS 규격·WebP/JPG/PNG 일괄 변환',
         guideSlug: 'image-resizer',
-        highlights: ['최대 50장 일괄 처리', '목표 용량(KB) 맞춤', '로컬 보안 처리']
+        highlights: ['AI 초해상도 2~4배', '초고속 Lanczos-3', '100% 브라우저 로컬']
     },
     'calculator': {
         image: '/images/utility/icon_calculator.png',

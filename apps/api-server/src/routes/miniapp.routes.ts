@@ -84,7 +84,7 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
             }
         }
 
-        // 이미지 크기 조정 & 일괄 변환기(image-resizer)가 DB에 없으면 자동 시딩
+        // 이미지 업스케일 & 포맷 변환기(image-resizer)가 DB에 없으면 자동 시딩
         const hasImageResizer = apps.results.some((a: any) => a.slug === 'image-resizer');
         if (!hasImageResizer) {
             try {
@@ -92,10 +92,10 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
                     INSERT INTO mini_apps (name, slug, icon_url, description, app_url, require_auth, sort_order, category, status)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `).bind(
-                    '이미지 크기 조정 & 일괄 변환기',
+                    '이미지 업스케일 & 포맷 변환기',
                     'image-resizer',
                     'fas fa-images',
-                    'SNS 권장 규격 및 픽셀, 비율, 용량(KB) 단위 최대 50장 다중 이미지 일괄 리사이즈 & WebP/JPG/PNG 변환기',
+                    '100% 브라우저 로컬 AI 초해상도(ESRGAN 2~4배) · Lanczos-3 업스케일 및 SNS 규격 · WebP/JPG/PNG 일괄 변환기',
                     '/app/image-resizer/',
                     0,
                     2,

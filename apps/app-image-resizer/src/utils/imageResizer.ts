@@ -1,5 +1,94 @@
 import JSZip from 'jszip';
-import { ResizeSettings, ImageFileItem, FitMode } from '../types/index';
+import {
+  FitMode,
+  ImageFileItem,
+  MAX_AI_LONG_EDGE,
+  MAX_LANCZOS_LONG_EDGE,
+  ResizeSettings,
+  SharpenLevel,
+  UpscaleEngine,
+} from '../types/index';
+import type {
+  LanczosWorkerRequest,
+  LanczosWorkerResponse,
+} from '../workers/lanczosUpscaler.worker';
+import { applyAdaptiveUnsharpMask, resampleImageDataLanczos3 } from './lanczosResampler';
+import { upscaleCanvasWithEsrgan } from './aiUpscaler';
+
+export interface UpscalePlan {
+  readonly targetW: number;
+  readonly targetH: number;
+  readonly effectiveScale: number;
+  readonly wasCappedForMemory: boolean;
+  readonly maxLongEdge: number;
+}
+
+/**
+ * 업스케일 모드 목표 해상도 및 브라우저 메모리 안전 상한(AI 4K / Lanczos 8K) 계산
+ */
+export function calculateUpscalePlan(
+  origW: number,
+  origH: number,
+  settings: Pick<ResizeSettings, 'upscaleEngine' | 'upscaleTarget'>
+): UpscalePlan {
+  const safeW = Math.max(1, origW);
+  const safeH = Math.max(1, origH);
+  const origLong = Math.max(safeW, safeH);
+  const maxLongEdge =
+    settings.upscaleEngine === 'ai-esrgan' ? MAX_AI_LONG_EDGE : MAX_LANCZOS_LONG_EDGE;
+
+  let rawW = safeW;
+  let rawH = safeH;
+
+  switch (settings.upscaleTarget) {
+    case '2x':
+      rawW = safeW * 2;
+      rawH = safeH * 2;
+      break;
+    case '3x':
+      rawW = safeW * 3;
+      rawH = safeH * 3;
+      break;
+    case '4x':
+      rawW = safeW * 4;
+      rawH = safeH * 4;
+      break;
+    case 'fhd': {
+      const targetLong = Math.max(origLong, 1920);
+      const ratio = targetLong / origLong;
+      rawW = Math.round(safeW * ratio);
+      rawH = Math.round(safeH * ratio);
+      break;
+    }
+    case '4k': {
+      const targetLong = Math.max(origLong, 3840);
+      const ratio = targetLong / origLong;
+      rawW = Math.round(safeW * ratio);
+      rawH = Math.round(safeH * ratio);
+      break;
+    }
+  }
+
+  let targetW = Math.max(1, rawW);
+  let targetH = Math.max(1, rawH);
+  let wasCappedForMemory = false;
+
+  const targetLong = Math.max(targetW, targetH);
+  if (targetLong > maxLongEdge) {
+    const capRatio = maxLongEdge / targetLong;
+    targetW = Math.max(1, Math.round(targetW * capRatio));
+    targetH = Math.max(1, Math.round(targetH * capRatio));
+    wasCappedForMemory = true;
+  }
+
+  return {
+    targetW,
+    targetH,
+    effectiveScale: Math.max(targetW / safeW, targetH / safeH),
+    wasCappedForMemory,
+    maxLongEdge,
+  };
+}
 
 /**
  * 이미지 파일의 너비, 높이 및 프리뷰 URL 획득
@@ -35,6 +124,13 @@ export function calculateTargetSize(
   let targetH = settings.height;
 
   switch (settings.unit) {
+    case 'upscale': {
+      const plan = calculateUpscalePlan(origW, origH, settings);
+      targetW = plan.targetW;
+      targetH = plan.targetH;
+      break;
+    }
+
     case 'pixel':
       targetW = Math.max(1, Math.round(settings.width));
       targetH = Math.max(1, Math.round(settings.height));
@@ -139,13 +235,166 @@ function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality: numb
   });
 }
 
+interface PendingWorkerJob {
+  resolve: (data: { buffer: ArrayBuffer; width: number; height: number }) => void;
+  reject: (err: Error) => void;
+  onProgress?: (percent: number, statusText: string) => void;
+}
+
+let lanczosWorker: Worker | null = null;
+let workerJobSeq = 0;
+const pendingWorkerJobs = new Map<number, PendingWorkerJob>();
+
+function getOrCreateLanczosWorker(): Worker | null {
+  if (typeof Worker === 'undefined') return null;
+  if (!lanczosWorker) {
+    try {
+      lanczosWorker = new Worker(
+        new URL('../workers/lanczosUpscaler.worker.ts', import.meta.url),
+        { type: 'module' }
+      );
+      lanczosWorker.onmessage = (event: MessageEvent<LanczosWorkerResponse>) => {
+        const msg = event.data;
+        const job = pendingWorkerJobs.get(msg.id);
+        if (!job) return;
+        if (msg.type === 'progress') {
+          if (job.onProgress) {
+            job.onProgress(msg.percent, `Lanczos-3 정밀 보간 중 (${msg.percent}%)`);
+          }
+          return;
+        }
+        pendingWorkerJobs.delete(msg.id);
+        if (msg.type === 'done') {
+          job.resolve({ buffer: msg.buffer, width: msg.width, height: msg.height });
+        } else {
+          job.reject(new Error(msg.message));
+        }
+      };
+      lanczosWorker.onerror = () => {
+        for (const [id, job] of pendingWorkerJobs.entries()) {
+          pendingWorkerJobs.delete(id);
+          job.reject(new Error('Web Worker 실행 중 오류가 발생했습니다.'));
+        }
+        lanczosWorker?.terminate();
+        lanczosWorker = null;
+      };
+    } catch {
+      return null;
+    }
+  }
+  return lanczosWorker;
+}
+
+async function upscaleCanvasWithLanczos(
+  img: HTMLImageElement,
+  targetW: number,
+  targetH: number,
+  sharpenLevel: SharpenLevel,
+  onProgress?: (percent: number, statusText: string) => void
+): Promise<HTMLCanvasElement> {
+  const origW = img.naturalWidth || img.width;
+  const origH = img.naturalHeight || img.height;
+
+  const srcCanvas = document.createElement('canvas');
+  srcCanvas.width = origW;
+  srcCanvas.height = origH;
+  const srcCtx = srcCanvas.getContext('2d');
+  if (!srcCtx) throw new Error('원본 캔버스 컨텍스트를 생성할 수 없습니다.');
+  srcCtx.drawImage(img, 0, 0, origW, origH);
+  const srcImgData = srcCtx.getImageData(0, 0, origW, origH);
+
+  let outPixels: Uint8ClampedArray;
+  const worker = getOrCreateLanczosWorker();
+
+  if (worker) {
+    try {
+      if (onProgress) onProgress(10, '초고속 Lanczos-3 워커 시작...');
+      const jobId = ++workerJobSeq;
+      const transferCopy = new Uint8ClampedArray(srcImgData.data);
+      const result = await new Promise<{ buffer: ArrayBuffer; width: number; height: number }>(
+        (resolve, reject) => {
+          pendingWorkerJobs.set(jobId, { resolve, reject, onProgress });
+          const payload: LanczosWorkerRequest = {
+            id: jobId,
+            buffer: transferCopy.buffer,
+            srcW: origW,
+            srcH: origH,
+            dstW: targetW,
+            dstH: targetH,
+            sharpenLevel,
+          };
+          worker.postMessage(payload, [payload.buffer]);
+        }
+      );
+      outPixels = new Uint8ClampedArray(result.buffer);
+    } catch {
+      const resampled = resampleImageDataLanczos3(
+        srcImgData.data,
+        origW,
+        origH,
+        targetW,
+        targetH,
+        (pct) => {
+          if (onProgress) onProgress(pct, `Lanczos-3 정밀 보간 중 (${pct}%)`);
+        }
+      );
+      outPixels = applyAdaptiveUnsharpMask(resampled, targetW, targetH, sharpenLevel);
+    }
+  } else {
+    const resampled = resampleImageDataLanczos3(
+      srcImgData.data,
+      origW,
+      origH,
+      targetW,
+      targetH,
+      (pct) => {
+        if (onProgress) onProgress(pct, `Lanczos-3 정밀 보간 중 (${pct}%)`);
+      }
+    );
+    outPixels = applyAdaptiveUnsharpMask(resampled, targetW, targetH, sharpenLevel);
+  }
+
+  const outCanvas = document.createElement('canvas');
+  outCanvas.width = targetW;
+  outCanvas.height = targetH;
+  const outCtx = outCanvas.getContext('2d');
+  if (!outCtx) throw new Error('출력 캔버스 컨텍스트를 생성할 수 없습니다.');
+  outCtx.putImageData(new ImageData(new Uint8ClampedArray(outPixels), targetW, targetH), 0, 0);
+  return outCanvas;
+}
+
+function flattenTransparentToWhiteIfJpeg(
+  canvas: HTMLCanvasElement,
+  mimeType: string
+): HTMLCanvasElement {
+  if (mimeType !== 'image/jpeg') return canvas;
+  const flattened = document.createElement('canvas');
+  flattened.width = canvas.width;
+  flattened.height = canvas.height;
+  const ctx = flattened.getContext('2d');
+  if (!ctx) return canvas;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, flattened.width, flattened.height);
+  ctx.drawImage(canvas, 0, 0);
+  return flattened;
+}
+
 /**
- * 개별 이미지 리사이징 실행
+ * 개별 이미지 리사이징 및 CSR 업스케일 실행
  */
 export async function resizeSingleImage(
   item: ImageFileItem,
-  settings: ResizeSettings
-): Promise<{ blob: Blob; url: string; width: number; height: number; size: number }> {
+  settings: ResizeSettings,
+  onProgress?: (percent: number, statusText: string) => void
+): Promise<{
+  blob: Blob;
+  url: string;
+  width: number;
+  height: number;
+  size: number;
+  wasCappedForMemory: boolean;
+  usedEngine: UpscaleEngine | 'canvas';
+}> {
   return new Promise((resolve, reject) => {
     const sourceUrl = URL.createObjectURL(item.file);
     const img = new Image();
@@ -153,7 +402,6 @@ export async function resizeSingleImage(
       try {
         const origW = img.naturalWidth || img.width;
         const origH = img.naturalHeight || img.height;
-        const { targetW, targetH } = calculateTargetSize(origW, origH, settings);
 
         // 출력 MIME 타입 결정
         let mimeType = item.file.type || 'image/jpeg';
@@ -161,45 +409,101 @@ export async function resizeSingleImage(
           mimeType = settings.format;
         }
 
+        if (settings.unit === 'upscale') {
+          const plan = calculateUpscalePlan(origW, origH, settings);
+          let outCanvas: HTMLCanvasElement;
+          let wasCapped = plan.wasCappedForMemory;
+          let usedEngine: UpscaleEngine = settings.upscaleEngine;
+
+          if (settings.upscaleEngine === 'ai-esrgan') {
+            const aiResult = await upscaleCanvasWithEsrgan(
+              img,
+              plan.targetW,
+              plan.targetH,
+              settings.sharpenLevel,
+              onProgress
+            );
+            outCanvas = aiResult.canvas;
+            wasCapped = wasCapped || aiResult.wasCappedForMemory;
+            usedEngine = 'ai-esrgan';
+          } else {
+            outCanvas = await upscaleCanvasWithLanczos(
+              img,
+              plan.targetW,
+              plan.targetH,
+              settings.sharpenLevel,
+              onProgress
+            );
+            usedEngine = 'lanczos3';
+          }
+
+          const finalCanvas = flattenTransparentToWhiteIfJpeg(outCanvas, mimeType);
+          const blob = await canvasToBlob(finalCanvas, mimeType, settings.quality);
+          URL.revokeObjectURL(sourceUrl);
+          const url = URL.createObjectURL(blob);
+          resolve({
+            blob,
+            url,
+            width: finalCanvas.width,
+            height: finalCanvas.height,
+            size: blob.size,
+            wasCappedForMemory: wasCapped,
+            usedEngine,
+          });
+          return;
+        }
+
+        const { targetW, targetH } = calculateTargetSize(origW, origH, settings);
         let canvas = drawImageToCanvas(img, targetW, targetH, settings.fitMode);
         let blob: Blob;
 
         if (settings.unit === 'target_kb') {
           const targetBytes = settings.targetKb * 1024;
-          // 이분 탐색(Binary Search)으로 목표 용량에 가장 근접한 품질 및 스케일 탐색
           let minQ = 0.1;
           let maxQ = 0.95;
           let bestBlob: Blob | null = null;
           let currentScale = 1.0;
 
-          // 1단계: 품질 조정 이분 탐색
           for (let i = 0; i < 5; i++) {
             const midQ = (minQ + maxQ) / 2;
-            const testBlob = await canvasToBlob(canvas, mimeType, midQ);
+            const testBlob = await canvasToBlob(
+              flattenTransparentToWhiteIfJpeg(canvas, mimeType),
+              mimeType,
+              midQ
+            );
             if (testBlob.size <= targetBytes) {
               bestBlob = testBlob;
-              minQ = midQ; // 더 높은 품질 시도
+              minQ = midQ;
             } else {
               maxQ = midQ;
             }
           }
 
-          // 2단계: 최저 품질로도 목표 용량 초과 시 해상도 축소
           if (!bestBlob || bestBlob.size > targetBytes) {
             for (let step = 0; step < 4; step++) {
               currentScale *= 0.75;
               const scaledW = Math.max(100, Math.round(targetW * currentScale));
               const scaledH = Math.max(100, Math.round(targetH * currentScale));
               canvas = drawImageToCanvas(img, scaledW, scaledH, settings.fitMode);
-              const testBlob = await canvasToBlob(canvas, mimeType, 0.75);
+              const testBlob = await canvasToBlob(
+                flattenTransparentToWhiteIfJpeg(canvas, mimeType),
+                mimeType,
+                0.75
+              );
               bestBlob = testBlob;
               if (testBlob.size <= targetBytes) break;
             }
           }
 
-          blob = bestBlob || (await canvasToBlob(canvas, mimeType, 0.5));
+          blob =
+            bestBlob ||
+            (await canvasToBlob(flattenTransparentToWhiteIfJpeg(canvas, mimeType), mimeType, 0.5));
         } else {
-          blob = await canvasToBlob(canvas, mimeType, settings.quality);
+          blob = await canvasToBlob(
+            flattenTransparentToWhiteIfJpeg(canvas, mimeType),
+            mimeType,
+            settings.quality
+          );
         }
 
         URL.revokeObjectURL(sourceUrl);
@@ -210,6 +514,8 @@ export async function resizeSingleImage(
           width: canvas.width,
           height: canvas.height,
           size: blob.size,
+          wasCappedForMemory: false,
+          usedEngine: 'canvas',
         });
       } catch (err) {
         URL.revokeObjectURL(sourceUrl);
@@ -230,13 +536,18 @@ export async function resizeSingleImage(
 export function getOutputFilename(originalName: string, settings: ResizeSettings): string {
   const lastDot = originalName.lastIndexOf('.');
   const baseName = lastDot > 0 ? originalName.slice(0, lastDot) : originalName;
-  let ext = lastDot > 0 ? originalName.slice(lastDot + 1).toLowerCase() : 'jpg';
+  let ext = lastDot > 0 ? originalName.slice(lastDot + 1).toLowerCase() : 'png';
 
   if (settings.format === 'image/webp') ext = 'webp';
   else if (settings.format === 'image/jpeg') ext = 'jpg';
   else if (settings.format === 'image/png') ext = 'png';
 
-  const suffix = settings.filenameSuffix || '_resized';
+  const defaultSuffix =
+    settings.unit === 'upscale' ? `_upscaled_${settings.upscaleTarget}` : '_resized';
+  const suffix =
+    settings.filenameSuffix && settings.filenameSuffix !== '_resized'
+      ? settings.filenameSuffix
+      : defaultSuffix;
   return `${baseName}${suffix}.${ext}`;
 }
 
@@ -423,48 +734,68 @@ export function formatBytes(bytes: number, decimals = 1): string {
 }
 
 /**
- * 원클릭 테스트 및 마케팅 캡처용 고해상도 샘플 이미지 생성
+ * 원클릭 업스케일 체감 테스트용 저해상도(320×180) 디테일 샘플 이미지 생성
  */
 export function createSampleImageFile(): File {
   const canvas = document.createElement('canvas');
-  canvas.width = 1920;
-  canvas.height = 1080;
+  canvas.width = 320;
+  canvas.height = 180;
   const ctx = canvas.getContext('2d')!;
 
-  // 1. 프리미엄 인디고-바이올렛 그라데이션 배경
-  const grad = ctx.createLinearGradient(0, 0, 1920, 1080);
-  grad.addColorStop(0, '#312E81');
+  const grad = ctx.createLinearGradient(0, 0, 320, 180);
+  grad.addColorStop(0, '#1E1B4B');
   grad.addColorStop(0.5, '#4338CA');
   grad.addColorStop(1, '#6366F1');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 1920, 1080);
+  ctx.fillRect(0, 0, 320, 180);
 
-  // 2. 기하학 데코레이션 원형
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  // 정밀 격자 & 곡선 디테일
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= 320; x += 20) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 180);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= 180; y += 20) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(320, y);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
   ctx.beginPath();
-  ctx.arc(300, 200, 250, 0, Math.PI * 2);
+  ctx.arc(62, 52, 34, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.beginPath();
-  ctx.arc(1600, 800, 350, 0, Math.PI * 2);
+  ctx.arc(266, 134, 48, 0, Math.PI * 2);
   ctx.fill();
 
-  // 3. 타이포그래피
+  // 선명한 대각선 엣지 검증 링
+  ctx.strokeStyle = '#A5B4FC';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(62, 52, 18, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 타이포그래피
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 72px sans-serif';
+  ctx.font = 'bold 17px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('VERA Image Resizer Sample', 960, 480);
+  ctx.fillText('VeraNex AI Upscale Test', 160, 82);
 
-  ctx.font = '36px sans-serif';
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-  ctx.fillText('1920 × 1080 High-Resolution Original Demo', 960, 560);
-
-  ctx.font = '28px monospace';
+  ctx.font = 'bold 12px monospace';
   ctx.fillStyle = '#FCD34D';
-  ctx.fillText('Ready for Zero-Loss Client-Side Batch Resizing', 960, 640);
+  ctx.fillText('320 × 180 Low-Res Original', 160, 108);
 
-  // DataURL ➔ Blob ➔ File
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.fillText('2x / 4x Super Resolution Sample', 160, 128);
+
+  const dataUrl = canvas.toDataURL('image/png');
   const arr = dataUrl.split(',');
   const mime = arr[0]!.match(/:(.*?);/)![1];
   const bstr = atob(arr[1]!);
@@ -474,5 +805,5 @@ export function createSampleImageFile(): File {
     u8arr[n] = bstr.charCodeAt(n);
   }
   const blob = new Blob([u8arr], { type: mime });
-  return new File([blob], 'sample_veranex_1920x1080.jpg', { type: 'image/jpeg' });
+  return new File([blob], 'sample_veranex_320x180.png', { type: 'image/png' });
 }

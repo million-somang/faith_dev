@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import {
-  ResizeSettings,
+  ImageFileItem,
   OutputFormat,
-  SNS_PRESETS,
   PresetOption,
+  ResizeSettings,
+  SNS_PRESETS,
+  SharpenLevel,
+  UpscaleTargetMode,
 } from '../types/index';
+import { calculateUpscalePlan } from '../utils/imageResizer';
 
 interface ResizeOptionsPanelProps {
   settings: ResizeSettings;
+  sampleItem?: ImageFileItem;
   onChange: (updated: Partial<ResizeSettings>) => void;
   itemCount: number;
   isProcessing: boolean;
@@ -52,8 +57,30 @@ const FORMAT_CARDS: {
   },
 ];
 
+const UPSCALE_TARGETS: readonly {
+  readonly key: UpscaleTargetMode;
+  readonly label: string;
+  readonly sub: string;
+}[] = [
+  { key: '2x', label: '2× 확대', sub: '면적 4배' },
+  { key: '3x', label: '3× 확대', sub: '고정밀 3배' },
+  { key: '4x', label: '4× 확대', sub: '초고배율 16배' },
+  { key: 'fhd', label: 'FHD 맞춤', sub: '긴 변 1920px' },
+  { key: '4k', label: '4K 맞춤', sub: '긴 변 3840px' },
+];
+
+const SHARPEN_OPTIONS: readonly {
+  readonly key: SharpenLevel;
+  readonly label: string;
+}[] = [
+  { key: 'none', label: '보정 안 함' },
+  { key: 'natural', label: '자연스럽게 (권장)' },
+  { key: 'crisp', label: '또렷하게 강조' },
+];
+
 export default function ResizeOptionsPanel({
   settings,
+  sampleItem,
   onChange,
   itemCount,
   isProcessing,
@@ -64,6 +91,11 @@ export default function ResizeOptionsPanel({
 
   // '원본 크기 그대로(100%)' 상태 판별
   const isKeepOriginalSize = settings.unit === 'percent' && settings.percent === 100;
+  const isUpscaleMode = settings.unit === 'upscale';
+
+  const previewPlan = sampleItem
+    ? calculateUpscalePlan(sampleItem.originalWidth, sampleItem.originalHeight, settings)
+    : null;
 
   const handleSelectKeepOriginalSize = () => {
     onChange({ unit: 'percent', percent: 100 });
@@ -204,29 +236,70 @@ export default function ResizeOptionsPanel({
           <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center">
             2
           </span>
-          <span>이미지 크기(해상도)는 어떻게 맞출까요?</span>
+          <span>업스케일링 · 해상도 조절 방식 선택</span>
         </label>
 
-        {/* 4대 크기 조절 모드 버튼 */}
+        {/* 주력 모드: 고화질 업스케일 (최우선 기본 선택 카드) */}
+        <button
+          type="button"
+          onClick={() => onChange({ unit: 'upscale' })}
+          className={`w-full p-3.5 rounded-2xl text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+            isUpscaleMode
+              ? 'bg-gradient-to-r from-indigo-50 via-white to-violet-50 text-indigo-950 border-2 border-indigo-600 shadow-xs'
+              : 'bg-[#FAF8F5] text-stone-700 border border-[#EBE6DD] hover:bg-stone-100'
+          }`}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm ${
+                isUpscaleMode
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-white text-indigo-600 border border-[#EBE6DD]'
+              }`}
+            >
+              <i className="fas fa-wand-magic-sparkles"></i>
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs sm:text-sm font-black">
+                  고화질 업스케일링 (2× · 3× · 4× · FHD · 4K)
+                </span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white">
+                  CSR 추천
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-500 mt-0.5">
+                AI 초해상도(ESRGAN) 또는 초고속 정밀 보간(Lanczos-3)으로 흐린 사진을 선명하게 확대합니다.
+              </p>
+            </div>
+          </div>
+          {isUpscaleMode && (
+            <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center shrink-0">
+              <i className="fas fa-check"></i>
+            </span>
+          )}
+        </button>
+
+        {/* 보조 리사이즈 4대 모드 버튼 */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <button
             type="button"
             onClick={handleSelectKeepOriginalSize}
-            className={`py-3 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+            className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
               isKeepOriginalSize
                 ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
                 : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
             }`}
           >
             <i className={`fas fa-expand text-sm ${isKeepOriginalSize ? 'text-indigo-600' : 'text-stone-400'}`}></i>
-            <span>원본 크기 그대로</span>
-            <span className="text-[10px] font-normal text-stone-500">크기 변경 안 함</span>
+            <span>포맷만 변환</span>
+            <span className="text-[10px] font-normal text-stone-500">원본 크기 유지</span>
           </button>
 
           <button
             type="button"
             onClick={handleSelectPercentScale}
-            className={`py-3 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+            className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
               settings.unit === 'percent' && settings.percent !== 100
                 ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
                 : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
@@ -238,13 +311,13 @@ export default function ResizeOptionsPanel({
               }`}
             ></i>
             <span>비율로 축소 (%)</span>
-            <span className="text-[10px] font-normal text-stone-500">50% · 75% 축소</span>
+            <span className="text-[10px] font-normal text-stone-500">25% · 50% · 75%</span>
           </button>
 
           <button
             type="button"
             onClick={() => onChange({ unit: 'pixel' })}
-            className={`py-3 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+            className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
               settings.unit === 'pixel'
                 ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
                 : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
@@ -258,7 +331,7 @@ export default function ResizeOptionsPanel({
           <button
             type="button"
             onClick={() => onChange({ unit: 'target_kb' })}
-            className={`py-3 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+            className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
               settings.unit === 'target_kb'
                 ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
                 : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
@@ -276,6 +349,135 @@ export default function ResizeOptionsPanel({
 
         {/* 선택된 크기 모드별 세부 설정 박스 */}
         <div className="bg-indigo-50/40 rounded-2xl p-4 sm:p-5 border border-indigo-100 space-y-4">
+          {isUpscaleMode && (
+            <div className="space-y-4">
+              {/* CSR 엔진 선택 */}
+              <div className="space-y-2">
+                <span className="block text-xs font-black text-indigo-950">
+                  CSR 업스케일 엔진 선택 (100% 브라우저 로컬)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => onChange({ upscaleEngine: 'ai-esrgan' })}
+                    className={`p-3 rounded-xl text-left transition-all cursor-pointer border ${
+                      settings.upscaleEngine === 'ai-esrgan'
+                        ? 'bg-white border-2 border-indigo-600 shadow-xs'
+                        : 'bg-white/75 border-indigo-100 hover:bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs font-black text-[#2D2A26] flex items-center gap-1.5">
+                        <i className="fas fa-microchip text-indigo-600"></i>
+                        AI 초해상도 (ESRGAN)
+                      </span>
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        최대 4K
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 leading-snug">
+                      딥러닝 신경망으로 2~4배 디테일 복원 (첫 실행 시 경량 모델 로드 · WebGL GPU 가속)
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onChange({ upscaleEngine: 'lanczos3' })}
+                    className={`p-3 rounded-xl text-left transition-all cursor-pointer border ${
+                      settings.upscaleEngine === 'lanczos3'
+                        ? 'bg-white border-2 border-indigo-600 shadow-xs'
+                        : 'bg-white/75 border-indigo-100 hover:bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs font-black text-[#2D2A26] flex items-center gap-1.5">
+                        <i className="fas fa-bolt text-emerald-600"></i>
+                        초고속 정밀 보간 (Lanczos-3)
+                      </span>
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        즉시 · 최대 8K
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 leading-snug">
+                      모델 다운로드 0MB · Web Worker 정밀 리샘플링 (문서·스크린샷·대량 배치 추천)
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* 목표 확대 배율 · 해상도 */}
+              <div className="space-y-2">
+                <span className="block text-xs font-black text-indigo-950">
+                  목표 배율 · 해상도 선택
+                </span>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {UPSCALE_TARGETS.map((target) => {
+                    const active = settings.upscaleTarget === target.key;
+                    return (
+                      <button
+                        key={target.key}
+                        type="button"
+                        onClick={() => onChange({ upscaleTarget: target.key })}
+                        className={`py-2 px-2 rounded-xl text-center border cursor-pointer transition-all ${
+                          active
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : 'bg-white text-[#2D2A26] border-indigo-200 hover:bg-indigo-50'
+                        }`}
+                      >
+                        <div className="text-xs font-black">{target.label}</div>
+                        <div
+                          className={`text-[10px] mt-0.5 ${
+                            active ? 'text-indigo-100' : 'text-stone-500'
+                          }`}
+                        >
+                          {target.sub}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 선명도 보정 + 예상 결과 해상도 */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1 border-t border-indigo-100">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-black text-indigo-950 mr-1">
+                    엣지 선명화:
+                  </span>
+                  {SHARPEN_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => onChange({ sharpenLevel: opt.key })}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer transition-colors ${
+                        settings.sharpenLevel === opt.key
+                          ? 'bg-[#2D2A26] text-white border-[#2D2A26]'
+                          : 'bg-white text-stone-600 border-indigo-200 hover:bg-indigo-50'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {sampleItem && previewPlan && (
+                  <div className="text-[11px] font-mono font-bold text-indigo-900 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 flex items-center gap-1.5 shrink-0">
+                    <span className="text-stone-500">예상:</span>
+                    <span>
+                      {sampleItem.originalWidth}×{sampleItem.originalHeight} ➔ {previewPlan.targetW}×
+                      {previewPlan.targetH}
+                    </span>
+                    {previewPlan.wasCappedForMemory && (
+                      <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px]">
+                        4K 안전상한
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {isKeepOriginalSize && (
             <div className="flex items-center gap-3 text-xs sm:text-sm text-indigo-950 font-bold">
               <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
@@ -541,12 +743,20 @@ export default function ResizeOptionsPanel({
           {isProcessing ? (
             <>
               <i className="fas fa-spinner fa-spin"></i>
-              <span>이미지 변환 중입니다... 잠시만 기다려 주세요</span>
+              <span>
+                {isUpscaleMode
+                  ? '브라우저에서 고화질 업스케일 실행 중... 잠시만 기다려 주세요'
+                  : '이미지 변환 중입니다... 잠시만 기다려 주세요'}
+              </span>
             </>
           ) : (
             <>
               <i className="fas fa-wand-magic-sparkles text-amber-300"></i>
-              <span>지금 변환 시작하기 ({itemCount}장)</span>
+              <span>
+                {isUpscaleMode
+                  ? `지금 고화질 업스케일 시작하기 (${itemCount}장)`
+                  : `지금 변환 시작하기 (${itemCount}장)`}
+              </span>
               <i className="fas fa-arrow-right"></i>
             </>
           )}

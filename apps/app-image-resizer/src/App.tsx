@@ -1,294 +1,71 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ResizeSettings, ImageFileItem } from './types/index';
-import {
-  loadImageDimensions,
-  resizeSingleImage,
-  getOutputFilename,
-  formatBytes,
-  supportsDirectoryPicker,
-  saveAllToSingleDirectory,
-  downloadAllAsSingleZip,
-} from './utils/imageResizer';
+import React, { useState } from 'react';
+import { formatBytes, supportsDirectoryPicker } from './utils/imageResizer';
+import { useImageUpscaler, type WizardStep } from './hooks/useImageUpscaler';
 import SplashScreen from './components/SplashScreen';
 import Header from './components/Header';
 import DropZone from './components/DropZone';
 import ResizeOptionsPanel from './components/ResizeOptionsPanel';
 import { ImageItemCard } from './components/ImageItemCard';
+import { BeforeAfterComparePanel } from './components/BeforeAfterCompareModal';
 import { HowToGuide } from './components/HowToGuide';
 import { FaqSection } from './components/FaqSection';
 
-type WizardStep = 1 | 2 | 3;
-
-const WIZARD_STEPS: { step: WizardStep; title: string; subtitle: string }[] = [
+const WIZARD_STEPS: readonly {
+  readonly step: WizardStep;
+  readonly title: string;
+  readonly subtitle: string;
+}[] = [
   { step: 1, title: '이미지 올리기', subtitle: '최대 50장 사진 선택' },
-  { step: 2, title: '크기 · 파일형식 선택', subtitle: 'JPG/PNG/WebP · 해상도' },
-  { step: 3, title: '변환 결과 · 파일 저장', subtitle: '파일 그대로 즉시 저장' },
+  { step: 2, title: '업스케일 · 포맷 선택', subtitle: 'AI 초해상도 · Lanczos-3' },
+  { step: 3, title: '비교 · 파일 저장', subtitle: 'Before/After 확인 · 저장' },
 ];
-
-const DEFAULT_SETTINGS: ResizeSettings = {
-  unit: 'percent',
-  width: 1200,
-  height: 630,
-  percent: 100,
-  longestSide: 1200,
-  targetKb: 500,
-  fitMode: 'cover',
-  lockAspectRatio: true,
-  preventUpscale: false,
-  format: 'original',
-  quality: 0.85,
-  filenameSuffix: '_resized',
-};
 
 export const App: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
-  const [activeTab, setActiveTab] = useState<'app' | 'guide' | 'faq'>('app');
-  const [currentStep, setCurrentStep] = useState<WizardStep>(1);
-  const [settings, setSettings] = useState<ResizeSettings>(DEFAULT_SETTINGS);
-  const [items, setItems] = useState<ImageFileItem[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isSavingAll, setIsSavingAll] = useState(false);
-  const [isZipping, setIsZipping] = useState(false);
-  const [saveProgress, setSaveProgress] = useState<{ current: number; total: number } | null>(null);
-  const [saveNotice, setSaveNotice] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
-  const itemsRef = useRef<ImageFileItem[]>([]);
+  const {
+    activeTab,
+    setActiveTab,
+    currentStep,
+    settings,
+    items,
+    doneItems,
+    activeCompareItem,
+    setCompareItemId,
+    isProcessing,
+    isSavingAll,
+    isZipping,
+    saveProgress,
+    saveNotice,
+    handleUpdateSettings,
+    handleGoToStep,
+    handleFilesAdded,
+    handleRemoveItem,
+    handleClearAll,
+    handleStartProcess,
+    handleDownloadSingle,
+    handleDownloadAllFiles,
+    handleDownloadZipAll,
+  } = useImageUpscaler();
 
-  useEffect(() => {
-    itemsRef.current = items;
-  }, [items]);
-
-  const handleUpdateSettings = (updated: Partial<ResizeSettings>) => {
-    setSettings((prev) => ({ ...prev, ...updated }));
-  };
-
-  // 컴포넌트 언마운트 시에만 ObjectURL 정리
-  useEffect(() => {
-    return () => {
-      itemsRef.current.forEach((item) => {
-        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
-        if (item.resizedUrl) URL.revokeObjectURL(item.resizedUrl);
-      });
-    };
-  }, []);
-
-  const handleGoToStep = (nextStep: WizardStep) => {
-    if (nextStep > 1 && items.length === 0) {
-      alert('먼저 변환할 이미지를 1장 이상 올려주세요.');
-      return;
-    }
-    setCurrentStep(nextStep);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // 파일 추가 핸들러
-  const handleFilesAdded = async (newFiles: File[]) => {
-    const remainingSlots = 50 - items.length;
-    if (remainingSlots <= 0) {
-      alert('최대 50장까지 한 번에 등록할 수 있습니다.');
-      return;
-    }
-
-    const filesToProcess = newFiles.slice(0, remainingSlots);
-
-    const loadedItems: ImageFileItem[] = [];
-    for (const file of filesToProcess) {
-      try {
-        const { width, height, previewUrl } = await loadImageDimensions(file);
-        loadedItems.push({
-          id: `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          file,
-          name: file.name,
-          originalWidth: width,
-          originalHeight: height,
-          originalSize: file.size,
-          previewUrl,
-          status: 'idle',
-          progress: 0,
-        });
-      } catch (err) {
-        console.error('Failed to load image:', file.name, err);
-      }
-    }
-
-    setItems((prev) => [...prev, ...loadedItems]);
-  };
-
-  // 개별 파일 삭제
-  const handleRemoveItem = (id: string) => {
-    setItems((prev) => {
-      const target = prev.find((it) => it.id === id);
-      if (target) {
-        if (target.previewUrl) URL.revokeObjectURL(target.previewUrl);
-        if (target.resizedUrl) URL.revokeObjectURL(target.resizedUrl);
-      }
-      return prev.filter((it) => it.id !== id);
-    });
-  };
-
-  // 전체 비우기
-  const handleClearAll = () => {
-    if (isProcessing) return;
-    items.forEach((it) => {
-      if (it.previewUrl) URL.revokeObjectURL(it.previewUrl);
-      if (it.resizedUrl) URL.revokeObjectURL(it.resizedUrl);
-    });
-    setSaveNotice(null);
-    setItems([]);
-    setCurrentStep(1);
-  };
-
-  // 일괄 리사이즈 및 포맷 변환 실행 -> 완료 후 자동으로 Step 3(결과 화면)로 이동!
-  const handleStartProcess = async () => {
-    if (isProcessing || items.length === 0) return;
-    setSaveNotice(null);
-    setIsProcessing(true);
-
-    const snapshot = [...items];
-
-    for (let i = 0; i < snapshot.length; i++) {
-      const current = snapshot[i];
-      setItems((prev) =>
-        prev.map((it) =>
-          it.id === current.id ? { ...it, status: 'processing', progress: 50 } : it
-        )
-      );
-
-      try {
-        const result = await resizeSingleImage(current, settings);
-        setItems((prev) =>
-          prev.map((it) =>
-            it.id === current.id
-              ? {
-                  ...it,
-                  status: 'done',
-                  progress: 100,
-                  resizedBlob: result.blob,
-                  resizedUrl: result.url,
-                  resizedWidth: result.width,
-                  resizedHeight: result.height,
-                  resizedSize: result.size,
-                  errorMessage: undefined,
-                }
-              : it
-          )
-        );
-      } catch (err: any) {
-        setItems((prev) =>
-          prev.map((it) =>
-            it.id === current.id
-              ? {
-                  ...it,
-                  status: 'error',
-                  progress: 0,
-                  errorMessage: err?.message || '변환 오류가 발생했습니다.',
-                }
-              : it
-          )
-        );
-      }
-    }
-
-    setIsProcessing(false);
-    setCurrentStep(3);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // 개별 이미지 파일 그대로 다운로드
-  const handleDownloadSingle = (item: ImageFileItem) => {
-    if (!item.resizedBlob) return;
-    const filename = getOutputFilename(item.name, settings);
-    const downloadUrl = URL.createObjectURL(item.resizedBlob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(downloadUrl), 4000);
-  };
-
-  // 폴더 1개만 선택하여 변환된 이미지 파일 전체 한꺼번에 저장 (미지원 브라우저는 단일 ZIP 폴백)
-  const handleDownloadAllFiles = async () => {
-    if (isSavingAll || isZipping) return;
-    const doneItems = items.filter((it) => it.status === 'done' && it.resizedBlob);
-    if (doneItems.length === 0) return;
-
-    if (doneItems.length === 1 && !supportsDirectoryPicker() && doneItems[0]) {
-      handleDownloadSingle(doneItems[0]);
-      return;
-    }
-
-    setIsSavingAll(true);
-    setSaveNotice(null);
-    setSaveProgress({ current: 0, total: doneItems.length });
-    try {
-      const result = await saveAllToSingleDirectory(doneItems, settings, (saved, total) => {
-        setSaveProgress({ current: saved, total });
-      });
-
-      if (result.status === 'saved') {
-        setSaveNotice({
-          type: 'success',
-          text: `선택한 "${result.folderName}" 폴더에 ${result.count}장의 이미지가 한꺼번에 저장되었습니다.`,
-        });
-      } else if (result.status === 'unsupported') {
-        await downloadAllAsSingleZip(doneItems, settings);
-        setSaveNotice({
-          type: 'info',
-          text: `현재 브라우저는 폴더 직접 저장을 지원하지 않아 ${doneItems.length}장을 ZIP 파일 1개로 묶어 저장했습니다.`,
-        });
-      }
-    } catch {
-      setSaveNotice({
-        type: 'error',
-        text: '폴더 저장 중 오류가 발생했습니다. 폴더 쓰기 권한을 확인하거나 아래 ZIP 저장을 이용해 주세요.',
-      });
-    } finally {
-      setIsSavingAll(false);
-      setSaveProgress(null);
-    }
-  };
-
-  // 단일 ZIP 파일(1개)로 묶어 저장
-  const handleDownloadZipAll = async () => {
-    if (isSavingAll || isZipping) return;
-    const doneItems = items.filter((it) => it.status === 'done' && it.resizedBlob);
-    if (doneItems.length === 0) return;
-
-    setIsZipping(true);
-    setSaveNotice(null);
-    try {
-      const count = await downloadAllAsSingleZip(doneItems, settings);
-      setSaveNotice({
-        type: 'info',
-        text: `변환된 이미지 ${count}장이 ZIP 파일 1개로 저장되었습니다.`,
-      });
-    } catch {
-      setSaveNotice({
-        type: 'error',
-        text: 'ZIP 압축 저장 중 오류가 발생했습니다.',
-      });
-    } finally {
-      setIsZipping(false);
-    }
-  };
-
-  const doneCount = items.filter((it) => it.status === 'done').length;
+  const doneCount = doneItems.length;
   const totalOriginalSize = items.reduce((sum, it) => sum + (it.originalSize || 0), 0);
   const totalResizedSize = items
     .filter((it) => it.status === 'done' && it.resizedSize)
     .reduce((sum, it) => sum + (it.resizedSize || 0), 0);
+
+  const progressWidthClass =
+    currentStep === 1 ? 'w-0' : currentStep === 2 ? 'w-1/2' : 'w-full';
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#2D2A26] flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
       {/* 4초 스플래시 화면 */}
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
 
-      <div className="max-w-3xl w-full mx-auto px-3 sm:px-6 pt-4 flex-1 flex flex-col">
+      <div className="max-w-3xl lg:max-w-5xl w-full mx-auto px-3 sm:px-6 pt-4 flex-1 flex flex-col">
         {/* Zone 1: 상단 샌드 베이지 헤더 & 메뉴 탭 */}
         <Header activeTab={activeTab} onChangeTab={setActiveTab} />
 
-        {/* 메인 콘텐츠 영역 */}
+        {/* 메인 콘텐츠 영역 (내부 중첩 스크롤 금지 -> 브라우저 단일 스크롤 흐름) */}
         <main className="flex-1 pb-10 space-y-5">
           {activeTab === 'app' && (
             <>
@@ -296,10 +73,7 @@ export const App: React.FC = () => {
               <div className="relative px-3 sm:px-8 py-3.5 bg-gradient-to-r from-indigo-50/70 via-white to-emerald-50/60 rounded-2xl border border-indigo-100/90 shadow-2xs">
                 <div className="absolute top-7 left-[18%] right-[18%] h-1 bg-[#E5E0D5] rounded-full overflow-hidden pointer-events-none">
                   <div
-                    className="h-full bg-indigo-600 transition-all duration-300"
-                    style={{
-                      width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%',
-                    }}
+                    className={`h-full bg-indigo-600 transition-all duration-300 ${progressWidthClass}`}
                   />
                 </div>
 
@@ -319,8 +93,8 @@ export const App: React.FC = () => {
                             isCurrent
                               ? 'bg-indigo-600 text-white border-indigo-600 ring-4 ring-indigo-100 scale-105 shadow-xs'
                               : isDone
-                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
-                              : 'bg-white text-stone-400 border-[#D8D1C5] group-hover:border-indigo-300 group-hover:text-stone-600'
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                                : 'bg-white text-stone-400 border-[#D8D1C5] group-hover:border-indigo-300 group-hover:text-stone-600'
                           }`}
                         >
                           {isDone ? <i className="fas fa-check text-[10px]"></i> : item.step}
@@ -330,8 +104,8 @@ export const App: React.FC = () => {
                             isCurrent
                               ? 'text-indigo-700'
                               : isDone
-                              ? 'text-emerald-800'
-                              : 'text-stone-500'
+                                ? 'text-emerald-800'
+                                : 'text-stone-500'
                           }`}
                         >
                           {item.title}
@@ -349,9 +123,7 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* ================================================================= */}
-              {/* [STEP 1] 1단계: 이미지 올리기 화면 */}
-              {/* ================================================================= */}
+              {/* STEP 1: 이미지 올리기 */}
               {currentStep === 1 && (
                 <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] border-t-4 border-t-indigo-600 shadow-md space-y-5 animate-fade-in">
                   <div className="flex items-start justify-between gap-3 border-b border-[#EBE6DD] pb-4">
@@ -360,10 +132,11 @@ export const App: React.FC = () => {
                         STEP 1 · 이미지 올리기
                       </span>
                       <h2 className="text-lg sm:text-xl font-black text-[#2D2A26]">
-                        변환할 이미지를 올려주세요 (최대 50장)
+                        업스케일 · 변환할 이미지를 올려주세요 (최대 50장)
                       </h2>
                       <p className="text-xs text-stone-500 mt-0.5">
-                        여러 장을 한꺼번에 끌어다 놓거나 클릭해서 선택한 뒤 아래 <strong>[다음 스텝]</strong> 버튼을 눌러주세요.
+                        여러 장을 한꺼번에 끌어다 놓거나 선택한 뒤 아래{' '}
+                        <strong>[다음 스텝]</strong> 버튼을 눌러주세요.
                       </p>
                     </div>
                     {items.length > 0 && (
@@ -377,10 +150,8 @@ export const App: React.FC = () => {
                     )}
                   </div>
 
-                  {/* 드롭존 */}
                   <DropZone onFilesSelected={handleFilesAdded} disabled={isProcessing} />
 
-                  {/* 등록된 이미지 미리보기 리스트 */}
                   {items.length > 0 && (
                     <div className="space-y-3 pt-2 border-t border-[#EBE6DD]">
                       <div className="flex items-center justify-between px-1">
@@ -390,7 +161,7 @@ export const App: React.FC = () => {
                         </span>
                       </div>
 
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                      <div className="space-y-2">
                         {items.map((item) => (
                           <ImageItemCard
                             key={item.id}
@@ -404,7 +175,6 @@ export const App: React.FC = () => {
                     </div>
                   )}
 
-                  {/* 하단 다음 스텝 이동 버튼 */}
                   <div className="pt-2">
                     <button
                       type="button"
@@ -414,7 +184,7 @@ export const App: React.FC = () => {
                     >
                       <span>
                         {items.length > 0
-                          ? `다음 스텝: 크기 · 파일형식 선택하기 (${items.length}장)`
+                          ? `다음 스텝: 업스케일 · 포맷 설정하기 (${items.length}장)`
                           : '먼저 위 박스를 눌러 이미지를 1장 이상 올려주세요'}
                       </span>
                       {items.length > 0 && <i className="fas fa-arrow-right"></i>}
@@ -423,12 +193,11 @@ export const App: React.FC = () => {
                 </div>
               )}
 
-              {/* ================================================================= */}
-              {/* [STEP 2] 2단계: 크기 · 파일형식 선택 및 변환 시작 화면 */}
-              {/* ================================================================= */}
+              {/* STEP 2: 업스케일 · 크기 · 파일형식 선택 */}
               {currentStep === 2 && (
                 <ResizeOptionsPanel
                   settings={settings}
+                  sampleItem={items[0]}
                   onChange={handleUpdateSettings}
                   itemCount={items.length}
                   isProcessing={isProcessing}
@@ -437,31 +206,33 @@ export const App: React.FC = () => {
                 />
               )}
 
-              {/* ================================================================= */}
-              {/* [STEP 3] 3단계: 변환 결과 확인 및 파일 그대로 저장 화면 */}
-              {/* ================================================================= */}
+              {/* STEP 3: Before/After 비교 및 파일 저장 */}
               {currentStep === 3 && (
                 <div
                   data-screenshot-point="result"
                   className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] border-t-4 border-t-emerald-600 shadow-md space-y-5 animate-fade-in"
                 >
-                  {/* 상단 완료 리포트 헤더 */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#EBE6DD] pb-4">
                     <div>
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-600 text-white text-[11px] font-black mb-1.5 shadow-2xs">
-                        <i className="fas fa-circle-check"></i> STEP 3 · 변환 완료 ({doneCount} / {items.length}장)
+                        <i className="fas fa-circle-check"></i> STEP 3 · 처리 완료 ({doneCount} /{' '}
+                        {items.length}장)
                       </span>
                       <h2 className="text-lg sm:text-xl font-black text-[#2D2A26]">
-                        이미지 변환이 완료되었습니다!
+                        {settings.unit === 'upscale'
+                          ? '고화질 업스케일이 완료되었습니다!'
+                          : '이미지 변환이 완료되었습니다!'}
                       </h2>
                       <p className="text-xs text-stone-500 mt-0.5">
-                        아래 초록색 버튼을 누르고 <strong>저장할 폴더 1개만 선택</strong>하면 변환된 이미지 전체가 한꺼번에 저장됩니다.
+                        아래 Before/After 분할 비교기에서 결과를 확인한 뒤 폴더 선택 또는 ZIP으로 한꺼번에 저장하세요.
                       </p>
                     </div>
 
                     {doneCount > 0 && (
                       <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-3.5 py-2 text-right shrink-0">
-                        <span className="text-[10px] font-bold text-emerald-700 block">총 용량 변화</span>
+                        <span className="text-[10px] font-bold text-emerald-700 block">
+                          총 파일 용량 변화
+                        </span>
                         <div className="text-xs font-mono font-black text-emerald-950">
                           {formatBytes(totalOriginalSize)} ➔ {formatBytes(totalResizedSize)}
                           {totalOriginalSize > totalResizedSize && (
@@ -474,7 +245,16 @@ export const App: React.FC = () => {
                     )}
                   </div>
 
-                  {/* 최상단 일괄 저장 액션 (폴더 1회 선택 일괄 저장 + 보조 ZIP 저장 + 결과 배너) */}
+                  {/* Before/After 드래그 분할 비교기 */}
+                  {activeCompareItem && (
+                    <BeforeAfterComparePanel
+                      item={activeCompareItem}
+                      allDoneItems={doneItems}
+                      onSelectCompareItem={setCompareItemId}
+                    />
+                  )}
+
+                  {/* 일괄 저장 액션 */}
                   {doneCount > 0 && (
                     <div className="space-y-2.5">
                       <button
@@ -494,15 +274,19 @@ export const App: React.FC = () => {
                           </>
                         ) : (
                           <>
-                            <i className={supportsDirectoryPicker() ? 'fas fa-folder-open' : 'fas fa-file-zipper'}></i>
+                            <i
+                              className={
+                                supportsDirectoryPicker() ? 'fas fa-folder-open' : 'fas fa-file-zipper'
+                              }
+                            ></i>
                             <span>
                               {supportsDirectoryPicker()
-                                ? (doneCount > 1
-                                    ? `폴더 1개 선택해서 모두 저장하기 (${doneCount}장)`
-                                    : '폴더 선택해서 저장하기')
-                                : (doneCount > 1
-                                    ? `ZIP 파일로 한꺼번에 저장하기 (${doneCount}장)`
-                                    : '변환된 이미지 파일 저장하기')}
+                                ? doneCount > 1
+                                  ? `폴더 1개 선택해서 모두 저장하기 (${doneCount}장)`
+                                  : '폴더 선택해서 저장하기'
+                                : doneCount > 1
+                                  ? `ZIP 파일로 한꺼번에 저장하기 (${doneCount}장)`
+                                  : '변환된 이미지 파일 저장하기'}
                             </span>
                           </>
                         )}
@@ -535,8 +319,8 @@ export const App: React.FC = () => {
                             saveNotice.type === 'success'
                               ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
                               : saveNotice.type === 'error'
-                              ? 'bg-rose-50 border-rose-200 text-rose-900'
-                              : 'bg-indigo-50 border-indigo-200 text-indigo-900'
+                                ? 'bg-rose-50 border-rose-200 text-rose-900'
+                                : 'bg-indigo-50 border-indigo-200 text-indigo-900'
                           }`}
                         >
                           <i
@@ -544,8 +328,8 @@ export const App: React.FC = () => {
                               saveNotice.type === 'success'
                                 ? 'fa-circle-check text-emerald-600'
                                 : saveNotice.type === 'error'
-                                ? 'fa-circle-exclamation text-rose-600'
-                                : 'fa-circle-info text-indigo-600'
+                                  ? 'fa-circle-exclamation text-rose-600'
+                                  : 'fa-circle-info text-indigo-600'
                             }`}
                           ></i>
                           <span>{saveNotice.text}</span>
@@ -554,8 +338,8 @@ export const App: React.FC = () => {
                     </div>
                   )}
 
-                  {/* 변환된 개별 파일 목록 */}
-                  <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
+                  {/* 변환된 개별 파일 목록 (중첩 스크롤 없음) */}
+                  <div className="space-y-2.5">
                     {items.map((item) => (
                       <ImageItemCard
                         key={item.id}
@@ -563,6 +347,8 @@ export const App: React.FC = () => {
                         settings={settings}
                         onRemove={handleRemoveItem}
                         onDownloadSingle={handleDownloadSingle}
+                        onCompare={setCompareItemId}
+                        isComparing={activeCompareItem?.id === item.id}
                       />
                     ))}
                   </div>
@@ -575,7 +361,7 @@ export const App: React.FC = () => {
                       className="flex-1 py-3.5 px-4 bg-[#FAF8F5] hover:bg-stone-200/70 text-[#2D2A26] border border-[#EBE6DD] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <i className="fas fa-sliders-h text-indigo-600"></i>
-                      <span>← 이전 스텝: 크기 · 파일형식 다시 설정하기</span>
+                      <span>← 이전 스텝: 업스케일 · 포맷 다시 설정하기</span>
                     </button>
 
                     <button
@@ -599,17 +385,17 @@ export const App: React.FC = () => {
 
       {/* 하단 푸터 */}
       <footer className="mt-auto border-t border-[#EBE6DD] bg-white/70 py-4 px-4 text-center text-xs text-stone-500">
-        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="max-w-3xl lg:max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="font-bold text-[#2D2A26]">
-            © 2026 VeraNex. 100% Client-Side Safe Image Processing.
+            © 2026 VeraNex. 100% Client-Side AI &amp; Lanczos Image Processing.
           </p>
           <div className="flex items-center gap-4 text-stone-400">
             <span className="flex items-center gap-1">
               <i className="fas fa-shield-alt text-emerald-600"></i>
-              무손실 로컬 엔진
+              로컬 AI CSR 엔진
             </span>
             <span>•</span>
-            <span>최대 50장 동시 변환</span>
+            <span>최대 50장 일괄 업스케일</span>
           </div>
         </div>
       </footer>

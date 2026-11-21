@@ -100,7 +100,7 @@ export default function DropZone({ onFilesSelected, disabled = false }: DropZone
         className="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition-colors border border-indigo-200 shadow-2xs flex items-center gap-1.5"
       >
         <i className="fas fa-magic"></i>
-        <span>데모 샘플 이미지 즉시 불러오기</span>
+        <span>저해상도(320×180) 업스케일 테스트 샘플 불러오기</span>
       </button>
     </div>
   );
