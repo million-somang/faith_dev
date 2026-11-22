@@ -44,6 +44,16 @@ function safeRoundRect(
 
 export const CANVAS_WIDTH = 450;
 export const CANVAS_HEIGHT = 600;
+export const MAX_UPGRADE_LEVEL = 20;
+
+// 주포 화력·연사 개조 등급(0~20)에 따른 주포 발사 패턴 티어(1~4) 산출
+export function getWeaponTierFromFirepower(firepowerLevel = 0): number {
+  const lv = Math.max(0, Math.floor(firepowerLevel || 0));
+  if (lv >= 12) return 4;
+  if (lv >= 6) return 3;
+  if (lv >= 2) return 2;
+  return 1;
+}
 
 let nextEntityId = 1;
 
@@ -59,20 +69,18 @@ export function getMinStageFrames(stage = 1): number {
   return Math.min(2800, 2100 + (s - 1) * 90);
 }
 
-// 스테이지(1 ~ 99) 기반 실시간 위험도 랭크 및 난이도 배율 산출 순수 함수
+// 스테이지(1 ~ 99) 기반 실시간 위험도 랭크 및 난이도 배율 산출 순수 함수 (~25% 완화 및 완만 곡선)
 export function getDifficultyScale(stage = 1): DifficultyScale {
   const clampedStage = Math.max(1, Math.min(99, Math.floor(stage || 1)));
   const s = clampedStage - 1;
 
-  // 스테이지 1은 초반 진입 장벽을 ~25% 완화하고, 스테이지 2 이상은 기존 점진적 상승 공식 유지
-  const spawnRateMultiplier = Number(Math.min(3.2, 0.88 + s * 0.14).toFixed(2));
-  const shootRateMultiplier = Number(Math.min(2.8, 0.78 + s * 0.12).toFixed(2));
-  const bulletSpeedMultiplier =
-    clampedStage === 1 ? 0.62 : Number(Math.min(2.0, 0.82 + s * 0.06).toFixed(2));
-  const enemyHpMultiplier =
-    clampedStage === 1 ? 0.75 : Number((1.0 + s * 0.28 + Math.pow(s, 1.2) * 0.08).toFixed(2));
+  // 전반 난이도 ~25% 완화: 1~10스테이지 급상승 절벽을 없애고 99스테이지까지 완만히 상승
+  const spawnRateMultiplier = Number(Math.min(2.8, 0.72 + s * 0.08).toFixed(2));
+  const shootRateMultiplier = Number(Math.min(2.4, 0.62 + s * 0.075).toFixed(2));
+  const bulletSpeedMultiplier = Number(Math.min(1.8, 0.62 + s * 0.042).toFixed(2));
+  const enemyHpMultiplier = Number((0.68 + s * 0.2 + Math.pow(s, 1.15) * 0.05).toFixed(2));
 
-  if (clampedStage >= 19) {
+  if (clampedStage >= 25) {
     return {
       rank: 'HELL',
       rankLevel: 5,
@@ -83,7 +91,7 @@ export function getDifficultyScale(stage = 1): DifficultyScale {
       color: '#DC2626',
     };
   }
-  if (clampedStage >= 11) {
+  if (clampedStage >= 15) {
     return {
       rank: 'EXPERT',
       rankLevel: 4,
@@ -94,7 +102,7 @@ export function getDifficultyScale(stage = 1): DifficultyScale {
       color: '#EA580C',
     };
   }
-  if (clampedStage >= 6) {
+  if (clampedStage >= 8) {
     return {
       rank: 'HARD',
       rankLevel: 3,
@@ -105,7 +113,7 @@ export function getDifficultyScale(stage = 1): DifficultyScale {
       color: '#D97706',
     };
   }
-  if (clampedStage >= 3) {
+  if (clampedStage >= 4) {
     return {
       rank: 'NORMAL+',
       rankLevel: 2,
@@ -303,30 +311,44 @@ export function playerShoot(state: GameEngineState) {
   const gameSpeed = state.gameSpeed || 1.0;
   const p = state.player;
   const fpBonus = p.firepowerLevel || 0;
-  const dmgMult = 1 + fpBonus * 0.16;
-  const baseInterval = Math.max(5.5, 9 - fpBonus * 0.5);
-  const shotInterval = Math.max(5, Math.round(baseInterval / gameSpeed));
+  const dmgMult = 1 + fpBonus * 0.14;
+  const baseInterval = Math.max(4.5, 9 - fpBonus * 0.22);
+  const shotInterval = Math.max(4, Math.round(baseInterval / gameSpeed));
 
-  // 1. 보조 무기: 자동 추적 유도 미사일 (M 아이템 / 개조 장착 시 총탄과 함께 발사)
+  // 1. 보조 무기: 자동 추적 유도 미사일 (격납고 개조 LV.1~20 — 단계별 1➔5발 확장)
   if ((p.missileLevel || 0) > 0) {
-    const mInterval = Math.max(16, Math.round((36 - p.missileLevel * 5) / gameSpeed));
+    const mInterval = Math.max(12, Math.round((44 - p.missileLevel * 1.5) / gameSpeed));
     if (state.currentFrame - (p.lastMissileFrame || 0) >= mInterval) {
       p.lastMissileFrame = state.currentFrame;
-      const mDmg = Math.round((20 + p.missileLevel * 6) * dmgMult);
+      const mDmg = Math.round((16 + p.missileLevel * 3.5) * dmgMult);
       const offsets =
-        p.missileLevel === 1
-          ? [{ dx: 0, vx: 0 }]
-          : p.missileLevel === 2
+        p.missileLevel >= 20
           ? [
-              { dx: -16, vx: -1.8 },
-              { dx: 16, vx: 1.8 },
+              { dx: -26, vx: -3.0 },
+              { dx: -13, vx: -1.5 },
+              { dx: 0, vx: 0 },
+              { dx: 13, vx: 1.5 },
+              { dx: 26, vx: 3.0 },
             ]
-          : [
-              { dx: -22, vx: -2.8 },
-              { dx: -10, vx: -1.1 },
-              { dx: 10, vx: 1.1 },
-              { dx: 22, vx: 2.8 },
-            ];
+          : p.missileLevel >= 15
+          ? [
+              { dx: -22, vx: -2.6 },
+              { dx: -10, vx: -1.0 },
+              { dx: 10, vx: 1.0 },
+              { dx: 22, vx: 2.6 },
+            ]
+          : p.missileLevel >= 10
+          ? [
+              { dx: -18, vx: -2.0 },
+              { dx: 0, vx: 0 },
+              { dx: 18, vx: 2.0 },
+            ]
+          : p.missileLevel >= 5
+          ? [
+              { dx: -14, vx: -1.6 },
+              { dx: 14, vx: 1.6 },
+            ]
+          : [{ dx: 0, vx: 0 }];
 
       offsets.forEach(({ dx, vx }) => {
         state.bullets.push({
@@ -346,25 +368,32 @@ export function playerShoot(state: GameEngineState) {
     }
   }
 
-  // 2. 보조 무기: 고화력 플라즈마 레이저 캐논 (W 아이템 / 개조 장착 시 총탄과 함께 발사)
+  // 2. 보조 무기: 고화력 플라즈마 레이저 캐논 (격납고 개조 LV.1~20 — 단계별 1➔4줄 확장)
   if ((p.plasmaLevel || 0) > 0) {
-    const pInterval = Math.max(12, Math.round((24 - p.plasmaLevel * 3) / gameSpeed));
+    const pInterval = Math.max(10, Math.round((30 - p.plasmaLevel * 0.95) / gameSpeed));
     if (state.currentFrame - (p.lastPlasmaFrame || 0) >= pInterval) {
       p.lastPlasmaFrame = state.currentFrame;
-      const pDmg = Math.round((15 + p.plasmaLevel * 5) * dmgMult);
+      const pDmg = Math.round((13 + p.plasmaLevel * 3.0) * dmgMult);
       const offsets =
-        p.plasmaLevel === 1
-          ? [{ dx: 0, vx: 0 }]
-          : p.plasmaLevel === 2
+        p.plasmaLevel >= 18
           ? [
-              { dx: -14, vx: 0 },
-              { dx: 14, vx: 0 },
+              { dx: -21, vx: -0.9 },
+              { dx: -7, vx: -0.25 },
+              { dx: 7, vx: 0.25 },
+              { dx: 21, vx: 0.9 },
             ]
-          : [
-              { dx: -18, vx: -0.9 },
+          : p.plasmaLevel >= 12
+          ? [
+              { dx: -18, vx: -0.8 },
               { dx: 0, vx: 0 },
-              { dx: 18, vx: 0.9 },
-            ];
+              { dx: 18, vx: 0.8 },
+            ]
+          : p.plasmaLevel >= 6
+          ? [
+              { dx: -13, vx: 0 },
+              { dx: 13, vx: 0 },
+            ]
+          : [{ dx: 0, vx: 0 }];
 
       offsets.forEach(({ dx, vx }) => {
         state.bullets.push({
@@ -642,33 +671,28 @@ export function createExplosion(
   }
 }
 
-// 스테이지별 필드 드롭 아이템 추첨 (1~4화는 P/L/B/S 위주, 5화+부터 M/W 합산 4% 극희귀 보너스)
-export function rollFieldItemType(stage = 1): ItemType {
-  const s = Math.max(1, Math.floor(stage || 1));
-  if (s >= 5) {
-    const rareRoll = Math.random();
-    if (rareRoll < 0.02) return 'M';
-    if (rareRoll < 0.04) return 'W';
-  }
-  const baseRoll = Math.random();
-  if (baseRoll < 0.32) return 'P';
-  if (baseRoll < 0.56) return 'L';
-  if (baseRoll < 0.82) return 'B';
-  return 'S';
+// 전투 중 필드 드롭 전술 지원 5종 추첨 (무기/스펙 영구 업그레이드 드롭 제외)
+export function rollFieldItemType(): ItemType {
+  const roll = Math.random();
+  if (roll < 0.3) return 'H'; // 30%: HP 회복 (+)
+  if (roll < 0.52) return 'L'; // 22%: 보조 비행기 호위기
+  if (roll < 0.74) return 'C'; // 22%: 전체 포탄 제거 EMP
+  if (roll < 0.88) return 'B'; // 14%: 메가 폭탄 보급
+  return 'R'; // 12%: 공중제비 롤 보급
 }
 
-// 아이템 스폰 (P: 주포, M: 유도탄, W: 플라즈마, L: 호위기, B: 폭탄, S: 스피드)
+// 아이템 스폰 (전술 지원 5종: H '+' 회복, L 호위기, C 전체 포탄 제거, B 폭탄, R 롤)
 function spawnItem(state: GameEngineState, x: number, y: number, specificType?: ItemType) {
-  const type: ItemType = specificType || rollFieldItemType(state.stage || 1);
+  const type: ItemType = specificType || rollFieldItemType();
 
-  const colorMap: Record<ItemType, string> = {
-    P: '#EF4444', // 주포 강화 (레드)
-    M: '#9333EA', // 유도 미사일 (퍼플)
-    W: '#0891B2', // 플라즈마 캐논 (시안)
-    L: '#10B981', // 호위기 편대 (에메랄드)
-    B: '#2563EB', // 메가 폭탄 (블루)
-    S: '#F59E0B', // 엔진 스피드 (앰버)
+  const metaMap: Record<ItemType, { color: string; label: string }> = {
+    H: { color: '#22C55E', label: '+' }, // HP 긴급 회복 (그린)
+    L: { color: '#10B981', label: 'L' }, // 보조 비행기 호위기 (에메랄드)
+    C: { color: '#8B5CF6', label: 'C' }, // 전체 포탄 제거 EMP (바이올렛)
+    B: { color: '#F59E0B', label: 'B' }, // 메가 폭탄 보급 (앰버)
+    R: { color: '#0284C7', label: 'R' }, // 공중제비 롤 보급 (스카이)
   };
+  const meta = metaMap[type];
 
   state.items.push({
     id: nextEntityId++,
@@ -678,8 +702,8 @@ function spawnItem(state: GameEngineState, x: number, y: number, specificType?: 
     vy: 1.2,
     width: 26,
     height: 26,
-    color: colorMap[type],
-    label: type,
+    color: meta.color,
+    label: meta.label,
     bounceCount: 0,
   });
 }
@@ -1069,11 +1093,11 @@ export function updateGameEngine(
       continue;
     }
 
-    // 플레이어 피격 판정 (적 탄환 vs 플레이어 HP 차감)
+    // 플레이어 피격 판정 (적 탄환 vs 플레이어 HP 차감 — 완화 적용)
     if (!b.isPlayer && !p.isInvincible) {
       const dist = Math.hypot(b.x - p.x, b.y - p.y);
       if (dist < b.radius + 9) {
-        const dmg = b.damage > 1 ? b.damage : 14;
+        const dmg = b.damage > 1 ? Math.max(8, Math.round(b.damage * 0.8)) : 11;
         state.bullets.splice(i, 1);
         handlePlayerHit(state, dmg);
         continue;
@@ -1082,7 +1106,7 @@ export function updateGameEngine(
   }
 
   // 7. 적기 업데이트 (스테이지별 정조준 저격탄 & 다연장 탄막 단계적 강화)
-  const stageDmgBonus = Math.min(18, Math.floor((currentStage - 1) * 1.2));
+  const stageDmgBonus = Math.min(16, Math.floor((currentStage - 1) * 0.7));
 
   for (let i = state.enemies.length - 1; i >= 0; i--) {
     const e = state.enemies[i];
@@ -1289,12 +1313,12 @@ export function updateGameEngine(
       }
     }
 
-    // 적 기체와 플레이어 기체 직접 충돌 판정 (HP 차감)
+    // 적 기체와 플레이어 기체 직접 충돌 판정 (HP 차감 — 완화 적용)
     if (!p.isInvincible) {
       const distToPlayer = Math.hypot(e.x - p.x, e.y - p.y);
       const hitRadius = e.type === 'boss' ? 52 : e.type === 'bomber' ? 28 : 20;
       if (distToPlayer < hitRadius) {
-        handlePlayerHit(state, 24 + stageDmgBonus);
+        handlePlayerHit(state, 20 + stageDmgBonus);
       }
     }
 
@@ -1487,8 +1511,9 @@ function handleEnemyDestroyed(state: GameEngineState, e: Enemy) {
     if (form) {
       form.destroyed++;
       if (form.destroyed >= form.total) {
-        // 전멸 성공! 아이템 확정 드롭 (1~4화는 P/L/B/S, 5화+부터 M/W 극희귀 포함)
-        const dropType = rollFieldItemType(state.stage || 1);
+        // 전멸 성공! 전술 지원 아이템 확정 드롭 (호위기 미장착 시 우선 합류 확률 부여)
+        const dropType =
+          !state.player.hasEscorts && Math.random() < 0.45 ? 'L' : rollFieldItemType();
         spawnItem(state, e.x, e.y, dropType);
         state.player.upgradePoints += 2;
         state.floatingTexts.push({
@@ -1507,38 +1532,89 @@ function handleEnemyDestroyed(state: GameEngineState, e: Enemy) {
   }
 }
 
-// 아이템 획득 효과 (P: 주포, M: 유도 미사일, W: 플라즈마 캐논, L: 호위기, B: 메가폭탄, S: 스피드)
-function applyItem(state: GameEngineState, type: ItemType) {
+// 아이템 획득 효과 (전술 지원 5종: H HP 회복, L 보조 비행기, C 전체 포탄 제거 EMP, B 메가 폭탄, R 공중제비 롤)
+export function applyItem(state: GameEngineState, type: ItemType) {
   sound.playItemSound();
   const p = state.player;
 
   let text = '';
   let color = '#10B981';
 
-  if (type === 'P') {
-    p.weaponLevel = Math.min(4, p.weaponLevel + 1);
-    text = `주포 업그레이드 LV.${p.weaponLevel}!`;
-    color = '#EF4444';
-  } else if (type === 'M') {
-    p.missileLevel = Math.min(3, (p.missileLevel || 0) + 1);
-    text = `🚀 유도 미사일 장착 LV.${p.missileLevel}!`;
-    color = '#9333EA';
-  } else if (type === 'W') {
-    p.plasmaLevel = Math.min(3, (p.plasmaLevel || 0) + 1);
-    text = `⚡ 플라즈마 캐논 LV.${p.plasmaLevel}!`;
-    color = '#0891B2';
+  if (type === 'H') {
+    const missing = Math.max(0, (p.maxHp || 100) - p.hp);
+    if (missing > 0) {
+      const healAmount = Math.max(35, Math.round((p.maxHp || 100) * 0.35));
+      const actualHeal = Math.min(missing, healAmount);
+      p.hp = Math.min(p.maxHp || 100, p.hp + actualHeal);
+      text = `💚 HP +${actualHeal} 회복!`;
+    } else {
+      p.score += 500;
+      p.upgradePoints = (p.upgradePoints || 0) + 5;
+      text = '💚 체력 만충! +500점 & +5 KP';
+    }
+    color = '#22C55E';
   } else if (type === 'L') {
-    p.hasEscorts = true;
-    text = '호위기 편대 합류!';
+    if (!p.hasEscorts) {
+      p.hasEscorts = true;
+      text = '✈️ 보조 비행기 호위기 합류!';
+    } else {
+      const missing = Math.max(0, (p.maxHp || 100) - p.hp);
+      const actualHeal = Math.min(missing, 20);
+      p.hp = Math.min(p.maxHp || 100, p.hp + actualHeal);
+      p.upgradePoints = (p.upgradePoints || 0) + 5;
+      text =
+        actualHeal > 0
+          ? `✈️ 호위기 지원! +${actualHeal} HP & +5 KP`
+          : '✈️ 호위기 탄약 보급! +5 KP';
+    }
     color = '#10B981';
+  } else if (type === 'C') {
+    let clearedCount = 0;
+    for (let i = state.bullets.length - 1; i >= 0; i--) {
+      const b = state.bullets[i];
+      if (!b.isPlayer) {
+        clearedCount++;
+        state.particles.push({
+          x: b.x,
+          y: b.y,
+          vx: (Math.random() - 0.5) * 2.2,
+          vy: (Math.random() - 0.5) * 2.2,
+          radius: 3,
+          color: '#A855F7',
+          alpha: 0.9,
+          decay: 0.05,
+          sizeDecay: 0.06,
+        });
+        state.bullets.splice(i, 1);
+      }
+    }
+    p.score += clearedCount * 20 + 250;
+    p.isInvincible = true;
+    p.invincibleTimer = Math.max(p.invincibleTimer || 0, 60);
+    state.screenShake = Math.max(state.screenShake || 0, 8);
+    text =
+      clearedCount > 0
+        ? `🛡️ EMP 전체 포탄 제거! (${clearedCount}발)`
+        : '🛡️ EMP 방어 펄스! (+250점 · 1초 보호)';
+    color = '#8B5CF6';
   } else if (type === 'B') {
-    p.bombs = Math.min(5, p.bombs + 1);
-    text = `메가 폭탄 +1 (보유 ${p.bombs})!`;
-    color = '#3B82F6';
-  } else if (type === 'S') {
-    p.speed = Math.min(6.8, p.speed + 0.45);
-    text = '엔진 스피드 업!';
+    if (p.bombs < 6) {
+      p.bombs += 1;
+      text = `💣 메가 폭탄 +1 (보유 ${p.bombs})!`;
+    } else {
+      p.upgradePoints = (p.upgradePoints || 0) + 5;
+      text = '💣 폭탄 최대 보유! +5 KP';
+    }
     color = '#F59E0B';
+  } else if (type === 'R') {
+    if (p.rolls < 6) {
+      p.rolls += 1;
+      text = `🔄 공중제비 롤 +1 (보유 ${p.rolls})!`;
+    } else {
+      p.upgradePoints = (p.upgradePoints || 0) + 5;
+      text = '🔄 롤 최대 보유! +5 KP';
+    }
+    color = '#0284C7';
   }
 
   state.floatingTexts.push({
@@ -1552,18 +1628,18 @@ function applyItem(state: GameEngineState, type: ItemType) {
   });
 }
 
-// 격납고 개조 항목별 필요 KP 비용 산출 (영구 무장·기체 개조 10배, 소모성 수리·보급 5~6배)
+// 격납고 개조 항목별 필요 KP 비용 산출 (영구 5종 최대 LV.20 점진 증가 · 99스테이지 장기 육성)
 export function getUpgradeCost(option: UpgradeOptionId, currentLevel = 0): number {
   const lv = Math.max(0, Math.floor(currentLevel || 0));
   switch (option) {
     case 'hull':
     case 'speed':
-      return 50 + lv * 20;
+      return 80 + lv * 30;
     case 'firepower':
-      return 60 + lv * 20;
+      return 100 + lv * 35;
     case 'missile':
     case 'plasma':
-      return 70 + lv * 30;
+      return 120 + lv * 40;
     case 'repair':
       return 25;
     case 'tactical':
@@ -1571,18 +1647,19 @@ export function getUpgradeCost(option: UpgradeOptionId, currentLevel = 0): numbe
   }
 }
 
-// 스테이지 종료 후 격납고(Hangar)에서 격추 포인트(KP)로 비행기 개조 실행
+// 스테이지 종료 후 격납고(Hangar)에서 격추 포인트(KP)로 비행기 개조 실행 (최대 20단계)
 export function applyPlayerUpgrade(state: GameEngineState, option: UpgradeOptionId): boolean {
   const p = state.player;
   const kp = p.upgradePoints || 0;
 
   if (option === 'hull') {
-    const cost = getUpgradeCost('hull', p.hullLevel || 0);
-    if (kp < cost || (p.hullLevel || 0) >= 5) return false;
+    const lv = p.hullLevel || 0;
+    const cost = getUpgradeCost('hull', lv);
+    if (kp < cost || lv >= MAX_UPGRADE_LEVEL) return false;
     p.upgradePoints -= cost;
-    p.hullLevel = (p.hullLevel || 0) + 1;
-    p.maxHp += 25;
-    p.hp = Math.min(p.maxHp, p.hp + 40);
+    p.hullLevel = lv + 1;
+    p.maxHp += 15;
+    p.hp = Math.min(p.maxHp, p.hp + 30);
     sound.playPowerUpSound();
     return true;
   }
@@ -1597,39 +1674,43 @@ export function applyPlayerUpgrade(state: GameEngineState, option: UpgradeOption
   }
 
   if (option === 'speed') {
-    const cost = getUpgradeCost('speed', p.speedLevel || 0);
-    if (kp < cost || (p.speedLevel || 0) >= 5) return false;
+    const lv = p.speedLevel || 0;
+    const cost = getUpgradeCost('speed', lv);
+    if (kp < cost || lv >= MAX_UPGRADE_LEVEL) return false;
     p.upgradePoints -= cost;
-    p.speedLevel = (p.speedLevel || 0) + 1;
-    p.speed = Number(Math.min(7.2, p.speed + 0.45).toFixed(2));
+    p.speedLevel = lv + 1;
+    p.speed = Number(Math.min(8.5, 4.5 + p.speedLevel * 0.2).toFixed(2));
     sound.playPowerUpSound();
     return true;
   }
 
   if (option === 'firepower') {
-    const cost = getUpgradeCost('firepower', p.firepowerLevel || 0);
-    if (kp < cost || (p.firepowerLevel || 0) >= 5) return false;
+    const lv = p.firepowerLevel || 0;
+    const cost = getUpgradeCost('firepower', lv);
+    if (kp < cost || lv >= MAX_UPGRADE_LEVEL) return false;
     p.upgradePoints -= cost;
-    p.firepowerLevel = (p.firepowerLevel || 0) + 1;
-    if (p.weaponLevel < 4) p.weaponLevel += 1;
+    p.firepowerLevel = lv + 1;
+    p.weaponLevel = Math.max(p.weaponLevel || 1, getWeaponTierFromFirepower(p.firepowerLevel));
     sound.playPowerUpSound();
     return true;
   }
 
   if (option === 'missile') {
-    const cost = getUpgradeCost('missile', p.missileLevel || 0);
-    if (kp < cost || (p.missileLevel || 0) >= 3) return false;
+    const lv = p.missileLevel || 0;
+    const cost = getUpgradeCost('missile', lv);
+    if (kp < cost || lv >= MAX_UPGRADE_LEVEL) return false;
     p.upgradePoints -= cost;
-    p.missileLevel = (p.missileLevel || 0) + 1;
+    p.missileLevel = lv + 1;
     sound.playPowerUpSound();
     return true;
   }
 
   if (option === 'plasma') {
-    const cost = getUpgradeCost('plasma', p.plasmaLevel || 0);
-    if (kp < cost || (p.plasmaLevel || 0) >= 3) return false;
+    const lv = p.plasmaLevel || 0;
+    const cost = getUpgradeCost('plasma', lv);
+    if (kp < cost || lv >= MAX_UPGRADE_LEVEL) return false;
     p.upgradePoints -= cost;
-    p.plasmaLevel = (p.plasmaLevel || 0) + 1;
+    p.plasmaLevel = lv + 1;
     sound.playPowerUpSound();
     return true;
   }
@@ -1717,13 +1798,16 @@ export function restoreFromSaveState(state: GameEngineState, save: FlightSaveSta
   p.lives = Math.max(1, save.lives || 3);
   p.bombs = save.bombs ?? 2;
   p.rolls = save.rolls ?? 3;
-  p.weaponLevel = Math.max(1, Math.min(4, save.weaponLevel || 1));
-  p.missileLevel = Math.max(0, Math.min(3, save.missileLevel || 0));
-  p.plasmaLevel = Math.max(0, Math.min(3, save.plasmaLevel || 0));
-  p.firepowerLevel = Math.max(0, Math.min(5, save.firepowerLevel || 0));
-  p.speedLevel = Math.max(0, Math.min(5, save.speedLevel || 0));
-  p.hullLevel = Math.max(0, Math.min(5, save.hullLevel || 0));
-  p.speed = Number(Math.min(7.2, 4.5 + p.speedLevel * 0.45).toFixed(2));
+  p.missileLevel = Math.max(0, Math.min(MAX_UPGRADE_LEVEL, save.missileLevel || 0));
+  p.plasmaLevel = Math.max(0, Math.min(MAX_UPGRADE_LEVEL, save.plasmaLevel || 0));
+  p.firepowerLevel = Math.max(0, Math.min(MAX_UPGRADE_LEVEL, save.firepowerLevel || 0));
+  p.speedLevel = Math.max(0, Math.min(MAX_UPGRADE_LEVEL, save.speedLevel || 0));
+  p.hullLevel = Math.max(0, Math.min(MAX_UPGRADE_LEVEL, save.hullLevel || 0));
+  p.weaponLevel = Math.max(
+    1,
+    Math.min(4, Math.max(save.weaponLevel || 1, getWeaponTierFromFirepower(p.firepowerLevel)))
+  );
+  p.speed = Number(Math.min(8.5, 4.5 + p.speedLevel * 0.2).toFixed(2));
   p.upgradePoints = Math.max(0, save.upgradePoints || 0);
   p.hasEscorts = !!save.hasEscorts;
 
@@ -1737,7 +1821,7 @@ export function restoreFromSaveState(state: GameEngineState, save: FlightSaveSta
 }
 
 // 플레이어 피격 처리 (HP 차감 시스템 — HP가 0이 되었을 때만 격추)
-function handlePlayerHit(state: GameEngineState, damage = 14) {
+function handlePlayerHit(state: GameEngineState, damage = 11) {
   const p = state.player;
   p.hp = Math.max(0, p.hp - damage);
   p.hitFlashTimer = 10;
@@ -1760,10 +1844,11 @@ function handlePlayerHit(state: GameEngineState, damage = 14) {
     return;
   }
 
-  // HP가 0이 된 경우: 기체 격추 처리
+  // HP가 0이 된 경우: 기체 격추 처리 (영구 개조로 해금된 주포 티어는 하한 보존)
   p.lives--;
   p.hasEscorts = false; // 격추 시 호위기 소실
-  p.weaponLevel = Math.max(1, p.weaponLevel - 1); // 무기 1단계 하향
+  const unlockedTier = getWeaponTierFromFirepower(p.firepowerLevel || 0);
+  p.weaponLevel = Math.max(unlockedTier, p.weaponLevel - 1);
   triggerPlayerExplosion(state, p.x, p.y);
   createExplosion(state, p.x, p.y, 'medium', 25);
   state.screenShake = 20;

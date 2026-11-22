@@ -92,15 +92,15 @@ export const HowToModal: React.FC<HowToModalProps> = ({ onClose }) => {
               </div>
             </div>
 
-            {/* 3. 빨간 편대 비행대 전멸 */}
+            {/* 3. 빨간 편대 비행대 전멸 & 전술 지원 아이템 5종 */}
             <div className="p-2.5 bg-rose-50/70 rounded-xl border border-rose-200 flex items-start gap-2.5">
               <Zap className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold text-rose-900 block">
-                  빨간 편대 비행대 5기 전멸 ➔ 파워업 아이템!
+                  전술 지원 아이템 5종 &amp; 격납고 20단계 개조
                 </span>
                 <p className="text-[11px] text-rose-800 leading-relaxed mt-0.5">
-                  S자 궤도로 날아오는 붉은 정예 편대기를 놓치지 않고 5기 모두 격추하면 주무기 강화(P), 호위기 장착(L), 폭탄 보충(B) 아이템이 확정 드롭됩니다.
+                  전투 중 폭격기·빨간 편대를 격추하면 <strong>HP 회복(+), 보조 비행기(L), 전체 포탄 제거 EMP(C), 폭탄(B), 롤(R)</strong>이 드롭되며, 무기·기체 영구 업그레이드(최대 LV.20)는 스테이지 클리어 후 <strong>전투기 개조 격납고</strong>에서 진행합니다.
                 </p>
               </div>
             </div>
@@ -110,10 +110,10 @@ export const HowToModal: React.FC<HowToModalProps> = ({ onClose }) => {
               <Layers className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold text-emerald-900 block">
-                  호위기(Option) 2기 편대 동시 비행
+                  호위기(L) 2기 편대 &amp; 전체 포탄 소거(C)
                 </span>
                 <p className="text-[11px] text-emerald-800 leading-relaxed mt-0.5">
-                  L 아이템을 획득하면 아군 전투기 양옆에 2기의 호위기가 배치되어 2배의 화력으로 함께 지원 사격을 가합니다.
+                  <strong>L</strong> 획득 시 양옆 호위기 2기가 합류하며(이미 보유 시 HP +20 &amp; +5 KP 지원), 보라색 <strong>C</strong> 아이템 획득 시 화면 내 모든 적 탄환을 즉시 소멸시키고 1초 무적 보호막을 얻습니다.
                 </p>
               </div>
             </div>

@@ -11,6 +11,7 @@ import {
   extractSaveState,
   restoreFromSaveState,
   getUpgradeCost,
+  MAX_UPGRADE_LEVEL,
   UpgradeOptionId,
   FlightSaveState,
   CANVAS_WIDTH,
@@ -1212,7 +1213,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
               </div>
 
               <p className="text-[11px] text-[#64748B] mb-2.5 leading-snug">
-                적기를 격추해 모은 <strong className="text-[#1E293B]">개조 포인트(KP)</strong>를 모아 10스테이지까지 꾸준히 무장과 기체를 강화하세요.
+                적기를 격추해 모은 <strong className="text-[#1E293B]">개조 포인트(KP)</strong>로 99스테이지까지 최대 LV.{MAX_UPGRADE_LEVEL}까지 기체와 무장을 꾸준히 강화하세요.
               </p>
 
               {/* 개조 항목 그리드 */}
@@ -1220,7 +1221,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                 {/* 1. 유도 미사일 장착/강화 */}
                 {(() => {
                   const cost = getUpgradeCost('missile', hudState.missileLevel);
-                  const isMax = hudState.missileLevel >= 3;
+                  const isMax = hudState.missileLevel >= MAX_UPGRADE_LEVEL;
                   const canBuy = !isMax && hudState.upgradePoints >= cost;
                   return (
                     <button
@@ -1242,11 +1243,11 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                           <div className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
                             <span>자동 추적 유도탄</span>
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-700 font-mono font-black">
-                              LV.{hudState.missileLevel}/3
+                              LV.{hudState.missileLevel}/{MAX_UPGRADE_LEVEL}
                             </span>
                           </div>
                           <span className="text-[10px] text-[#64748B] block truncate">
-                            총탄과 함께 적기를 찾아가는 유도 미사일 (1➔2➔4발)
+                            적기 자동 추적 미사일 (LV.1·5·10·15·20 ➔ 1~5발 확장)
                           </span>
                         </div>
                       </div>
@@ -1268,7 +1269,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                 {/* 2. 플라즈마 캐논 장착/강화 */}
                 {(() => {
                   const cost = getUpgradeCost('plasma', hudState.plasmaLevel);
-                  const isMax = hudState.plasmaLevel >= 3;
+                  const isMax = hudState.plasmaLevel >= MAX_UPGRADE_LEVEL;
                   const canBuy = !isMax && hudState.upgradePoints >= cost;
                   return (
                     <button
@@ -1290,11 +1291,11 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                           <div className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
                             <span>플라즈마 레이저 캐논</span>
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-100 text-cyan-800 font-mono font-black">
-                              LV.{hudState.plasmaLevel}/3
+                              LV.{hudState.plasmaLevel}/{MAX_UPGRADE_LEVEL}
                             </span>
                           </div>
                           <span className="text-[10px] text-[#64748B] block truncate">
-                            초고속 고화력 에너지 볼트 추가 발사
+                            초고속 고화력 에너지 볼트 (LV.1·6·12·18 ➔ 1~4줄 확장)
                           </span>
                         </div>
                       </div>
@@ -1316,7 +1317,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                 {/* 3. 최대 HP 장갑 증설 */}
                 {(() => {
                   const cost = getUpgradeCost('hull', hudState.hullLevel);
-                  const isMax = hudState.hullLevel >= 5;
+                  const isMax = hudState.hullLevel >= MAX_UPGRADE_LEVEL;
                   const canBuy = !isMax && hudState.upgradePoints >= cost;
                   return (
                     <button
@@ -1336,13 +1337,13 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                         </div>
                         <div className="min-w-0">
                           <div className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
-                            <span>기체 장갑 강화 (최대 HP +25)</span>
+                            <span>기체 장갑 강화 (최대 HP +15)</span>
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-mono font-black">
-                              LV.{hudState.hullLevel}/5
+                              LV.{hudState.hullLevel}/{MAX_UPGRADE_LEVEL}
                             </span>
                           </div>
                           <span className="text-[10px] text-[#64748B] block truncate">
-                            최대 HP +25 증가 및 즉시 +40 수리 ({hudState.hp}/{hudState.maxHp})
+                            최대 HP +15 영구 증가 및 즉시 +30 수리 ({hudState.hp}/{hudState.maxHp})
                           </span>
                         </div>
                       </div>
@@ -1364,7 +1365,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                 {/* 4. 비행기 이동 속도 업 */}
                 {(() => {
                   const cost = getUpgradeCost('speed', hudState.speedLevel);
-                  const isMax = hudState.speedLevel >= 5;
+                  const isMax = hudState.speedLevel >= MAX_UPGRADE_LEVEL;
                   const canBuy = !isMax && hudState.upgradePoints >= cost;
                   return (
                     <button
@@ -1386,7 +1387,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                           <div className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
                             <span>엔진 출력 개조 (이동 속도)</span>
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-sky-100 text-sky-800 font-mono font-black">
-                              LV.{hudState.speedLevel}/5
+                              LV.{hudState.speedLevel}/{MAX_UPGRADE_LEVEL}
                             </span>
                           </div>
                           <span className="text-[10px] text-[#64748B] block truncate">
@@ -1412,7 +1413,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                 {/* 5. 주포 화력 & 연사 개조 */}
                 {(() => {
                   const cost = getUpgradeCost('firepower', hudState.firepowerLevel);
-                  const isMax = hudState.firepowerLevel >= 5;
+                  const isMax = hudState.firepowerLevel >= MAX_UPGRADE_LEVEL;
                   const canBuy = !isMax && hudState.upgradePoints >= cost;
                   return (
                     <button
@@ -1434,11 +1435,11 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                           <div className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
                             <span>주포 화력·연사 개조</span>
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-mono font-black">
-                              LV.{hudState.firepowerLevel}/5
+                              LV.{hudState.firepowerLevel}/{MAX_UPGRADE_LEVEL}
                             </span>
                           </div>
                           <span className="text-[10px] text-[#64748B] block truncate">
-                            모든 무기 공격력 +16% · 연사 향상 및 주포 단계 상승
+                            모든 무기 공격력 +14% · 연사 향상 · LV.2/6/12 주포 진화
                           </span>
                         </div>
                       </div>

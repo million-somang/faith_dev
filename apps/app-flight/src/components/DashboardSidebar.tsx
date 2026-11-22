@@ -43,10 +43,10 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
   const remainSeconds = Math.ceil(remainFrames / 60);
 
   const weaponTiers = [
-    { level: 1, name: '단발 기관총', desc: '전방 단발 고속 탄환' },
-    { level: 2, name: '트윈 캐논', desc: '좌우 2열 평행 사격' },
-    { level: 3, name: '3-Way 스프레드', desc: '부채꼴 3방향 확산탄' },
-    { level: 4, name: '헤비 발칸포', desc: '4열 초강력 집중 화력' },
+    { level: 1, name: '단발 기관총', desc: '기본 장착 · 전방 단발 고속 탄환' },
+    { level: 2, name: '트윈 캐논', desc: '주포 개조 LV.2 해금 · 좌우 2열 평행 사격' },
+    { level: 3, name: '3-Way 스프레드', desc: '주포 개조 LV.6 해금 · 부채꼴 3방향 확산탄' },
+    { level: 4, name: '헤비 발칸포', desc: '주포 개조 LV.12 해금 · 4열 초강력 집중 화력' },
   ];
 
   return (
@@ -158,12 +158,12 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
         </div>
       </div>
 
-      {/* 2. 주무기 업그레이드 트리 (4단계) */}
+      {/* 2. 주무기 업그레이드 트리 (4단계 · 격납고 화력 개조 연동) */}
       <div className="p-3.5 bg-white rounded-2xl border border-[#EBE6DD] shadow-2xs">
         <div className="flex items-center justify-between mb-2.5">
           <span className="text-xs font-bold text-[#2D2A26] flex items-center gap-1.5">
             <Zap className="w-4 h-4 text-amber-500 fill-amber-400" />
-            무기 업그레이드 트리 (P 아이템)
+            무기 업그레이드 트리 (화력 개조)
           </span>
           <span className="text-xs font-black text-amber-700 font-mono">
             LV.{weaponLevel} / 4
@@ -241,7 +241,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
           </span>
         </div>
 
-        {/* 보조 특수 무기 (M 유도 미사일 / W 플라즈마 캐논) */}
+        {/* 보조 특수 무기 (격납고 개조 LV.20 확장) */}
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           <div
             className={`p-2 rounded-xl border flex items-center justify-between ${
@@ -253,7 +253,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
             <div>
               <span className="text-[11px] font-bold block leading-tight">🚀 유도탄 (M)</span>
               <span className="text-[9px] text-[#7A756D]">
-                {missileLevel > 0 ? '적기 자동 추적' : '미장착'}
+                {missileLevel > 0 ? '적기 자동 추적' : '미장착 (격납고 개조)'}
               </span>
             </div>
             <span
@@ -261,7 +261,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
                 missileLevel > 0 ? 'bg-fuchsia-600 text-white' : 'bg-stone-200 text-stone-500'
               }`}
             >
-              LV.{missileLevel}/3
+              LV.{missileLevel}/20
             </span>
           </div>
 
@@ -275,7 +275,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
             <div>
               <span className="text-[11px] font-bold block leading-tight">⚡ 플라즈마 (W)</span>
               <span className="text-[9px] text-[#7A756D]">
-                {plasmaLevel > 0 ? '고화력 에너지포' : '미장착'}
+                {plasmaLevel > 0 ? '고화력 에너지포' : '미장착 (격납고 개조)'}
               </span>
             </div>
             <span
@@ -283,7 +283,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
                 plasmaLevel > 0 ? 'bg-sky-600 text-white' : 'bg-stone-200 text-stone-500'
               }`}
             >
-              LV.{plasmaLevel}/3
+              LV.{plasmaLevel}/20
             </span>
           </div>
         </div>
@@ -378,7 +378,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
         <div className="p-2 rounded-xl bg-sky-50/60 border border-sky-200 text-[10px] text-sky-900 leading-relaxed flex items-start gap-1.5">
           <Info className="w-3.5 h-3.5 text-sky-600 shrink-0 mt-0.5" />
           <span>
-            <strong>빨간 편대 비행대(5기)</strong>를 남김없이 전원 격추하면 P, L, B 파워업 아이템이 확정 드롭됩니다!
+            <strong>빨간 편대(5기)</strong> 전멸 또는 폭격기 격추 시 <strong>보조 비행기(L)·HP 회복(+)·전체 포탄 제거(C)·폭탄(B)·롤(R)</strong>이 드롭됩니다!
           </span>
         </div>
       </div>

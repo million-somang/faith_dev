@@ -20,12 +20,12 @@ export interface Player {
   lives: number;
   bombs: number;
   rolls: number; // 360도 공중제비 롤 잔여 횟수
-  weaponLevel: number; // 1 ~ 4
-  missileLevel: number; // 0 ~ 3 (자동 추적 유도 미사일 등급)
-  plasmaLevel: number; // 0 ~ 3 (고화력 플라즈마 캐논 등급)
-  firepowerLevel: number; // 0 ~ 5 (주포 공격력/연사 개조 등급)
-  speedLevel: number; // 0 ~ 5 (엔진 속도 개조 등급)
-  hullLevel: number; // 0 ~ 5 (최대 HP 장갑 개조 등급)
+  weaponLevel: number; // 1 ~ 4 (주포 화력 LV.2/6/12 연동)
+  missileLevel: number; // 0 ~ 20 (자동 추적 유도 미사일 등급)
+  plasmaLevel: number; // 0 ~ 20 (고화력 플라즈마 캐논 등급)
+  firepowerLevel: number; // 0 ~ 20 (주포 공격력/연사 개조 등급)
+  speedLevel: number; // 0 ~ 20 (엔진 속도 개조 등급)
+  hullLevel: number; // 0 ~ 20 (최대 HP 장갑 개조 등급)
   upgradePoints: number; // 격추수로 획득한 가용 개조 포인트 (KP)
   stageKills: number; // 현재 스테이지에서 기록한 격추 수
   hasEscorts: boolean; // 호위기 2기 동반 여부
@@ -91,7 +91,8 @@ export interface BossTurret {
   lastShot: number;
 }
 
-export type ItemType = 'P' | 'L' | 'B' | 'S' | 'M' | 'W';
+// 전투 중 필드 드롭 전술 지원 5종: L(호위기), H(HP 회복 '+'), C(전체 포탄 제거 EMP), B(메가 폭탄), R(공중제비 롤)
+export type ItemType = 'L' | 'H' | 'C' | 'B' | 'R';
 
 export interface Item {
   id: number;
