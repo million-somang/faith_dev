@@ -1,66 +1,41 @@
 import React from 'react';
-import { RotateCw, Bomb } from 'lucide-react';
+import { Maximize2, Hand, RotateCw, Bomb } from 'lucide-react';
 
-interface TouchControlsProps {
-  rolls: number;
-  bombs: number;
-  onTriggerRoll: () => void;
-  onTriggerBomb: () => void;
-}
-
-export const TouchControls: React.FC<TouchControlsProps> = ({
-  rolls,
-  bombs,
-  onTriggerRoll,
-  onTriggerBomb,
-}) => {
+export const TouchControls: React.FC = () => {
   return (
-    <div className="w-full max-w-[450px] mx-auto mt-2 px-2 flex items-center justify-between gap-3 select-none">
-      {/* 360도 공중제비 롤 (Z) 버튼 */}
-      <button
-        onClick={onTriggerRoll}
-        disabled={rolls <= 0}
-        data-screenshot-click="action"
-        className={`flex-1 py-2.5 px-3 rounded-2xl border flex items-center justify-center gap-2 font-bold text-xs transition active:scale-95 shadow-xs ${
-          rolls > 0
-            ? 'bg-gradient-to-r from-sky-50 to-indigo-50 border-sky-300 text-sky-800 hover:from-sky-100 hover:to-indigo-100'
-            : 'bg-[#F2EDE4] border-[#E0D9CD] text-[#A8A29E] cursor-not-allowed'
-        }`}
-        title="360도 공중제비 롤 (1.5초 무적 회피, Z키)"
-      >
-        <RotateCw className="w-4 h-4 text-sky-600" />
-        <span>360° 공중제비</span>
-        <span
-          className={`px-1.5 py-0.2 rounded-full font-mono text-[11px] font-black ${
-            rolls > 0 ? 'bg-sky-600 text-white' : 'bg-stone-300 text-white'
-          }`}
-        >
-          {rolls}
+    <div
+      data-lobby-gesture-guide="true"
+      className="w-full max-w-[450px] mx-auto mt-2.5 bg-white rounded-2xl border border-[#EBE6DD] shadow-2xs p-3 select-none"
+    >
+      <div className="flex items-center justify-between gap-2 mb-2.5 pb-2 border-b border-[#F2EDE4]">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#1E293B]">
+          <Maximize2 className="w-3.5 h-3.5 text-sky-600" />
+          출격 시 자동 전체화면 몰입 모드
         </span>
-      </button>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
+          오터치 방지 제스처
+        </span>
+      </div>
 
-      {/* 메가 폭탄 (X) 버튼 */}
-      <button
-        onClick={onTriggerBomb}
-        disabled={bombs <= 0}
-        data-screenshot-click="action"
-        className={`flex-1 py-2.5 px-3 rounded-2xl border flex items-center justify-center gap-2 font-bold text-xs transition active:scale-95 shadow-xs ${
-          bombs > 0
-            ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 text-amber-900 hover:from-amber-100 hover:to-orange-100'
-            : 'bg-[#F2EDE4] border-[#E0D9CD] text-[#A8A29E] cursor-not-allowed'
-        }`}
-        title="화면 전체 탄환 소거 및 폭발 공격 (X키)"
-      >
-        <Bomb className="w-4 h-4 text-amber-600" />
-        <span>메가 폭탄</span>
-        <span
-          className={`px-1.5 py-0.2 rounded-full font-mono text-[11px] font-black ${
-            bombs > 0 ? 'bg-amber-600 text-white' : 'bg-stone-300 text-white'
-          }`}
-        >
-          {bombs}
-        </span>
-      </button>
+      <div className="grid grid-cols-3 gap-1.5 text-center">
+        <div className="rounded-xl bg-[#FAF8F5] border border-[#EBE6DD] px-2 py-2 flex flex-col items-center gap-1">
+          <Hand className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="text-[11px] font-extrabold text-[#2D2A26]">전체 드래그</span>
+          <span className="text-[10px] text-[#7A756D] leading-tight">여백 포함 자유 이동</span>
+        </div>
+
+        <div className="rounded-xl bg-[#FAF8F5] border border-[#EBE6DD] px-2 py-2 flex flex-col items-center gap-1">
+          <RotateCw className="w-3.5 h-3.5 text-sky-600" />
+          <span className="text-[11px] font-extrabold text-[#2D2A26]">더블탭 / Z</span>
+          <span className="text-[10px] text-[#7A756D] leading-tight">360° 공중제비 무적</span>
+        </div>
+
+        <div className="rounded-xl bg-[#FAF8F5] border border-[#EBE6DD] px-2 py-2 flex flex-col items-center gap-1">
+          <Bomb className="w-3.5 h-3.5 text-amber-600" />
+          <span className="text-[11px] font-extrabold text-[#2D2A26]">두 손가락 / X</span>
+          <span className="text-[10px] text-[#7A756D] leading-tight">메가 폭탄 전탄 소거</span>
+        </div>
+      </div>
     </div>
   );
 };

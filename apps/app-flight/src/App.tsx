@@ -33,8 +33,6 @@ export default function App() {
   });
 
   const [engineState, setEngineState] = useState<GameEngineState | null>(null);
-  const [rollTriggerCount, setRollTriggerCount] = useState<number>(0);
-  const [bombTriggerCount, setBombTriggerCount] = useState<number>(0);
   const [restartTriggerCount, setRestartTriggerCount] = useState<number>(0);
 
   // 로그인 유저의 서버 최고 기록 및 최신 스테이지 세이브 동기화
@@ -186,16 +184,6 @@ export default function App() {
     setRestartTriggerCount((c) => c + 1);
   }, []);
 
-  // 터치/버튼 롤 트리거
-  const handleTriggerRoll = useCallback(() => {
-    setRollTriggerCount((c) => c + 1);
-  }, []);
-
-  // 터치/버튼 폭탄 트리거
-  const handleTriggerBomb = useCallback(() => {
-    setBombTriggerCount((c) => c + 1);
-  }, []);
-
   // 스플래시 로딩 완료 콜백 (참조 고정으로 타이머 초기화 방지)
   const handleSplashFinish = useCallback(() => {
     setIsLoading(false);
@@ -213,7 +201,7 @@ export default function App() {
         {/* 메인 반응형 워크스페이스: 모바일 450px 1단 ➔ 태블릿/PC 2열 그리드 자동 확장 */}
         <main className="w-full max-w-[450px] md:max-w-3xl lg:max-w-5xl mx-auto flex-1 my-auto">
           <div className="md:grid md:grid-cols-2 md:gap-6 md:items-start">
-            {/* 좌측 컬럼: 메인 비행 캔버스 + 터치 조작부 + 스폰서 배너 */}
+            {/* 좌측 컬럼: 메인 비행 캔버스 + 제스처/전체화면 가이드 + 스폰서 배너 */}
             <div className="flex flex-col items-center">
               <FlightCanvas
                 onGameOver={handleGameOver}
@@ -222,18 +210,12 @@ export default function App() {
                 isLoggedIn={!!user}
                 savedState={savedState}
                 onSaveStageProgress={handleSaveStageProgress}
-                rollTriggerRequested={rollTriggerCount}
-                bombTriggerRequested={bombTriggerCount}
                 restartTriggerRequested={restartTriggerCount}
+                onOpenHowTo={() => setShowHowTo(true)}
               />
 
-              {/* 모바일/태블릿 하단 퀵 액션 버튼 (360° 롤 & 메가 폭탄) */}
-              <TouchControls
-                rolls={engineState?.player.rolls || 0}
-                bombs={engineState?.player.bombs || 0}
-                onTriggerRoll={handleTriggerRoll}
-                onTriggerBomb={handleTriggerBomb}
-              />
+              {/* 로비 전용 전체화면 & 제스처 퀵 가이드 (플레이 중 자동 전체화면 시 미노출) */}
+              <TouchControls />
 
               {/* 좌측 하단 스폰서 배너 슬롯 */}
               <div className="w-full max-w-[450px] mt-2.5">

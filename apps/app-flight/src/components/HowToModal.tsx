@@ -7,7 +7,7 @@ interface HowToModalProps {
 
 export const HowToModal: React.FC<HowToModalProps> = ({ onClose }) => {
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 select-none">
+    <div className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 select-none">
       <div className="w-full max-w-md bg-white rounded-3xl p-5 sm:p-6 border border-[#EBE6DD] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         {/* 헤더 */}
         <div className="flex items-center justify-between pb-3 border-b border-[#EBE6DD] mb-4">
@@ -40,21 +40,23 @@ export const HowToModal: React.FC<HowToModalProps> = ({ onClose }) => {
             </h4>
             <div className="grid grid-cols-2 gap-2 text-[11px]">
               <div>
-                <span className="font-semibold block text-[#7A756D]">PC 키보드</span>
+                <span className="font-semibold block text-[#7A756D]">PC 키보드 / 마우스</span>
                 <p className="mt-0.5 text-[#2D2A26]">
-                  • 이동: 방향키 또는 WASD<br />
+                  • 이동: 방향키·WASD 또는 마우스 드래그(여백 포함)<br />
                   • 사격: Space 또는 자동 연사<br />
-                  • 롤(무적): Z 또는 J 키<br />
-                  • 폭탄: X 또는 K 키
+                  • 롤(무적): Z / J 키 또는 더블클릭<br />
+                  • 폭탄: X / K 키 또는 우클릭<br />
+                  • 일시정지: P 또는 ESC 키
                 </p>
               </div>
               <div>
-                <span className="font-semibold block text-[#7A756D]">모바일 터치</span>
+                <span className="font-semibold block text-[#7A756D]">모바일 전체화면 제스처</span>
                 <p className="mt-0.5 text-[#2D2A26]">
-                  • 이동: 화면 어디든 터치 후 드래그 (상대 조작 방식, 손가락이 기체를 가리지 않음)<br />
-                  • 사격: 터치 시 자동 사격<br />
-                  • 롤(무적): 화면 하단 롤 버튼<br />
-                  • 폭탄: 화면 하단 폭탄 버튼
+                  • 이동: 전체화면 여백 포함 어디든 드래그<br />
+                  • 사격: 자동 연사<br />
+                  • 롤(무적): 화면 빠르게 더블탭<br />
+                  • 폭탄: 다른 손가락 추가 터치(두 손가락 탭)<br />
+                  • 설정/종료: 우측 상단 ⏸ 일시정지 버튼
                 </p>
               </div>
             </div>
@@ -72,7 +74,7 @@ export const HowToModal: React.FC<HowToModalProps> = ({ onClose }) => {
                   360° 공중제비 롤 (1.5초 완전 무적)
                 </span>
                 <p className="text-[11px] text-sky-800 leading-relaxed mt-0.5">
-                  탄막이 사방을 뒤덮었을 때 Z키 또는 롤 버튼을 누르면 기체가 회전하며 약 1.5초간 모든 탄환과 충돌을 무시합니다.
+                  탄막이 사방을 뒤덮었을 때 화면을 빠르게 더블탭(또는 PC Z키·더블클릭)하면 기체가 회전하며 약 1.5초간 모든 탄환과 충돌을 무시합니다.
                 </p>
               </div>
             </div>
@@ -85,7 +87,7 @@ export const HowToModal: React.FC<HowToModalProps> = ({ onClose }) => {
                   메가 폭탄 (전탄 소거 + 400 광역 피해)
                 </span>
                 <p className="text-[11px] text-amber-800 leading-relaxed mt-0.5">
-                  위기 상황 시 X키를 눌러 화면 전체의 적탄을 즉시 소멸시키고, 화면 내 모든 적에게 치명적인 폭발 피해를 입힙니다.
+                  한 손가락 조종 중에도 다른 손가락으로 화면을 가볍게 터치(두 손가락 탭, PC X키·우클릭)하면 즉시 화면 전체 적탄을 소멸시키고 광역 피해를 입힙니다.
                 </p>
               </div>
             </div>
