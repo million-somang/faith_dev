@@ -198,11 +198,14 @@ export function App() {
       if (added) {
         audio.playAdd();
         if (added.recurrence.type === 'workday' && !added.occurrence.isDueToday) {
+          if (filter.status === 'today') {
+            setFilter((prev) => ({ ...prev, status: 'all' }));
+          }
           const nextLabel = added.occurrence.nextOccurrenceDate
             ? added.occurrence.nextOccurrenceDate.slice(5).replace('-', '/')
             : '다음 영업일';
           showToast(
-            `영업일 반복 등록 완료 — 휴무일 제외되어 ${nextLabel}에 자동 노출됩니다.`
+            `'${added.title.slice(0, 16)}' (${added.occurrence.summaryLabel || '영업일 반복'}) 등록 완료 · 다음 영업일(${nextLabel}) 실행 예정`
           );
           return;
         }
@@ -212,7 +215,7 @@ export function App() {
         showToast(`'${added.title.slice(0, 16)}'${recSuffix} 추가됨`);
       }
     },
-    [addTodo, audio, showToast]
+    [addTodo, audio, filter.status, setFilter, showToast]
   );
 
   const handleAddRoutine = useCallback(
@@ -536,19 +539,24 @@ export function App() {
                       {hiddenWorkdayCount > 0 && filter.status !== 'recurring' && (
                         <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
                           <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
-                            <i className="fas fa-calendar-xmark text-amber-600 text-[11px] shrink-0"></i>
+                            <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
                             <span className="truncate">
-                              {nonWorkdayReason
-                                ? `${nonWorkdayReason} 휴무로 영업일 반복 ${hiddenWorkdayCount}건 자동 숨김`
-                                : `오늘 예정이 아닌 영업일 반복 ${hiddenWorkdayCount}건 숨김`}
+                              {filter.status === 'today'
+                                ? `${nonWorkdayReason ? `${nonWorkdayReason} 휴무 — ` : ''}영업일 반복 ${hiddenWorkdayCount}건은 다음 영업일에 자동 실행됩니다`
+                                : `오늘은 ${nonWorkdayReason ? `${nonWorkdayReason}(휴무)` : '비영업일'}입니다 · 영업일 반복 ${hiddenWorkdayCount}건 다음 영업일 실행 대기 중`}
                             </span>
                           </div>
                           <button
                             type="button"
-                            onClick={() => setFilter({ ...filter, status: 'recurring' })}
+                            onClick={() =>
+                              setFilter({
+                                ...filter,
+                                status: filter.status === 'today' ? 'all' : 'today',
+                              })
+                            }
                             className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
                           >
-                            반복 탭 보기 →
+                            {filter.status === 'today' ? '전체 목록에서 보기 →' : '오늘 할 일만 보기 →'}
                           </button>
                         </div>
                       )}

@@ -85,10 +85,16 @@ export default function TodoItemCard({
   const categoryMeta = CATEGORY_MAP[item.category];
   const isUrgentActive = !item.completed && item.priority === 'urgent';
   const isRecurring = item.occurrence.isRecurring;
+  const isWorkdayStandby =
+    item.recurrence.type === 'workday' && !item.occurrence.isDueToday && !item.completed;
+  const standbyNextDate = item.occurrence.nextOccurrenceDate
+    ? item.occurrence.nextOccurrenceDate.slice(5).replace('-', '/')
+    : '다음 영업일';
   const dueBadge = !isRecurring ? getDueDateBadge(item.dueDate, item.completed, todayStr) : null;
-  const nextOccLabel = isRecurring
-    ? formatNextOccurrenceLabel(item.occurrence.nextOccurrenceDate, todayStr, item.completed)
-    : null;
+  const nextOccLabel =
+    isRecurring && !isWorkdayStandby
+      ? formatNextOccurrenceLabel(item.occurrence.nextOccurrenceDate, todayStr, item.completed)
+      : null;
   const completedSubtasks = item.subtasks.filter((s) => s.completed).length;
 
   const handleOpenEdit = () => {
@@ -159,6 +165,7 @@ export default function TodoItemCard({
 
   return (
     <article
+      data-workday-standby={isWorkdayStandby ? 'true' : 'false'}
       className={`group relative overflow-hidden rounded-xl border transition-all ${
         item.completed
           ? 'bg-[#F6F3EC] border-[#EAE3D7] opacity-75'
@@ -168,7 +175,9 @@ export default function TodoItemCard({
               ? 'bg-indigo-50/45 border-indigo-300 ring-1 ring-indigo-300 shadow-sm'
               : isUrgentActive
                 ? 'bg-gradient-to-r from-rose-50/85 via-white to-white border-rose-200/90 hover:border-rose-300 shadow-[0_3px_12px_rgba(225,29,72,0.12),0_1px_2px_rgba(36,33,29,0.06)] hover:shadow-[0_6px_18px_rgba(225,29,72,0.18)]'
-                : 'bg-white border-[#E4DBD0] hover:border-indigo-300 shadow-[0_2px_6px_rgba(36,33,29,0.06)] hover:shadow-md'
+                : isWorkdayStandby
+                  ? 'bg-amber-50/35 border-amber-200/90 hover:border-amber-300 shadow-[0_2px_6px_rgba(36,33,29,0.05)] hover:shadow-md'
+                  : 'bg-white border-[#E4DBD0] hover:border-indigo-300 shadow-[0_2px_6px_rgba(36,33,29,0.06)] hover:shadow-md'
       }`}
     >
       <span
@@ -289,6 +298,13 @@ export default function TodoItemCard({
                 variant="success"
                 label={`🔥 ${item.streakCount}연속`}
               />
+            )}
+
+            {isWorkdayStandby && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-amber-200 bg-amber-50 text-[9px] font-extrabold text-amber-800">
+                <i className="far fa-calendar-clock text-[8px]"></i>
+                휴무 대기 · {standbyNextDate} 실행
+              </span>
             )}
 
             {nextOccLabel && (

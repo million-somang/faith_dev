@@ -900,18 +900,15 @@ export function usePortalTodos() {
   const { visibleItems, hiddenWorkdayCount, nonWorkdayReason } = useMemo(() => {
     const todayStr = getTodayLocalDateStr();
     const reason = getPortalNonWorkdayReason(todayStr);
-    const visible: PortalTodoItem[] = [];
-    let hidden = 0;
+    let standbyCount = 0;
     for (const item of activeItems) {
-      if (item.recurrence.type === 'workday' && !item.occurrence.isDueToday) {
-        hidden += 1;
-        continue;
+      if (!item.completed && item.recurrence.type === 'workday' && !item.occurrence.isDueToday) {
+        standbyCount += 1;
       }
-      visible.push(item);
     }
     return {
-      visibleItems: visible,
-      hiddenWorkdayCount: hidden,
+      visibleItems: activeItems,
+      hiddenWorkdayCount: standbyCount,
       nonWorkdayReason: reason,
     };
   }, [activeItems]);

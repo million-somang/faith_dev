@@ -19,7 +19,12 @@ import type {
   TodoPriority,
   TodoRecurrenceRule,
 } from '../types/todo';
-import { formatRecurrenceSummary, normalizeRecurrenceRule } from '../utils/recurrence';
+import {
+  evaluateTodoOccurrence,
+  formatRecurrenceSummary,
+  getNonWorkdayReason,
+  normalizeRecurrenceRule,
+} from '../utils/recurrence';
 import { getLocalDateString, getOffsetDateString } from '../utils/todoAnalytics';
 
 interface TodoQuickAddProps {
@@ -48,6 +53,20 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
 
   const todayStr = getLocalDateString();
   const tomorrowStr = getOffsetDateString(1);
+  const nonWorkdayReason = getNonWorkdayReason(todayStr);
+  const nextWorkdayLabel = (() => {
+    if (!nonWorkdayReason) return null;
+    const occ = evaluateTodoOccurrence({
+      rule: normalizeRecurrenceRule({ type: 'workday', interval }, dueDate ?? todayStr),
+      anchorDate: dueDate ?? todayStr,
+      lastCompletedPeriod: null,
+      completed: false,
+      targetDate: todayStr,
+    });
+    return occ.nextOccurrenceDate
+      ? occ.nextOccurrenceDate.slice(5).replace('-', '/')
+      : '다음 영업일';
+  })();
   const selectedPriority = PRIORITY_MAP[priority];
   const selectedCategory = CATEGORY_MAP[category];
   const dueShortLabel =
@@ -349,6 +368,11 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 font-bold">
                         토·일·공휴일 자동 제외
                       </span>
+                      {nonWorkdayReason && nextWorkdayLabel && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-800 font-extrabold">
+                          오늘({nonWorkdayReason}) 등록 가능 · {nextWorkdayLabel}부터 실행
+                        </span>
+                      )}
                     </>
                   )}
 

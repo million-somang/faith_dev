@@ -848,13 +848,6 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
     const query = filter.searchQuery.trim().toLowerCase();
 
     const filtered = activeItems.filter((item) => {
-      if (
-        filter.status !== 'recurring' &&
-        item.recurrence.type === 'workday' &&
-        !item.occurrence.isDueToday
-      ) {
-        return false;
-      }
       if (filter.status === 'active' && item.completed) return false;
       if (filter.status === 'completed' && !item.completed) return false;
       if (filter.status === 'recurring' && item.recurrence.type === 'none') return false;
@@ -918,11 +911,10 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
     let visibleTotal = 0;
     let visibleActive = 0;
     let visibleCompleted = 0;
-    let hiddenWorkday = 0;
+    let standbyWorkday = 0;
     for (const item of activeItems) {
-      if (item.recurrence.type === 'workday' && !item.occurrence.isDueToday) {
-        hiddenWorkday += 1;
-        continue;
+      if (!item.completed && item.recurrence.type === 'workday' && !item.occurrence.isDueToday) {
+        standbyWorkday += 1;
       }
       visibleTotal += 1;
       if (item.completed) {
@@ -935,7 +927,7 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
       visibleTotalCount: visibleTotal,
       visibleActiveCount: visibleActive,
       visibleCompletedCount: visibleCompleted,
-      hiddenWorkdayCount: hiddenWorkday,
+      hiddenWorkdayCount: standbyWorkday,
       nonWorkdayReason: reason,
     };
   }, [activeItems]);

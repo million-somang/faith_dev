@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, type FormEvent } from 'react';
+import React, { useEffect, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useAppLauncher } from '@/hooks/useAppLauncher';
 import {
@@ -102,6 +102,15 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
   const [quickPriority, setQuickPriority] = useState<LocalTodoPriority>('important');
   const [quickRecurrence, setQuickRecurrence] = useState<PortalRecurrenceType>('none');
   const [showCompleted, setShowCompleted] = useState<boolean>(false);
+  const [hideStandbyWorkday, setHideStandbyWorkday] = useState<boolean>(false);
+  const [quickNotice, setQuickNotice] = useState<string | null>(null);
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+    };
+  }, []);
 
   const todayStr = getTodayLocalDateStr();
   const maxVisible = variant === 'compact' ? 4 : 6;
@@ -112,6 +121,11 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
 
   const visibleList = todos
     .filter((item) => (showCompleted ? true : !item.completed))
+    .filter((item) =>
+      hideStandbyWorkday
+        ? !(item.recurrence.type === 'workday' && !item.occurrence.isDueToday && !item.completed)
+        : true
+    )
     .slice(0, maxVisible);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -120,6 +134,16 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
     if (!trimmed) return;
     addQuickTodo(trimmed, quickPriority, true, quickRecurrence);
     setQuickTitle('');
+    if (quickRecurrence === 'workday' && nonWorkdayReason) {
+      setHideStandbyWorkday(false);
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+      setQuickNotice(
+        `'${trimmed.slice(0, 18)}' 영업일 반복 등록 완료 — ${nonWorkdayReason} 휴무 후 다음 영업일에 자동 실행됩니다.`
+      );
+      noticeTimerRef.current = setTimeout(() => {
+        setQuickNotice(null);
+      }, 4500);
+    }
   };
 
   return (
@@ -323,10 +347,19 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
               })}
               {quickRecurrence === 'workday' && (
                 <span className="px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-[9px] font-bold text-amber-800">
-                  토·일·공휴일 자동 제외
+                  {nonWorkdayReason
+                    ? `오늘(${nonWorkdayReason}) 등록 가능 · 다음 영업일 실행`
+                    : '토·일·공휴일 자동 제외'}
                 </span>
               )}
             </div>
+          </div>
+        )}
+
+        {quickNotice && (
+          <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-900 flex items-center gap-1.5">
+            <i className="fas fa-circle-check text-emerald-600 text-xs shrink-0"></i>
+            <span>{quickNotice}</span>
           </div>
         )}
       </form>
@@ -372,19 +405,20 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
           {hydrated && hiddenWorkdayCount > 0 && (
             <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
               <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
-                <i className="fas fa-calendar-xmark text-amber-600 text-[11px] shrink-0"></i>
+                <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
                 <span className="truncate">
                   {nonWorkdayReason
-                    ? `${nonWorkdayReason} 휴무로 영업일 반복 ${hiddenWorkdayCount}건 자동 숨김`
-                    : `오늘 예정이 아닌 영업일 반복 ${hiddenWorkdayCount}건 숨김`}
+                    ? `${nonWorkdayReason} 휴무 · 영업일 반복 ${hiddenWorkdayCount}건은 다음 영업일 실행 대기 중`
+                    : `비영업일 대기 영업일 반복 ${hiddenWorkdayCount}건`}
                 </span>
               </div>
               <button
                 type="button"
-                onClick={() => launchApp('/app/todo-list/', 'todo-list')}
+                data-mypage-standby-toggle="true"
+                onClick={() => setHideStandbyWorkday((prev) => !prev)}
                 className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
               >
-                스마트 TODO에서 보기 →
+                {hideStandbyWorkday ? '대기 항목 함께 보기' : '오늘 할 일만 보기'}
               </button>
             </div>
           )}
@@ -399,15 +433,25 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                 <i className="fas fa-clipboard-list"></i>
               </div>
               <p className="text-xs font-extrabold text-[#24211D]">
-                {hiddenWorkdayCount > 0
-                  ? '오늘은 휴무일이라 예정된 할 일이 없습니다.'
-                  : '아직 등록된 할 일이 없습니다.'}
+                아직 등록된 할 일이 없습니다.
               </p>
               <p className="text-[11px] text-[#6C655B]">
-                {hiddenWorkdayCount > 0
-                  ? `영업일 반복 할 일 ${hiddenWorkdayCount}건은 다음 영업일에 자동 표시되며, 전체 플래너의 반복 탭에서 언제든 확인할 수 있습니다.`
-                  : '위 입력창에 바로 추가하거나 전체 플래너 팝업에서 세부 반복 주기와 집중 타이머를 설정해 보세요.'}
+                위 입력창에 바로 추가하거나 전체 플래너 팝업에서 세부 반복 주기와 집중 타이머를 설정해 보세요.
               </p>
+            </div>
+          ) : visibleList.length === 0 && hideStandbyWorkday && hiddenWorkdayCount > 0 ? (
+            <div className="rounded-2xl bg-amber-50/75 border border-amber-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs font-extrabold text-amber-900">
+                <i className="fas fa-calendar-clock text-amber-600 text-sm"></i>
+                <span>오늘은 휴무일이라 예정된 할 일이 없습니다. (대기 {hiddenWorkdayCount}건)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHideStandbyWorkday(false)}
+                className="text-[11px] font-black text-indigo-700 hover:underline cursor-pointer shrink-0"
+              >
+                대기 항목 함께 보기
+              </button>
             </div>
           ) : visibleList.length === 0 ? (
             <div className="rounded-2xl bg-emerald-50/80 border border-emerald-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-2">
@@ -428,6 +472,11 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
               {visibleList.map((item) => {
                 const pri = PRIORITY_BADGE[item.priority];
                 const isRecurring = item.recurrence.type !== 'none';
+                const isWorkdayStandby =
+                  item.recurrence.type === 'workday' && !item.occurrence.isDueToday && !item.completed;
+                const standbyNextDate = item.occurrence.nextOccurrenceDate
+                  ? item.occurrence.nextOccurrenceDate.slice(5).replace('-', '/')
+                  : '다음 영업일';
                 const due = !isRecurring
                   ? getCompactDueLabel(item.dueDate, item.completed, todayStr)
                   : null;
@@ -436,10 +485,13 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                 return (
                   <div
                     key={item.id}
+                    data-mypage-workday-standby={isWorkdayStandby ? 'true' : 'false'}
                     className={`group relative overflow-hidden flex items-center justify-between gap-2.5 pl-4 pr-3 py-3 rounded-xl border transition-all ${
                       item.completed
                         ? 'bg-[#F6F3EC] border-[#EAE3D7] opacity-80'
-                        : 'bg-white border-[#E4DBD0] hover:border-indigo-300 shadow-[0_1px_3px_rgba(36,33,29,0.06)] hover:shadow-md'
+                        : isWorkdayStandby
+                          ? 'bg-amber-50/35 border-amber-200/90 hover:border-amber-300 shadow-[0_1px_3px_rgba(36,33,29,0.05)] hover:shadow-md'
+                          : 'bg-white border-[#E4DBD0] hover:border-indigo-300 shadow-[0_1px_3px_rgba(36,33,29,0.06)] hover:shadow-md'
                     }`}
                   >
                     <span
@@ -480,6 +532,11 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                           {isRecurring && item.occurrence.summaryLabel && (
                             <span className="px-1.5 py-0.5 rounded border bg-indigo-50 text-indigo-700 border-indigo-200 font-black">
                               🔁 {item.occurrence.summaryLabel}
+                            </span>
+                          )}
+                          {isWorkdayStandby && (
+                            <span className="px-1.5 py-0.5 rounded border bg-amber-50 text-amber-800 border-amber-200 font-extrabold">
+                              휴무 대기 · {standbyNextDate} 실행
                             </span>
                           )}
                           {isRecurring && item.streakCount > 0 && (
