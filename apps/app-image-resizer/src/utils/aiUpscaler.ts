@@ -107,10 +107,16 @@ export function selectEsrganScaleForRatio(ratio: number): EsrganScale {
   return 4;
 }
 
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new DOMException('작업이 중단되었습니다.', 'AbortError');
+  }
+}
+
 /**
  * 100% 브라우저 CSR AI(ESRGAN-Slim) 초해상도 업스케일링
  * - 지연 로딩 + 동일 출처 가중치 캐시
- * - 타일 분할(Patch 64px) 실시간 진행률 보고
+ * - 타일 분할(Patch 64px) 실시간 진행률 보고 + AbortSignal 즉시 중단
  * - 최대 4K(4096px) 안전 상한 및 투명 PNG/WebP 알파 채널 보존
  */
 export async function upscaleCanvasWithEsrgan(
@@ -118,8 +124,11 @@ export async function upscaleCanvasWithEsrgan(
   targetW: number,
   targetH: number,
   sharpenLevel: SharpenLevel,
-  onProgress?: (percent: number, statusText: string) => void
+  onProgress?: (percent: number, statusText: string) => void,
+  signal?: AbortSignal
 ): Promise<UpscalerResultCanvas> {
+  throwIfAborted(signal);
+
   const origW = img.naturalWidth || img.width;
   const origH = img.naturalHeight || img.height;
 
@@ -141,13 +150,24 @@ export async function upscaleCanvasWithEsrgan(
   }
 
   if (onProgress) {
-    onProgress(8, `AI 초해상도(${modelScale}×) 모델 준비 중...`);
+    onProgress(4, 'WebGL2 GPU 추론 엔진 초기화 중...');
   }
 
   const tf = await ensureTfReady();
+  throwIfAborted(signal);
+
+  if (onProgress) {
+    onProgress(9, `AI 초해상도(${modelScale}×) 모델 가중치 불러오는 중...`);
+  }
+
   const upscaler = await getUpscalerInstance(modelScale);
+  throwIfAborted(signal);
 
   // 원본 캔버스 추출
+  if (onProgress) {
+    onProgress(13, '타일 분할 및 알파 채널 분석 중...');
+  }
+
   const rawCanvas = document.createElement('canvas');
   rawCanvas.width = aiInW;
   rawCanvas.height = aiInH;
@@ -173,7 +193,7 @@ export async function upscaleCanvasWithEsrgan(
   aiInputCtx.drawImage(rawCanvas, 0, 0);
 
   if (onProgress) {
-    onProgress(16, `AI 타일 복원 시작 (x${modelScale})...`);
+    onProgress(16, `AI 초해상도 타일 복원 시작 (${modelScale}×)...`);
   }
 
   let upscaledTensor: Tensor3D | null = null;
@@ -187,13 +207,17 @@ export async function upscaleCanvasWithEsrgan(
       patchSize: 64,
       padding: 4,
       awaitNextFrame: true,
+      signal,
       progress: (amount: number) => {
+        if (signal?.aborted) return;
         if (onProgress) {
           const scaledPct = Math.min(88, 16 + Math.round(amount * 72));
-          onProgress(scaledPct, `AI 디테일 복원 중 (${Math.round(amount * 100)}%)`);
+          onProgress(scaledPct, `AI 디테일 신경망 복원 중 (${Math.round(amount * 100)}%)`);
         }
       },
     });
+
+    throwIfAborted(signal);
 
     if (typeof result === 'string') {
       throw new Error('예기치 않은 AI 출력 형식입니다.');
@@ -205,6 +229,8 @@ export async function upscaleCanvasWithEsrgan(
     aiOutW = tW;
 
     const rgbData = await result.data();
+    throwIfAborted(signal);
+
     const totalPx = aiOutW * aiOutH;
     finalRgba = new Uint8ClampedArray(totalPx * 4);
     for (let i = 0; i < totalPx; i += 1) {
@@ -223,6 +249,8 @@ export async function upscaleCanvasWithEsrgan(
     void tf.getBackend();
   }
 
+  throwIfAborted(signal);
+
   // 목표 치수(예: FHD/4K 정확 맞춤 또는 4K 상한) 맞추기
   const safeTargetLong = Math.max(targetW, targetH);
   let outW = targetW;
@@ -235,7 +263,7 @@ export async function upscaleCanvasWithEsrgan(
   }
 
   if (onProgress) {
-    onProgress(92, '해상도 정밀 맞춤 및 후처리 중...');
+    onProgress(91, '목표 해상도 맞춤 및 알파 합성 중...');
   }
 
   let normalizedRgba: Uint8ClampedArray;
@@ -244,6 +272,8 @@ export async function upscaleCanvasWithEsrgan(
   } else {
     normalizedRgba = finalRgba;
   }
+
+  throwIfAborted(signal);
 
   // 투명 PNG/WebP 알파 채널 무손실 재합성
   if (hasAlpha) {
@@ -259,10 +289,16 @@ export async function upscaleCanvasWithEsrgan(
     }
   }
 
+  throwIfAborted(signal);
+
+  if (onProgress) {
+    onProgress(95, '엣지 선명화 후처리 적용 중...');
+  }
+
   // 선택적 적응형 엣지 선명화
   const polishedRgba = applyAdaptiveUnsharpMask(normalizedRgba, outW, outH, sharpenLevel);
   if (onProgress) {
-    onProgress(98, '이미지 파일 생성 중...');
+    onProgress(98, '고화질 이미지 포맷 인코딩 중...');
   }
 
   return {

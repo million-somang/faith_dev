@@ -43,6 +43,142 @@
     animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes emblemSpin3d {
+    0% {
+        transform: perspective(600px) rotateY(0deg) translateY(0px);
+    }
+    50% {
+        transform: perspective(600px) rotateY(180deg) translateY(-3px);
+    }
+    100% {
+        transform: perspective(600px) rotateY(360deg) translateY(0px);
+    }
+}
+
+@keyframes orbitSlow {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes sparkleTwinkle {
+    0%, 100% {
+        opacity: 0.25;
+        transform: scale(0.72);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.18);
+    }
+}
+
+@keyframes waveSlide {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+@keyframes shimmerSweep {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(220%);
+    }
+}
+
+@keyframes scanBeam {
+    0% {
+        transform: translateY(-100%);
+    }
+    100% {
+        transform: translateY(380%);
+    }
+}
+
+@keyframes popCelebrate {
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    70% {
+        opacity: 1;
+        transform: scale(1.14);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.nm-stage-disc {
+    box-shadow:
+        8px 8px 18px rgba(177, 166, 146, 0.42),
+        -8px -8px 18px rgba(255, 255, 255, 0.92),
+        inset 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.nm-inset-panel {
+    box-shadow:
+        inset 4px 4px 10px rgba(188, 177, 158, 0.34),
+        inset -4px -4px 10px rgba(255, 255, 255, 0.85);
+}
+
+.ring-progress-transition {
+    transition:
+        stroke-dashoffset 220ms cubic-bezier(0.22, 1, 0.36, 1),
+        stroke 300ms ease;
+}
+
+.animate-emblem-spin-3d {
+    animation: emblemSpin3d 3.2s linear infinite;
+    will-change: transform;
+}
+
+.animate-orbit-slow {
+    animation: orbitSlow 14s linear infinite;
+}
+
+.animate-sparkle-a {
+    animation: sparkleTwinkle 1.8s ease-in-out infinite;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+.animate-sparkle-b {
+    animation: sparkleTwinkle 2.1s ease-in-out 0.6s infinite;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+.animate-sparkle-c {
+    animation: sparkleTwinkle 2.4s ease-in-out 1.2s infinite;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+.animate-wave-slide {
+    animation: waveSlide 2.2s linear infinite;
+}
+
+.animate-shimmer-sweep {
+    animation: shimmerSweep 1.6s ease-in-out infinite;
+}
+
+.animate-scan-beam {
+    animation: scanBeam 1.9s ease-in-out infinite;
+}
+
+.animate-pop-celebrate {
+    animation: popCelebrate 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
 /* Custom scrollbar for preview lists */
 ::-webkit-scrollbar {
     width: 6px;

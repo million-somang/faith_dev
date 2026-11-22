@@ -52,6 +52,26 @@ export interface ImageFileItem {
   errorMessage?: string;
 }
 
+export type UpscaleProcessingStage = 0 | 1 | 2 | 3;
+
+export interface UpscaleProcessingState {
+  readonly isActive: boolean;
+  readonly isCompleting: boolean;
+  readonly totalCount: number;
+  readonly currentIndex: number; // 1-based
+  readonly currentItemId: string;
+  readonly currentFileName: string;
+  readonly currentPreviewUrl: string;
+  readonly currentOriginalDims: string;
+  readonly currentTargetDims: string;
+  readonly overallPercent: number; // 1 ~ 100
+  readonly itemPercent: number; // 1 ~ 100
+  readonly stageIndex: UpscaleProcessingStage;
+  readonly statusText: string;
+  readonly engineLabel: string;
+  readonly elapsedMs: number;
+}
+
 export interface PresetOption {
   id: string;
   label: string;

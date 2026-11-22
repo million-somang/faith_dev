@@ -7,6 +7,7 @@ import DropZone from './components/DropZone';
 import ResizeOptionsPanel from './components/ResizeOptionsPanel';
 import { ImageItemCard } from './components/ImageItemCard';
 import { BeforeAfterComparePanel } from './components/BeforeAfterCompareModal';
+import { UpscaleProgressStage } from './components/UpscaleProgressStage';
 import { HowToGuide } from './components/HowToGuide';
 import { FaqSection } from './components/FaqSection';
 
@@ -32,6 +33,8 @@ export const App: React.FC = () => {
     activeCompareItem,
     setCompareItemId,
     isProcessing,
+    processingState,
+    processNotice,
     isSavingAll,
     isZipping,
     saveProgress,
@@ -42,6 +45,7 @@ export const App: React.FC = () => {
     handleRemoveItem,
     handleClearAll,
     handleStartProcess,
+    handleCancelProcess,
     handleDownloadSingle,
     handleDownloadAllFiles,
     handleDownloadZipAll,
@@ -123,9 +127,17 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* STEP 1: 이미지 올리기 */}
-              {currentStep === 1 && (
-                <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] border-t-4 border-t-indigo-600 shadow-md space-y-5 animate-fade-in">
+              {/* 전용 포커스 프로그레스 스테이지 (1~100% 3D 로고 & 컬러 채움 연출) */}
+              {processingState?.isActive ? (
+                <UpscaleProgressStage
+                  state={processingState}
+                  onCancel={handleCancelProcess}
+                />
+              ) : (
+                <>
+                  {/* STEP 1: 이미지 올리기 */}
+                  {currentStep === 1 && (
+                    <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] border-t-4 border-t-indigo-600 shadow-md space-y-5 animate-fade-in">
                   <div className="flex items-start justify-between gap-3 border-b border-[#EBE6DD] pb-4">
                     <div>
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-indigo-600 text-white text-[11px] font-black mb-1.5 shadow-2xs">
@@ -193,18 +205,26 @@ export const App: React.FC = () => {
                 </div>
               )}
 
-              {/* STEP 2: 업스케일 · 크기 · 파일형식 선택 */}
-              {currentStep === 2 && (
-                <ResizeOptionsPanel
-                  settings={settings}
-                  sampleItem={items[0]}
-                  onChange={handleUpdateSettings}
-                  itemCount={items.length}
-                  isProcessing={isProcessing}
-                  onBackToStep1={() => handleGoToStep(1)}
-                  onStartProcess={handleStartProcess}
-                />
-              )}
+                  {/* STEP 2: 업스케일 · 크기 · 파일형식 선택 */}
+                  {currentStep === 2 && (
+                    <div className="space-y-3">
+                      {processNotice && (
+                        <div className="rounded-2xl px-4 py-3 text-xs font-bold border bg-indigo-50 border-indigo-200 text-indigo-900 flex items-center gap-2 animate-fade-in">
+                          <i className="fas fa-circle-info text-indigo-600"></i>
+                          <span>{processNotice.text}</span>
+                        </div>
+                      )}
+                      <ResizeOptionsPanel
+                        settings={settings}
+                        sampleItem={items[0]}
+                        onChange={handleUpdateSettings}
+                        itemCount={items.length}
+                        isProcessing={isProcessing}
+                        onBackToStep1={() => handleGoToStep(1)}
+                        onStartProcess={handleStartProcess}
+                      />
+                    </div>
+                  )}
 
               {/* STEP 3: Before/After 비교 및 파일 저장 */}
               {currentStep === 3 && (
@@ -374,6 +394,8 @@ export const App: React.FC = () => {
                     </button>
                   </div>
                 </div>
+              )}
+                </>
               )}
             </>
           )}

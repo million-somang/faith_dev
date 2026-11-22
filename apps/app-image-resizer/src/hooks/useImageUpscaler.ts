@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ImageFileItem, ResizeSettings } from '../types/index';
 import {
+  ImageFileItem,
+  ResizeSettings,
+  UpscaleProcessingStage,
+  UpscaleProcessingState,
+} from '../types/index';
+import {
+  calculateTargetSize,
   downloadAllAsSingleZip,
   getOutputFilename,
+  isAbortError,
   loadImageDimensions,
   resizeSingleImage,
   saveAllToSingleDirectory,
@@ -34,6 +41,25 @@ export interface SaveNotice {
   readonly text: string;
 }
 
+function resolveStageIndex(percent: number): UpscaleProcessingStage {
+  if (percent < 16) return 0;
+  if (percent < 89) return 1;
+  if (percent < 97) return 2;
+  return 3;
+}
+
+function resolveEngineLabel(settings: ResizeSettings): string {
+  if (settings.unit === 'upscale') {
+    return settings.upscaleEngine === 'ai-esrgan'
+      ? `AI 초해상도 (${settings.upscaleTarget.toUpperCase()})`
+      : `초고속 Lanczos-3 (${settings.upscaleTarget.toUpperCase()})`;
+  }
+  if (settings.unit === 'target_kb') return `목표 용량 맞춤 (${settings.targetKb}KB)`;
+  if (settings.unit === 'pixel') return '픽셀 · SNS 규격 변환';
+  if (settings.percent === 100) return '포맷 변환 (원본 크기)';
+  return `비율 축소 (${settings.percent}%)`;
+}
+
 export function useImageUpscaler() {
   const [activeTab, setActiveTab] = useState<'app' | 'guide' | 'faq'>('app');
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
@@ -41,31 +67,51 @@ export function useImageUpscaler() {
   const [items, setItems] = useState<ImageFileItem[]>([]);
   const [compareItemId, setCompareItemId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingState, setProcessingState] = useState<UpscaleProcessingState | null>(null);
+  const [processNotice, setProcessNotice] = useState<SaveNotice | null>(null);
   const [isSavingAll, setIsSavingAll] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [saveProgress, setSaveProgress] = useState<{ current: number; total: number } | null>(null);
   const [saveNotice, setSaveNotice] = useState<SaveNotice | null>(null);
+
   const itemsRef = useRef<ImageFileItem[]>([]);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const elapsedTimerRef = useRef<number | null>(null);
+  const completionTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
 
+  const stopElapsedTimer = useCallback(() => {
+    if (elapsedTimerRef.current !== null) {
+      window.clearInterval(elapsedTimerRef.current);
+      elapsedTimerRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     return () => {
+      abortControllerRef.current?.abort();
+      stopElapsedTimer();
+      if (completionTimerRef.current !== null) {
+        window.clearTimeout(completionTimerRef.current);
+      }
       itemsRef.current.forEach((item) => {
         if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
         if (item.resizedUrl) URL.revokeObjectURL(item.resizedUrl);
       });
     };
-  }, []);
+  }, [stopElapsedTimer]);
 
   const handleUpdateSettings = useCallback((updated: Partial<ResizeSettings>) => {
+    setProcessNotice(null);
     setSettings((prev) => ({ ...prev, ...updated }));
   }, []);
 
   const handleGoToStep = useCallback(
     (nextStep: WizardStep) => {
+      if (isProcessing) return;
       if (nextStep > 1 && itemsRef.current.length === 0) {
         alert('먼저 업스케일 또는 변환할 이미지를 1장 이상 올려주세요.');
         return;
@@ -73,7 +119,7 @@ export function useImageUpscaler() {
       setCurrentStep(nextStep);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
-    []
+    [isProcessing]
   );
 
   const handleFilesAdded = useCallback(async (newFiles: File[]) => {
@@ -106,6 +152,7 @@ export function useImageUpscaler() {
     }
 
     if (loadedItems.length > 0) {
+      setProcessNotice(null);
       setItems((prev) => [...prev, ...loadedItems]);
     }
   }, []);
@@ -129,23 +176,110 @@ export function useImageUpscaler() {
       if (it.resizedUrl) URL.revokeObjectURL(it.resizedUrl);
     });
     setSaveNotice(null);
+    setProcessNotice(null);
     setCompareItemId(null);
     setItems([]);
     setCurrentStep(1);
   }, [isProcessing]);
+
+  const handleCancelProcess = useCallback(() => {
+    if (!abortControllerRef.current) return;
+    setProcessingState((prev) =>
+      prev
+        ? {
+            ...prev,
+            statusText: '작업을 안전하게 중단하는 중...',
+          }
+        : null
+    );
+    abortControllerRef.current.abort();
+  }, []);
 
   const handleStartProcess = useCallback(async () => {
     const snapshot = [...itemsRef.current];
     if (isProcessing || snapshot.length === 0) return;
 
     setSaveNotice(null);
+    setProcessNotice(null);
     setIsProcessing(true);
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const startTime = Date.now();
+    const engineLabel = resolveEngineLabel(settings);
+
+    const firstTarget = calculateTargetSize(
+      snapshot[0]!.originalWidth,
+      snapshot[0]!.originalHeight,
+      settings
+    );
+
+    setProcessingState({
+      isActive: true,
+      isCompleting: false,
+      totalCount: snapshot.length,
+      currentIndex: 1,
+      currentItemId: snapshot[0]!.id,
+      currentFileName: snapshot[0]!.name,
+      currentPreviewUrl: snapshot[0]!.previewUrl,
+      currentOriginalDims: `${snapshot[0]!.originalWidth}×${snapshot[0]!.originalHeight}`,
+      currentTargetDims: `${firstTarget.targetW}×${firstTarget.targetH}`,
+      overallPercent: 1,
+      itemPercent: 1,
+      stageIndex: 0,
+      statusText:
+        settings.unit === 'upscale'
+          ? settings.upscaleEngine === 'ai-esrgan'
+            ? 'AI 초해상도 엔진 초기화 중...'
+            : 'Lanczos-3 워커 초기화 중...'
+          : '이미지 변환 준비 중...',
+      engineLabel,
+      elapsedMs: 0,
+    });
+
+    stopElapsedTimer();
+    elapsedTimerRef.current = window.setInterval(() => {
+      setProcessingState((prev) =>
+        prev && !prev.isCompleting ? { ...prev, elapsedMs: Date.now() - startTime } : prev
+      );
+    }, 100);
+
     let firstDoneId: string | null = null;
+    let completedCountInRun = 0;
+    let wasAborted = false;
 
     for (let i = 0; i < snapshot.length; i += 1) {
+      if (controller.signal.aborted) {
+        wasAborted = true;
+        break;
+      }
+
       const current = snapshot[i]!;
       const oldResizedUrl = current.resizedUrl;
+      const targetSize = calculateTargetSize(
+        current.originalWidth,
+        current.originalHeight,
+        settings
+      );
+
+      const initialBatchPct = Math.max(1, Math.min(99, Math.round((i / snapshot.length) * 100)));
+      setProcessingState((prev) =>
+        prev
+          ? {
+              ...prev,
+              currentIndex: i + 1,
+              currentItemId: current.id,
+              currentFileName: current.name,
+              currentPreviewUrl: current.previewUrl,
+              currentOriginalDims: `${current.originalWidth}×${current.originalHeight}`,
+              currentTargetDims: `${targetSize.targetW}×${targetSize.targetH}`,
+              overallPercent: Math.max(prev.overallPercent, initialBatchPct),
+              itemPercent: 2,
+              stageIndex: 0,
+              statusText: `${current.name} 분석 및 준비 중...`,
+            }
+          : prev
+      );
 
       setItems((prev) =>
         prev.map((it) =>
@@ -153,26 +287,46 @@ export function useImageUpscaler() {
             ? {
                 ...it,
                 status: 'processing',
-                progress: 5,
-                statusText:
-                  settings.unit === 'upscale'
-                    ? settings.upscaleEngine === 'ai-esrgan'
-                      ? 'AI 초해상도 준비 중...'
-                      : 'Lanczos-3 업스케일 시작...'
-                    : '이미지 변환 중...',
+                progress: 2,
+                statusText: '처리 준비 중...',
               }
             : it
         )
       );
 
       try {
-        const result = await resizeSingleImage(current, settings, (percent, statusText) => {
-          setItems((prev) =>
-            prev.map((it) =>
-              it.id === current.id ? { ...it, progress: percent, statusText } : it
-            )
-          );
-        });
+        const result = await resizeSingleImage(
+          current,
+          settings,
+          (percent, statusText) => {
+            if (controller.signal.aborted) return;
+            const safeItemPct = Math.max(1, Math.min(99, Math.round(percent)));
+            const overallPct = Math.max(
+              1,
+              Math.min(99, Math.round(((i + safeItemPct / 100) / snapshot.length) * 100))
+            );
+            const stageIndex = resolveStageIndex(safeItemPct);
+
+            setProcessingState((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    overallPercent: Math.max(prev.overallPercent, overallPct),
+                    itemPercent: safeItemPct,
+                    stageIndex,
+                    statusText,
+                  }
+                : prev
+            );
+
+            setItems((prev) =>
+              prev.map((it) =>
+                it.id === current.id ? { ...it, progress: safeItemPct, statusText } : it
+              )
+            );
+          },
+          controller.signal
+        );
 
         if (oldResizedUrl) {
           URL.revokeObjectURL(oldResizedUrl);
@@ -181,6 +335,7 @@ export function useImageUpscaler() {
         if (!firstDoneId) {
           firstDoneId = current.id;
         }
+        completedCountInRun += 1;
 
         setItems((prev) =>
           prev.map((it) =>
@@ -203,6 +358,23 @@ export function useImageUpscaler() {
           )
         );
       } catch (err: unknown) {
+        if (isAbortError(err) || controller.signal.aborted) {
+          wasAborted = true;
+          setItems((prev) =>
+            prev.map((it) =>
+              it.id === current.id
+                ? {
+                    ...it,
+                    status: 'idle',
+                    progress: 0,
+                    statusText: undefined,
+                  }
+                : it
+            )
+          );
+          break;
+        }
+
         const message = err instanceof Error ? err.message : '변환 오류가 발생했습니다.';
         setItems((prev) =>
           prev.map((it) =>
@@ -220,13 +392,53 @@ export function useImageUpscaler() {
       }
     }
 
+    stopElapsedTimer();
+    abortControllerRef.current = null;
+
+    if (wasAborted) {
+      setProcessingState(null);
+      setIsProcessing(false);
+      setProcessNotice({
+        type: 'info',
+        text:
+          completedCountInRun > 0
+            ? `작업이 중단되었습니다. (이미 완료된 ${completedCountInRun}장은 보존되었습니다)`
+            : '업스케일 작업이 중단되었습니다. 옵션을 변경한 뒤 다시 시작할 수 있습니다.',
+      });
+      return;
+    }
+
     if (firstDoneId) {
       setCompareItemId(firstDoneId);
     }
+
+    // 100% 도달 축하 연출(0.6초) 후 STEP 3 자동 전환
+    setProcessingState((prev) =>
+      prev
+        ? {
+            ...prev,
+            isCompleting: true,
+            overallPercent: 100,
+            itemPercent: 100,
+            stageIndex: 3,
+            elapsedMs: Date.now() - startTime,
+            statusText: '처리가 완료되었습니다! 비교 화면으로 이동합니다...',
+          }
+        : prev
+    );
+
+    await new Promise<void>((resolve) => {
+      completionTimerRef.current = window.setTimeout(() => {
+        completionTimerRef.current = null;
+        resolve();
+      }, 600);
+    });
+
+    setProcessingState(null);
     setIsProcessing(false);
     setCurrentStep(3);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [isProcessing, settings]);
+  }, [isProcessing, settings, stopElapsedTimer]);
 
   const handleDownloadSingle = useCallback(
     (item: ImageFileItem) => {
@@ -322,6 +534,8 @@ export function useImageUpscaler() {
     activeCompareItem,
     setCompareItemId,
     isProcessing,
+    processingState,
+    processNotice,
     isSavingAll,
     isZipping,
     saveProgress,
@@ -332,6 +546,7 @@ export function useImageUpscaler() {
     handleRemoveItem,
     handleClearAll,
     handleStartProcess,
+    handleCancelProcess,
     handleDownloadSingle,
     handleDownloadAllFiles,
     handleDownloadZipAll,

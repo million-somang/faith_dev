@@ -285,15 +285,43 @@ function getOrCreateLanczosWorker(): Worker | null {
   return lanczosWorker;
 }
 
+export function isAbortError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'AbortError') return true;
+  if (err && typeof err === 'object' && 'name' in err) {
+    return (err as { readonly name: unknown }).name === 'AbortError';
+  }
+  return false;
+}
+
+function createAbortError(): DOMException {
+  return new DOMException('작업이 중단되었습니다.', 'AbortError');
+}
+
+function terminateLanczosWorkerWithAbort(): void {
+  for (const [id, job] of pendingWorkerJobs.entries()) {
+    pendingWorkerJobs.delete(id);
+    job.reject(createAbortError());
+  }
+  if (lanczosWorker) {
+    lanczosWorker.terminate();
+    lanczosWorker = null;
+  }
+}
+
 async function upscaleCanvasWithLanczos(
   img: HTMLImageElement,
   targetW: number,
   targetH: number,
   sharpenLevel: SharpenLevel,
-  onProgress?: (percent: number, statusText: string) => void
+  onProgress?: (percent: number, statusText: string) => void,
+  signal?: AbortSignal
 ): Promise<HTMLCanvasElement> {
+  if (signal?.aborted) throw createAbortError();
+
   const origW = img.naturalWidth || img.width;
   const origH = img.naturalHeight || img.height;
+
+  if (onProgress) onProgress(6, '원본 픽셀 버퍼 준비 중...');
 
   const srcCanvas = document.createElement('canvas');
   srcCanvas.width = origW;
@@ -308,12 +336,28 @@ async function upscaleCanvasWithLanczos(
 
   if (worker) {
     try {
-      if (onProgress) onProgress(10, '초고속 Lanczos-3 워커 시작...');
+      if (signal?.aborted) throw createAbortError();
+      if (onProgress) onProgress(12, '초고속 Lanczos-3 워커 시작...');
       const jobId = ++workerJobSeq;
       const transferCopy = new Uint8ClampedArray(srcImgData.data);
       const result = await new Promise<{ buffer: ArrayBuffer; width: number; height: number }>(
         (resolve, reject) => {
-          pendingWorkerJobs.set(jobId, { resolve, reject, onProgress });
+          const onAbort = () => {
+            terminateLanczosWorkerWithAbort();
+          };
+          signal?.addEventListener('abort', onAbort, { once: true });
+
+          pendingWorkerJobs.set(jobId, {
+            resolve: (data) => {
+              signal?.removeEventListener('abort', onAbort);
+              resolve(data);
+            },
+            reject: (err) => {
+              signal?.removeEventListener('abort', onAbort);
+              reject(err);
+            },
+            onProgress,
+          });
           const payload: LanczosWorkerRequest = {
             id: jobId,
             buffer: transferCopy.buffer,
@@ -327,7 +371,10 @@ async function upscaleCanvasWithLanczos(
         }
       );
       outPixels = new Uint8ClampedArray(result.buffer);
-    } catch {
+    } catch (err: unknown) {
+      if (isAbortError(err) || signal?.aborted) {
+        throw createAbortError();
+      }
       const resampled = resampleImageDataLanczos3(
         srcImgData.data,
         origW,
@@ -353,6 +400,9 @@ async function upscaleCanvasWithLanczos(
     );
     outPixels = applyAdaptiveUnsharpMask(resampled, targetW, targetH, sharpenLevel);
   }
+
+  if (signal?.aborted) throw createAbortError();
+  if (onProgress) onProgress(98, '고화질 이미지 포맷 인코딩 중...');
 
   const outCanvas = document.createElement('canvas');
   outCanvas.width = targetW;
@@ -385,7 +435,8 @@ function flattenTransparentToWhiteIfJpeg(
 export async function resizeSingleImage(
   item: ImageFileItem,
   settings: ResizeSettings,
-  onProgress?: (percent: number, statusText: string) => void
+  onProgress?: (percent: number, statusText: string) => void,
+  signal?: AbortSignal
 ): Promise<{
   blob: Blob;
   url: string;
@@ -395,11 +446,15 @@ export async function resizeSingleImage(
   wasCappedForMemory: boolean;
   usedEngine: UpscaleEngine | 'canvas';
 }> {
+  if (signal?.aborted) throw createAbortError();
+
   return new Promise((resolve, reject) => {
     const sourceUrl = URL.createObjectURL(item.file);
     const img = new Image();
     img.onload = async () => {
       try {
+        if (signal?.aborted) throw createAbortError();
+
         const origW = img.naturalWidth || img.width;
         const origH = img.naturalHeight || img.height;
 
@@ -421,7 +476,8 @@ export async function resizeSingleImage(
               plan.targetW,
               plan.targetH,
               settings.sharpenLevel,
-              onProgress
+              onProgress,
+              signal
             );
             outCanvas = aiResult.canvas;
             wasCapped = wasCapped || aiResult.wasCappedForMemory;
@@ -432,13 +488,17 @@ export async function resizeSingleImage(
               plan.targetW,
               plan.targetH,
               settings.sharpenLevel,
-              onProgress
+              onProgress,
+              signal
             );
             usedEngine = 'lanczos3';
           }
 
+          if (signal?.aborted) throw createAbortError();
           const finalCanvas = flattenTransparentToWhiteIfJpeg(outCanvas, mimeType);
           const blob = await canvasToBlob(finalCanvas, mimeType, settings.quality);
+          if (signal?.aborted) throw createAbortError();
+
           URL.revokeObjectURL(sourceUrl);
           const url = URL.createObjectURL(blob);
           resolve({
@@ -453,11 +513,13 @@ export async function resizeSingleImage(
           return;
         }
 
+        if (onProgress) onProgress(18, '이미지 리사이즈 캔버스 구성 중...');
         const { targetW, targetH } = calculateTargetSize(origW, origH, settings);
         let canvas = drawImageToCanvas(img, targetW, targetH, settings.fitMode);
         let blob: Blob;
 
         if (settings.unit === 'target_kb') {
+          if (onProgress) onProgress(42, '목표 용량(KB) 최적 화질 탐색 중...');
           const targetBytes = settings.targetKb * 1024;
           let minQ = 0.1;
           let maxQ = 0.95;
@@ -465,6 +527,7 @@ export async function resizeSingleImage(
           let currentScale = 1.0;
 
           for (let i = 0; i < 5; i++) {
+            if (signal?.aborted) throw createAbortError();
             const midQ = (minQ + maxQ) / 2;
             const testBlob = await canvasToBlob(
               flattenTransparentToWhiteIfJpeg(canvas, mimeType),
@@ -477,10 +540,12 @@ export async function resizeSingleImage(
             } else {
               maxQ = midQ;
             }
+            if (onProgress) onProgress(45 + i * 7, '목표 용량(KB) 수렴 계산 중...');
           }
 
           if (!bestBlob || bestBlob.size > targetBytes) {
             for (let step = 0; step < 4; step++) {
+              if (signal?.aborted) throw createAbortError();
               currentScale *= 0.75;
               const scaledW = Math.max(100, Math.round(targetW * currentScale));
               const scaledH = Math.max(100, Math.round(targetH * currentScale));
@@ -495,16 +560,21 @@ export async function resizeSingleImage(
             }
           }
 
+          if (onProgress) onProgress(95, '목표 용량 파일 인코딩 중...');
           blob =
             bestBlob ||
             (await canvasToBlob(flattenTransparentToWhiteIfJpeg(canvas, mimeType), mimeType, 0.5));
         } else {
+          if (onProgress) onProgress(65, '해상도 보간 및 포맷 변환 중...');
           blob = await canvasToBlob(
             flattenTransparentToWhiteIfJpeg(canvas, mimeType),
             mimeType,
             settings.quality
           );
+          if (onProgress) onProgress(96, '포맷 인코딩 완료 중...');
         }
+
+        if (signal?.aborted) throw createAbortError();
 
         URL.revokeObjectURL(sourceUrl);
         const url = URL.createObjectURL(blob);
