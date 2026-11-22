@@ -64,11 +64,13 @@ export function getDifficultyScale(stage = 1): DifficultyScale {
   const clampedStage = Math.max(1, Math.min(99, Math.floor(stage || 1)));
   const s = clampedStage - 1;
 
-  // 스테이지가 올라갈 때마다 물량·사격빈도·탄속·적기 HP가 완만하고 점진적으로 상승
+  // 스테이지 1은 초반 진입 장벽을 ~25% 완화하고, 스테이지 2 이상은 기존 점진적 상승 공식 유지
   const spawnRateMultiplier = Number(Math.min(3.2, 0.88 + s * 0.14).toFixed(2));
   const shootRateMultiplier = Number(Math.min(2.8, 0.78 + s * 0.12).toFixed(2));
-  const bulletSpeedMultiplier = Number(Math.min(2.0, 0.82 + s * 0.06).toFixed(2));
-  const enemyHpMultiplier = Number((1.0 + s * 0.28 + Math.pow(s, 1.2) * 0.08).toFixed(2));
+  const bulletSpeedMultiplier =
+    clampedStage === 1 ? 0.62 : Number(Math.min(2.0, 0.82 + s * 0.06).toFixed(2));
+  const enemyHpMultiplier =
+    clampedStage === 1 ? 0.75 : Number((1.0 + s * 0.28 + Math.pow(s, 1.2) * 0.08).toFixed(2));
 
   if (clampedStage >= 19) {
     return {
@@ -640,18 +642,24 @@ export function createExplosion(
   }
 }
 
+// 스테이지별 필드 드롭 아이템 추첨 (1~4화는 P/L/B/S 위주, 5화+부터 M/W 합산 4% 극희귀 보너스)
+export function rollFieldItemType(stage = 1): ItemType {
+  const s = Math.max(1, Math.floor(stage || 1));
+  if (s >= 5) {
+    const rareRoll = Math.random();
+    if (rareRoll < 0.02) return 'M';
+    if (rareRoll < 0.04) return 'W';
+  }
+  const baseRoll = Math.random();
+  if (baseRoll < 0.32) return 'P';
+  if (baseRoll < 0.56) return 'L';
+  if (baseRoll < 0.82) return 'B';
+  return 'S';
+}
+
 // 아이템 스폰 (P: 주포, M: 유도탄, W: 플라즈마, L: 호위기, B: 폭탄, S: 스피드)
 function spawnItem(state: GameEngineState, x: number, y: number, specificType?: ItemType) {
-  let type: ItemType = specificType || 'P';
-  if (!specificType) {
-    const roll = Math.random();
-    if (roll < 0.28) type = 'P';
-    else if (roll < 0.52) type = 'M';
-    else if (roll < 0.70) type = 'W';
-    else if (roll < 0.82) type = 'L';
-    else if (roll < 0.92) type = 'B';
-    else type = 'S';
-  }
+  const type: ItemType = specificType || rollFieldItemType(state.stage || 1);
 
   const colorMap: Record<ItemType, string> = {
     P: '#EF4444', // 주포 강화 (레드)
@@ -1479,9 +1487,8 @@ function handleEnemyDestroyed(state: GameEngineState, e: Enemy) {
     if (form) {
       form.destroyed++;
       if (form.destroyed >= form.total) {
-        // 전멸 성공! 아이템 확정 드롭 (유도탄/플라즈마/주포/호위기 중 드롭)
-        const bonusPool: ItemType[] = ['M', 'W', 'P', 'L'];
-        const dropType = bonusPool[Math.floor(Math.random() * bonusPool.length)];
+        // 전멸 성공! 아이템 확정 드롭 (1~4화는 P/L/B/S, 5화+부터 M/W 극희귀 포함)
+        const dropType = rollFieldItemType(state.stage || 1);
         spawnItem(state, e.x, e.y, dropType);
         state.player.upgradePoints += 2;
         state.floatingTexts.push({
@@ -1545,13 +1552,32 @@ function applyItem(state: GameEngineState, type: ItemType) {
   });
 }
 
+// 격납고 개조 항목별 필요 KP 비용 산출 (영구 무장·기체 개조 10배, 소모성 수리·보급 5~6배)
+export function getUpgradeCost(option: UpgradeOptionId, currentLevel = 0): number {
+  const lv = Math.max(0, Math.floor(currentLevel || 0));
+  switch (option) {
+    case 'hull':
+    case 'speed':
+      return 50 + lv * 20;
+    case 'firepower':
+      return 60 + lv * 20;
+    case 'missile':
+    case 'plasma':
+      return 70 + lv * 30;
+    case 'repair':
+      return 25;
+    case 'tactical':
+      return 30;
+  }
+}
+
 // 스테이지 종료 후 격납고(Hangar)에서 격추 포인트(KP)로 비행기 개조 실행
 export function applyPlayerUpgrade(state: GameEngineState, option: UpgradeOptionId): boolean {
   const p = state.player;
   const kp = p.upgradePoints || 0;
 
   if (option === 'hull') {
-    const cost = 5 + (p.hullLevel || 0) * 2;
+    const cost = getUpgradeCost('hull', p.hullLevel || 0);
     if (kp < cost || (p.hullLevel || 0) >= 5) return false;
     p.upgradePoints -= cost;
     p.hullLevel = (p.hullLevel || 0) + 1;
@@ -1562,7 +1588,7 @@ export function applyPlayerUpgrade(state: GameEngineState, option: UpgradeOption
   }
 
   if (option === 'repair') {
-    const cost = 4;
+    const cost = getUpgradeCost('repair');
     if (kp < cost || p.hp >= p.maxHp) return false;
     p.upgradePoints -= cost;
     p.hp = p.maxHp;
@@ -1571,7 +1597,7 @@ export function applyPlayerUpgrade(state: GameEngineState, option: UpgradeOption
   }
 
   if (option === 'speed') {
-    const cost = 5 + (p.speedLevel || 0) * 2;
+    const cost = getUpgradeCost('speed', p.speedLevel || 0);
     if (kp < cost || (p.speedLevel || 0) >= 5) return false;
     p.upgradePoints -= cost;
     p.speedLevel = (p.speedLevel || 0) + 1;
@@ -1581,7 +1607,7 @@ export function applyPlayerUpgrade(state: GameEngineState, option: UpgradeOption
   }
 
   if (option === 'firepower') {
-    const cost = 6 + (p.firepowerLevel || 0) * 2;
+    const cost = getUpgradeCost('firepower', p.firepowerLevel || 0);
     if (kp < cost || (p.firepowerLevel || 0) >= 5) return false;
     p.upgradePoints -= cost;
     p.firepowerLevel = (p.firepowerLevel || 0) + 1;
@@ -1591,7 +1617,7 @@ export function applyPlayerUpgrade(state: GameEngineState, option: UpgradeOption
   }
 
   if (option === 'missile') {
-    const cost = 7 + (p.missileLevel || 0) * 3;
+    const cost = getUpgradeCost('missile', p.missileLevel || 0);
     if (kp < cost || (p.missileLevel || 0) >= 3) return false;
     p.upgradePoints -= cost;
     p.missileLevel = (p.missileLevel || 0) + 1;
@@ -1600,7 +1626,7 @@ export function applyPlayerUpgrade(state: GameEngineState, option: UpgradeOption
   }
 
   if (option === 'plasma') {
-    const cost = 7 + (p.plasmaLevel || 0) * 3;
+    const cost = getUpgradeCost('plasma', p.plasmaLevel || 0);
     if (kp < cost || (p.plasmaLevel || 0) >= 3) return false;
     p.upgradePoints -= cost;
     p.plasmaLevel = (p.plasmaLevel || 0) + 1;
@@ -1609,7 +1635,7 @@ export function applyPlayerUpgrade(state: GameEngineState, option: UpgradeOption
   }
 
   if (option === 'tactical') {
-    const cost = 5;
+    const cost = getUpgradeCost('tactical');
     if (kp < cost) return false;
     p.upgradePoints -= cost;
     p.bombs = Math.min(6, p.bombs + 1);

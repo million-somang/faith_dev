@@ -10,6 +10,7 @@ import {
   proceedFromHangar,
   extractSaveState,
   restoreFromSaveState,
+  getUpgradeCost,
   UpgradeOptionId,
   FlightSaveState,
   CANVAS_WIDTH,
@@ -1181,73 +1182,83 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
         )}
       </div>
 
-      {/* 스테이지 클리어 & 격추수 기반 비행기 개조 격납고 오버레이 */}
+      {/* 스테이지 클리어 & 격추수 기반 비행기 개조 격납고 오버레이 (FaithPortal Design System) */}
       {hudState.status === 'hangar' && (
         <div
           data-hud-interactive="true"
-          className="absolute inset-0 z-[55] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 pt-16 pb-4"
+          data-flight-hangar-overlay="true"
+          className="absolute inset-0 z-[55] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 pt-16 pb-4"
         >
-          <div className="w-full max-w-md max-h-[85dvh] overflow-y-auto custom-scrollbar rounded-3xl bg-slate-900/95 border border-white/15 p-4 text-white shadow-2xl flex flex-col justify-between">
+          <div className="w-full max-w-md max-h-[85dvh] overflow-y-auto custom-scrollbar rounded-3xl bg-[#FAF8F5] border border-[#EBE6DD] p-4 sm:p-5 text-[#2D2A26] shadow-2xl flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between border-b border-white/15 pb-2.5 mb-3">
+              <div className="flex items-center justify-between border-b border-[#EBE6DD] pb-3 mb-3 gap-2">
                 <div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block">
-                    🎉 STAGE {hudState.stage} CLEAR!
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 block">
+                    STAGE {hudState.stage} CLEAR
                   </span>
-                  <h3 className="text-base sm:text-lg font-black flex items-center gap-1.5">
-                    <Wrench className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-base sm:text-lg font-black text-[#1E293B] flex items-center gap-1.5">
+                    <Wrench className="w-4 h-4 text-indigo-600" />
                     전투기 개조 격납고
                   </h3>
                 </div>
-                <div className="text-right bg-amber-500/20 border border-amber-400/50 rounded-xl px-3 py-1">
-                  <span className="text-[10px] text-amber-200 font-bold block">
-                    가용 개조 포인트 (누적 격추 {hudState.kills}기)
+                <div className="text-right bg-white border border-amber-200 rounded-2xl px-3 py-1.5 shadow-2xs shrink-0">
+                  <span className="text-[10px] text-[#7A756D] font-bold block">
+                    보유 KP (격추 {hudState.kills}기)
                   </span>
-                  <span className="font-mono text-base font-black text-amber-300">
+                  <span className="font-mono text-base font-black text-amber-600 tabular-nums">
                     {hudState.upgradePoints} KP
                   </span>
                 </div>
               </div>
 
-              <p className="text-[11px] text-slate-300 mb-2.5 leading-snug">
-                적기를 격추해 모은 <strong>개조 포인트(KP)</strong>로 기체 HP, 비행 속도, 유도탄 등 무장을 강화하세요!
+              <p className="text-[11px] text-[#64748B] mb-2.5 leading-snug">
+                적기를 격추해 모은 <strong className="text-[#1E293B]">개조 포인트(KP)</strong>를 모아 10스테이지까지 꾸준히 무장과 기체를 강화하세요.
               </p>
 
               {/* 개조 항목 그리드 */}
               <div className="grid grid-cols-1 gap-1.5">
                 {/* 1. 유도 미사일 장착/강화 */}
                 {(() => {
-                  const cost = 7 + hudState.missileLevel * 3;
+                  const cost = getUpgradeCost('missile', hudState.missileLevel);
                   const isMax = hudState.missileLevel >= 3;
                   const canBuy = !isMax && hudState.upgradePoints >= cost;
                   return (
                     <button
                       type="button"
                       disabled={!canBuy}
+                      data-hangar-cost-missile={cost}
                       onClick={() => handleUpgrade('missile')}
-                      className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition ${
+                      className={`w-full p-2.5 rounded-2xl border text-left flex items-center justify-between gap-2 transition ${
                         canBuy
-                          ? 'bg-purple-950/60 border-purple-400/60 hover:bg-purple-900/70 cursor-pointer active:scale-[0.99]'
-                          : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                          ? 'bg-white border-purple-200 hover:border-purple-400 hover:bg-purple-50/40 shadow-2xs cursor-pointer active:scale-[0.99]'
+                          : 'bg-[#F2EDE4]/70 border-[#EBE6DD] opacity-65 cursor-not-allowed'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-purple-500/25 border border-purple-400/40 flex items-center justify-center shrink-0">
-                          <Rocket className="w-4 h-4 text-purple-300" />
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center shrink-0">
+                          <Rocket className="w-4 h-4 text-purple-600" />
                         </div>
-                        <div>
-                          <div className="text-xs font-black text-white flex items-center gap-1.5">
-                            <span>🚀 자동 추적 유도탄</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/30 text-purple-200 font-mono">
+                        <div className="min-w-0">
+                          <div className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
+                            <span>자동 추적 유도탄</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-700 font-mono font-black">
                               LV.{hudState.missileLevel}/3
                             </span>
                           </div>
-                          <span className="text-[10px] text-slate-300">
-                            총탄과 함께 적기를 스스로 찾아가는 유도 미사일 발사 (1발➔2발➔4발)
+                          <span className="text-[10px] text-[#64748B] block truncate">
+                            총탄과 함께 적기를 찾아가는 유도 미사일 (1➔2➔4발)
                           </span>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-purple-500 text-white font-mono text-xs font-black shrink-0">
+                      <span
+                        className={`px-2.5 py-1 rounded-xl font-mono text-xs font-black tabular-nums shrink-0 ${
+                          isMax
+                            ? 'bg-stone-200 text-stone-600'
+                            : canBuy
+                            ? 'bg-purple-600 text-white shadow-2xs'
+                            : 'bg-stone-300 text-stone-600'
+                        }`}
+                      >
                         {isMax ? 'MAX' : `${cost} KP`}
                       </span>
                     </button>
@@ -1256,37 +1267,46 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
 
                 {/* 2. 플라즈마 캐논 장착/강화 */}
                 {(() => {
-                  const cost = 7 + hudState.plasmaLevel * 3;
+                  const cost = getUpgradeCost('plasma', hudState.plasmaLevel);
                   const isMax = hudState.plasmaLevel >= 3;
                   const canBuy = !isMax && hudState.upgradePoints >= cost;
                   return (
                     <button
                       type="button"
                       disabled={!canBuy}
+                      data-hangar-cost-plasma={cost}
                       onClick={() => handleUpgrade('plasma')}
-                      className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition ${
+                      className={`w-full p-2.5 rounded-2xl border text-left flex items-center justify-between gap-2 transition ${
                         canBuy
-                          ? 'bg-cyan-950/60 border-cyan-400/60 hover:bg-cyan-900/70 cursor-pointer active:scale-[0.99]'
-                          : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                          ? 'bg-white border-cyan-200 hover:border-cyan-400 hover:bg-cyan-50/40 shadow-2xs cursor-pointer active:scale-[0.99]'
+                          : 'bg-[#F2EDE4]/70 border-[#EBE6DD] opacity-65 cursor-not-allowed'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-cyan-500/25 border border-cyan-400/40 flex items-center justify-center shrink-0">
-                          <Sparkles className="w-4 h-4 text-cyan-300" />
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-cyan-100 border border-cyan-200 flex items-center justify-center shrink-0">
+                          <Sparkles className="w-4 h-4 text-cyan-700" />
                         </div>
-                        <div>
-                          <div className="text-xs font-black text-white flex items-center gap-1.5">
-                            <span>⚡ 플라즈마 레이저 캐논</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/30 text-cyan-200 font-mono">
+                        <div className="min-w-0">
+                          <div className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
+                            <span>플라즈마 레이저 캐논</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-100 text-cyan-800 font-mono font-black">
                               LV.{hudState.plasmaLevel}/3
                             </span>
                           </div>
-                          <span className="text-[10px] text-slate-300">
-                            총탄과 함께 초고속 고화력 에너지 볼트 추가 발사
+                          <span className="text-[10px] text-[#64748B] block truncate">
+                            초고속 고화력 에너지 볼트 추가 발사
                           </span>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-cyan-600 text-white font-mono text-xs font-black shrink-0">
+                      <span
+                        className={`px-2.5 py-1 rounded-xl font-mono text-xs font-black tabular-nums shrink-0 ${
+                          isMax
+                            ? 'bg-stone-200 text-stone-600'
+                            : canBuy
+                            ? 'bg-cyan-600 text-white shadow-2xs'
+                            : 'bg-stone-300 text-stone-600'
+                        }`}
+                      >
                         {isMax ? 'MAX' : `${cost} KP`}
                       </span>
                     </button>
@@ -1295,37 +1315,46 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
 
                 {/* 3. 최대 HP 장갑 증설 */}
                 {(() => {
-                  const cost = 5 + hudState.hullLevel * 2;
+                  const cost = getUpgradeCost('hull', hudState.hullLevel);
                   const isMax = hudState.hullLevel >= 5;
                   const canBuy = !isMax && hudState.upgradePoints >= cost;
                   return (
                     <button
                       type="button"
                       disabled={!canBuy}
+                      data-hangar-cost-hull={cost}
                       onClick={() => handleUpgrade('hull')}
-                      className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition ${
+                      className={`w-full p-2.5 rounded-2xl border text-left flex items-center justify-between gap-2 transition ${
                         canBuy
-                          ? 'bg-emerald-950/60 border-emerald-400/60 hover:bg-emerald-900/70 cursor-pointer active:scale-[0.99]'
-                          : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                          ? 'bg-white border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/40 shadow-2xs cursor-pointer active:scale-[0.99]'
+                          : 'bg-[#F2EDE4]/70 border-[#EBE6DD] opacity-65 cursor-not-allowed'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/25 border border-emerald-400/40 flex items-center justify-center shrink-0">
-                          <Shield className="w-4 h-4 text-emerald-300" />
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                          <Shield className="w-4 h-4 text-emerald-700" />
                         </div>
-                        <div>
-                          <div className="text-xs font-black text-white flex items-center gap-1.5">
-                            <span>🛡️ 기체 장갑 강화 (최대 HP +25)</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/30 text-emerald-200 font-mono">
+                        <div className="min-w-0">
+                          <div className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
+                            <span>기체 장갑 강화 (최대 HP +25)</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-mono font-black">
                               LV.{hudState.hullLevel}/5
                             </span>
                           </div>
-                          <span className="text-[10px] text-slate-300">
-                            최대 HP 영구 +25 증가 및 즉시 +40 HP 수리 (현재 {hudState.hp}/{hudState.maxHp})
+                          <span className="text-[10px] text-[#64748B] block truncate">
+                            최대 HP +25 증가 및 즉시 +40 수리 ({hudState.hp}/{hudState.maxHp})
                           </span>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-mono text-xs font-black shrink-0">
+                      <span
+                        className={`px-2.5 py-1 rounded-xl font-mono text-xs font-black tabular-nums shrink-0 ${
+                          isMax
+                            ? 'bg-stone-200 text-stone-600'
+                            : canBuy
+                            ? 'bg-emerald-600 text-white shadow-2xs'
+                            : 'bg-stone-300 text-stone-600'
+                        }`}
+                      >
                         {isMax ? 'MAX' : `${cost} KP`}
                       </span>
                     </button>
@@ -1334,37 +1363,46 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
 
                 {/* 4. 비행기 이동 속도 업 */}
                 {(() => {
-                  const cost = 5 + hudState.speedLevel * 2;
+                  const cost = getUpgradeCost('speed', hudState.speedLevel);
                   const isMax = hudState.speedLevel >= 5;
                   const canBuy = !isMax && hudState.upgradePoints >= cost;
                   return (
                     <button
                       type="button"
                       disabled={!canBuy}
+                      data-hangar-cost-speed={cost}
                       onClick={() => handleUpgrade('speed')}
-                      className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition ${
+                      className={`w-full p-2.5 rounded-2xl border text-left flex items-center justify-between gap-2 transition ${
                         canBuy
-                          ? 'bg-sky-950/60 border-sky-400/60 hover:bg-sky-900/70 cursor-pointer active:scale-[0.99]'
-                          : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                          ? 'bg-white border-sky-200 hover:border-sky-400 hover:bg-sky-50/40 shadow-2xs cursor-pointer active:scale-[0.99]'
+                          : 'bg-[#F2EDE4]/70 border-[#EBE6DD] opacity-65 cursor-not-allowed'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-sky-500/25 border border-sky-400/40 flex items-center justify-center shrink-0">
-                          <Gauge className="w-4 h-4 text-sky-300" />
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-sky-100 border border-sky-200 flex items-center justify-center shrink-0">
+                          <Gauge className="w-4 h-4 text-sky-700" />
                         </div>
-                        <div>
-                          <div className="text-xs font-black text-white flex items-center gap-1.5">
-                            <span>💨 엔진 출력 개조 (비행 속도 업)</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-sky-500/30 text-sky-200 font-mono">
+                        <div className="min-w-0">
+                          <div className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
+                            <span>엔진 출력 개조 (이동 속도)</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-sky-100 text-sky-800 font-mono font-black">
                               LV.{hudState.speedLevel}/5
                             </span>
                           </div>
-                          <span className="text-[10px] text-slate-300">
+                          <span className="text-[10px] text-[#64748B] block truncate">
                             기체 이동 및 회피 기동 속도를 영구적으로 높입니다
                           </span>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-sky-600 text-white font-mono text-xs font-black shrink-0">
+                      <span
+                        className={`px-2.5 py-1 rounded-xl font-mono text-xs font-black tabular-nums shrink-0 ${
+                          isMax
+                            ? 'bg-stone-200 text-stone-600'
+                            : canBuy
+                            ? 'bg-sky-600 text-white shadow-2xs'
+                            : 'bg-stone-300 text-stone-600'
+                        }`}
+                      >
                         {isMax ? 'MAX' : `${cost} KP`}
                       </span>
                     </button>
@@ -1373,37 +1411,46 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
 
                 {/* 5. 주포 화력 & 연사 개조 */}
                 {(() => {
-                  const cost = 6 + hudState.firepowerLevel * 2;
+                  const cost = getUpgradeCost('firepower', hudState.firepowerLevel);
                   const isMax = hudState.firepowerLevel >= 5;
                   const canBuy = !isMax && hudState.upgradePoints >= cost;
                   return (
                     <button
                       type="button"
                       disabled={!canBuy}
+                      data-hangar-cost-firepower={cost}
                       onClick={() => handleUpgrade('firepower')}
-                      className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition ${
+                      className={`w-full p-2.5 rounded-2xl border text-left flex items-center justify-between gap-2 transition ${
                         canBuy
-                          ? 'bg-amber-950/60 border-amber-400/60 hover:bg-amber-900/70 cursor-pointer active:scale-[0.99]'
-                          : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                          ? 'bg-white border-amber-200 hover:border-amber-400 hover:bg-amber-50/40 shadow-2xs cursor-pointer active:scale-[0.99]'
+                          : 'bg-[#F2EDE4]/70 border-[#EBE6DD] opacity-65 cursor-not-allowed'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500/25 border border-amber-400/40 flex items-center justify-center shrink-0">
-                          <Zap className="w-4 h-4 text-amber-300" />
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0">
+                          <Zap className="w-4 h-4 text-amber-600" />
                         </div>
-                        <div>
-                          <div className="text-xs font-black text-white flex items-center gap-1.5">
-                            <span>🔥 주포 화력·연사 개조</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/30 text-amber-200 font-mono">
+                        <div className="min-w-0">
+                          <div className="text-xs font-extrabold text-[#1E293B] flex items-center gap-1.5">
+                            <span>주포 화력·연사 개조</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-mono font-black">
                               LV.{hudState.firepowerLevel}/5
                             </span>
                           </div>
-                          <span className="text-[10px] text-slate-300">
-                            모든 무기 공격력 +16% 증가, 연사 속도 향상 및 주포 단계 상승
+                          <span className="text-[10px] text-[#64748B] block truncate">
+                            모든 무기 공격력 +16% · 연사 향상 및 주포 단계 상승
                           </span>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-amber-600 text-white font-mono text-xs font-black shrink-0">
+                      <span
+                        className={`px-2.5 py-1 rounded-xl font-mono text-xs font-black tabular-nums shrink-0 ${
+                          isMax
+                            ? 'bg-stone-200 text-stone-600'
+                            : canBuy
+                            ? 'bg-amber-600 text-white shadow-2xs'
+                            : 'bg-stone-300 text-stone-600'
+                        }`}
+                      >
                         {isMax ? 'MAX' : `${cost} KP`}
                       </span>
                     </button>
@@ -1411,50 +1458,68 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                 })()}
 
                 {/* 6. 긴급 완전 수리 & 전술 무장 보급 (2열) */}
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    disabled={hudState.upgradePoints < 4 || hudState.hp >= hudState.maxHp}
-                    onClick={() => handleUpgrade('repair')}
-                    className={`p-2 rounded-xl border text-left flex items-center justify-between transition ${
-                      hudState.upgradePoints >= 4 && hudState.hp < hudState.maxHp
-                        ? 'bg-rose-950/60 border-rose-400/60 hover:bg-rose-900/70 cursor-pointer'
-                        : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
-                    }`}
-                  >
-                    <div>
-                      <span className="text-[11px] font-black block">🔧 HP 100% 수리</span>
-                      <span className="text-[9px] text-slate-300">체력 즉시 완충</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-rose-600 text-white font-mono text-[11px] font-black">
-                      4 KP
-                    </span>
-                  </button>
+                {(() => {
+                  const repairCost = getUpgradeCost('repair');
+                  const tacticalCost = getUpgradeCost('tactical');
+                  const canRepair = hudState.upgradePoints >= repairCost && hudState.hp < hudState.maxHp;
+                  const canTactical = hudState.upgradePoints >= tacticalCost;
+                  return (
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        disabled={!canRepair}
+                        data-hangar-cost-repair={repairCost}
+                        onClick={() => handleUpgrade('repair')}
+                        className={`p-2.5 rounded-2xl border text-left flex items-center justify-between gap-1.5 transition ${
+                          canRepair
+                            ? 'bg-white border-rose-200 hover:border-rose-400 hover:bg-rose-50/40 shadow-2xs cursor-pointer'
+                            : 'bg-[#F2EDE4]/70 border-[#EBE6DD] opacity-65 cursor-not-allowed'
+                        }`}
+                      >
+                        <div>
+                          <span className="text-[11px] font-extrabold text-[#1E293B] block">HP 100% 수리</span>
+                          <span className="text-[9px] text-[#64748B]">체력 즉시 완충</span>
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-black tabular-nums shrink-0 ${
+                            canRepair ? 'bg-rose-600 text-white' : 'bg-stone-300 text-stone-600'
+                          }`}
+                        >
+                          {repairCost} KP
+                        </span>
+                      </button>
 
-                  <button
-                    type="button"
-                    disabled={hudState.upgradePoints < 5}
-                    onClick={() => handleUpgrade('tactical')}
-                    className={`p-2 rounded-xl border text-left flex items-center justify-between transition ${
-                      hudState.upgradePoints >= 5
-                        ? 'bg-indigo-950/60 border-indigo-400/60 hover:bg-indigo-900/70 cursor-pointer'
-                        : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
-                    }`}
-                  >
-                    <div>
-                      <span className="text-[11px] font-black block">💣 폭탄+1 & 롤+1</span>
-                      <span className="text-[9px] text-slate-300">특수기 즉시 보충</span>
+                      <button
+                        type="button"
+                        disabled={!canTactical}
+                        data-hangar-cost-tactical={tacticalCost}
+                        onClick={() => handleUpgrade('tactical')}
+                        className={`p-2.5 rounded-2xl border text-left flex items-center justify-between gap-1.5 transition ${
+                          canTactical
+                            ? 'bg-white border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/40 shadow-2xs cursor-pointer'
+                            : 'bg-[#F2EDE4]/70 border-[#EBE6DD] opacity-65 cursor-not-allowed'
+                        }`}
+                      >
+                        <div>
+                          <span className="text-[11px] font-extrabold text-[#1E293B] block">폭탄+1 &amp; 롤+1</span>
+                          <span className="text-[9px] text-[#64748B]">특수기 보충</span>
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-black tabular-nums shrink-0 ${
+                            canTactical ? 'bg-indigo-600 text-white' : 'bg-stone-300 text-stone-600'
+                          }`}
+                        >
+                          {tacticalCost} KP
+                        </span>
+                      </button>
                     </div>
-                    <span className="px-2 py-0.5 rounded bg-indigo-600 text-white font-mono text-[11px] font-black">
-                      5 KP
-                    </span>
-                  </button>
-                </div>
+                  );
+                })()}
               </div>
             </div>
 
             {/* 스테이지 클리어 세이브 (로그인 유저 전용) & 다음 스테이지 출격 버튼 */}
-            <div className="mt-2.5 flex flex-col gap-1.5">
+            <div className="mt-3 flex flex-col gap-1.5">
               {isLoggedIn ? (
                 <button
                   type="button"
@@ -1462,31 +1527,31 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
                   onClick={handleSaveInHangar}
                   className={`w-full py-2 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     stageSavedNotice
-                      ? 'bg-emerald-900/70 border-emerald-400 text-emerald-200'
-                      : 'bg-sky-900/70 border-sky-400/70 hover:bg-sky-800/80 text-sky-100 active:scale-[0.99]'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                      : 'bg-white border-sky-200 hover:bg-sky-50 text-sky-700 active:scale-[0.99]'
                   }`}
                 >
                   {stageSavedNotice ? (
                     <>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       <span>
-                        ✅ STAGE {Math.min(99, hudState.stage + 1)} 출격 대기 & 기체 개조 서버 세이브 완료!
+                        STAGE {Math.min(99, hudState.stage + 1)} 출격 대기 &amp; 기체 개조 서버 세이브 완료!
                       </span>
                     </>
                   ) : (
                     <>
-                      <Save className="w-4 h-4 text-sky-300" />
+                      <Save className="w-4 h-4 text-sky-600" />
                       <span>
                         {isSavingStage
                           ? '서버에 세이브 중...'
-                          : `💾 현재 스테이지(STAGE ${Math.min(99, hudState.stage + 1)}) & 개조 상태 세이브`}
+                          : `현재 스테이지(STAGE ${Math.min(99, hudState.stage + 1)}) & 개조 상태 세이브`}
                       </span>
                     </>
                   )}
                 </button>
               ) : (
-                <div className="w-full py-1.5 px-3 rounded-xl bg-white/5 border border-white/10 text-[10px] text-slate-300 flex items-center justify-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <div className="w-full py-1.5 px-3 rounded-xl bg-white border border-[#EBE6DD] text-[10px] text-[#64748B] flex items-center justify-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span>로그인 후 플레이하면 스테이지 클리어 및 기체 개조 상태를 세이브할 수 있습니다</span>
                 </div>
               )}
@@ -1494,9 +1559,9 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
               <button
                 type="button"
                 onClick={handleLaunchNextStage}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-slate-950 font-black text-sm shadow-lg transition active:scale-95 cursor-pointer"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white font-black text-sm shadow-md transition active:scale-95 cursor-pointer"
               >
-                🚀 개조 완료 — STAGE {Math.min(99, hudState.stage + 1)} 출격 시작!
+                개조 완료 — STAGE {Math.min(99, hudState.stage + 1)} 출격 시작!
               </button>
             </div>
           </div>
