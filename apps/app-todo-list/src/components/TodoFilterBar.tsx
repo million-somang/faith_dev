@@ -31,6 +31,8 @@ export default function TodoFilterBar({
   totalCount,
 }: TodoFilterBarProps) {
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
+  const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
+  const hasActiveSortOrCategory = filter.category !== 'all' || filter.sortBy !== 'manual';
 
   const countByStatus = (status: TodoStatusFilter): number => {
     switch (status) {
@@ -49,10 +51,10 @@ export default function TodoFilterBar({
   };
 
   return (
-    <div className="px-2.5 py-1.5 border-b border-[#EFE8DC] bg-[#FCFBF8] space-y-1.5 shrink-0">
-      <div className="flex items-center justify-between gap-1">
-        {/* 상태 필터 알약 5종 (430px 내 0px 클리핑) */}
-        <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto hide-scrollbar">
+    <div className="bg-white shrink-0">
+      <div className="px-3 border-b border-[#F1ECE3] flex items-center justify-between gap-2">
+        {/* 상태 필터 언더라인 탭 5종 */}
+        <div className="flex items-center gap-3 flex-1 min-w-0 overflow-x-auto hide-scrollbar">
           {STATUS_TABS.map((tab) => {
             const isSelected = filter.status === tab.key;
             return (
@@ -60,16 +62,16 @@ export default function TodoFilterBar({
                 key={tab.key}
                 type="button"
                 onClick={() => onChangeFilter({ ...filter, status: tab.key })}
-                className={`px-2 py-1 rounded-xl text-[10px] font-black transition-all cursor-pointer flex items-center gap-1 shrink-0 border ${
+                className={`py-2 text-[12px] border-b-2 inline-flex items-center gap-1 shrink-0 cursor-pointer transition-colors ${
                   isSelected
-                    ? 'bg-[#24211D] text-white border-[#24211D]'
-                    : 'bg-white/90 text-[#6C655B] border-[#E5DDD0] hover:bg-[#F2EDE4]'
+                    ? 'font-black text-[#1C1917] border-[#1C1917]'
+                    : 'font-semibold text-[#8E8579] hover:text-[#4D473F] border-transparent'
                 }`}
               >
                 <span>{tab.label}</span>
                 <span
-                  className={`text-[9px] font-mono ${
-                    isSelected ? 'text-emerald-300' : 'text-[#9B9183]'
+                  className={`text-[10px] font-mono tabular-nums ${
+                    isSelected ? 'text-indigo-600 font-black' : 'text-[#A8A29E]'
                   }`}
                 >
                   {countByStatus(tab.key)}
@@ -79,8 +81,48 @@ export default function TodoFilterBar({
           })}
         </div>
 
-        {/* 분류 + 정렬 + 검색 토글 */}
-        <div className="flex items-center gap-1 shrink-0">
+        {/* 접이식 분류·정렬 & 검색 토글 */}
+        <div className="flex items-center gap-1 shrink-0 py-1">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((prev) => !prev)}
+            aria-label="분류 및 정렬 설정"
+            aria-expanded={filtersOpen || hasActiveSortOrCategory}
+            title="분류 · 정렬"
+            className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] cursor-pointer transition-colors ${
+              filtersOpen || hasActiveSortOrCategory
+                ? 'bg-indigo-50 text-indigo-700'
+                : 'text-[#8E8579] hover:text-[#24211D] hover:bg-[#F5F1EA]'
+            }`}
+          >
+            <i className="fas fa-sliders"></i>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (searchOpen && filter.searchQuery) {
+                onChangeFilter({ ...filter, searchQuery: '' });
+              }
+              setSearchOpen((prev) => !prev);
+            }}
+            aria-label="할 일 검색 토글"
+            aria-expanded={searchOpen || filter.searchQuery.length > 0}
+            title="검색"
+            className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] cursor-pointer transition-colors ${
+              searchOpen || filter.searchQuery
+                ? 'bg-indigo-50 text-indigo-700'
+                : 'text-[#8E8579] hover:text-[#24211D] hover:bg-[#F5F1EA]'
+            }`}
+          >
+            <i className="fas fa-magnifying-glass"></i>
+          </button>
+        </div>
+      </div>
+
+      {/* 접이식 분류 · 정렬 바 */}
+      {(filtersOpen || hasActiveSortOrCategory) && (
+        <div className="px-3 py-2 bg-[#FAF8F5] border-b border-[#F1ECE3] flex items-center gap-2 animate-fade-in">
           <select
             value={filter.category}
             onChange={(e) =>
@@ -90,12 +132,12 @@ export default function TodoFilterBar({
               })
             }
             aria-label="카테고리 필터"
-            className="h-7 px-1 rounded-lg bg-white border border-[#E5DDD0] text-[10px] font-bold text-[#4D473F] outline-none focus:border-indigo-500 cursor-pointer"
+            className="flex-1 h-7 px-2 rounded-lg bg-white border border-[#E5DDD0] text-[11px] font-bold text-[#4D473F] outline-none focus:border-indigo-500 cursor-pointer"
           >
-            <option value="all">분류</option>
+            <option value="all">분류: 전체</option>
             {CATEGORY_LIST.map((cat) => (
               <option key={cat.key} value={cat.key}>
-                {cat.label}
+                분류: {cat.label}
               </option>
             ))}
           </select>
@@ -109,37 +151,34 @@ export default function TodoFilterBar({
               })
             }
             aria-label="정렬 기준 선택"
-            className="h-7 px-1 rounded-lg bg-white border border-[#E5DDD0] text-[10px] font-bold text-[#4D473F] outline-none focus:border-indigo-500 cursor-pointer"
+            className="flex-1 h-7 px-2 rounded-lg bg-white border border-[#E5DDD0] text-[11px] font-bold text-[#4D473F] outline-none focus:border-indigo-500 cursor-pointer"
           >
-            <option value="manual">우선순위순</option>
-            <option value="dueDate">예정일순</option>
-            <option value="createdAt">최신순</option>
+            <option value="manual">정렬: 우선순위순</option>
+            <option value="dueDate">정렬: 예정일순</option>
+            <option value="createdAt">정렬: 최신순</option>
           </select>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (searchOpen && filter.searchQuery) {
-                onChangeFilter({ ...filter, searchQuery: '' });
+          {hasActiveSortOrCategory && (
+            <button
+              type="button"
+              onClick={() =>
+                onChangeFilter({
+                  ...filter,
+                  category: 'all',
+                  sortBy: 'manual',
+                })
               }
-              setSearchOpen((prev) => !prev);
-            }}
-            aria-label="할 일 검색 토글"
-            title="검색"
-            className={`w-7 h-7 rounded-lg border flex items-center justify-center text-[10px] cursor-pointer transition-colors ${
-              searchOpen || filter.searchQuery
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-[#6C655B] border-[#E5DDD0] hover:bg-[#F2EDE4]'
-            }`}
-          >
-            <i className="fas fa-search"></i>
-          </button>
+              className="text-[11px] font-bold text-indigo-700 hover:underline px-1.5 shrink-0 cursor-pointer"
+            >
+              초기화
+            </button>
+          )}
         </div>
-      </div>
+      )}
 
       {/* 검색 입력창 (Astryx TextInput) */}
       {(searchOpen || filter.searchQuery.length > 0) && (
-        <div className="animate-fade-in">
+        <div className="px-3 py-2 bg-[#FAF8F5] border-b border-[#F1ECE3] animate-fade-in">
           <TextInput
             type="search"
             label="할 일 제목 또는 메모 검색"

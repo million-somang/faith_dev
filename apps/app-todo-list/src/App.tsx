@@ -400,9 +400,6 @@ export function App() {
 
   const isTodayAllDone = stats.todayTotalCount > 0 && stats.todayActiveCount === 0;
   const nonTodayTotalCount = Math.max(0, stats.totalCount - stats.todayTotalCount);
-  const miniRingCircumference = 2 * Math.PI * 8;
-  const miniRingOffset =
-    miniRingCircumference - (miniRingCircumference * stats.todayCompletionRate) / 100;
 
   return (
     <ErrorBoundary>
@@ -511,76 +508,68 @@ export function App() {
                   {/* 1. 슬림 1행 빠른 입력 + 펼침 반복 스케줄러 카드 */}
                   <TodoQuickAdd inputRef={quickAddInputRef} onAdd={handleAddTodo} />
 
-                  {/* 2. 시그니처 화이트 할 일 리스트 보드 (페이지 중심 히어로 영역) */}
-                  <div className="flex-1 flex flex-col bg-white rounded-2xl border-2 border-[#D9CEBC] shadow-[0_6px_22px_rgba(36,33,29,0.08)] overflow-clip">
-                    {/* 보드 상단 시그니처 헤더 */}
-                    <div className="px-3 py-2 border-b border-[#EFE8DC] bg-gradient-to-r from-indigo-50/65 via-white to-white flex items-center justify-between gap-2 shrink-0">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className={`w-7 h-7 rounded-xl text-white flex items-center justify-center shadow-sm shrink-0 ${
-                            isTodayAllDone ? 'bg-emerald-600' : 'bg-indigo-600'
-                          }`}
-                        >
-                          <i className={`fas ${isTodayAllDone ? 'fa-check-double' : 'fa-list-check'} text-xs`}></i>
+                  {/* 2. 시그니처 화이트 통합 체크리스트 보드 */}
+                  <div className="flex-1 flex flex-col bg-white rounded-2xl border border-[#E7E0D5] shadow-[0_2px_10px_rgba(36,33,29,0.04)] overflow-clip">
+                    {/* 보드 상단 심플 헤더 + 얇은 가로 진행률 바 */}
+                    <div className="px-3.5 pt-3 pb-2.5 border-b border-[#F1ECE3] bg-white space-y-2 shrink-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
+                          <h2 className="text-[15px] sm:text-base font-black text-[#1C1917] tracking-tight">
+                            오늘의 할 일
+                          </h2>
+                          <span className="text-[11px] font-semibold text-[#8E8579]">
+                            {formatTodayKoreanLabel()}
+                          </span>
+                          {isLoadingRemote && (
+                            <span className="text-[10px] font-bold text-indigo-600">동기화 중...</span>
+                          )}
                         </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <h2 className="text-[14px] sm:text-[15px] font-black text-[#1C1917] tracking-tight">
-                              오늘의 할 일
-                            </h2>
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-white text-[10px] font-black tabular-nums ${
-                                isTodayAllDone ? 'bg-emerald-600' : 'bg-indigo-600'
-                              }`}
-                            >
-                              {isTodayAllDone ? '오늘 100% 완료' : `진행중 ${stats.todayActiveCount}건`}
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {pomodoro.isRunning && (
+                            <span className="px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-[10px] font-mono font-black text-indigo-700 animate-pulse-ring">
+                              <i className="fas fa-stopwatch mr-1"></i>
+                              {pomodoro.formattedTime}
                             </span>
-                          </div>
-                          <div className="text-[10px] font-bold text-[#6C655B] truncate">
-                            {formatTodayKoreanLabel()} · 완료{' '}
-                            <strong className={isTodayAllDone ? 'text-emerald-700' : 'text-indigo-700'}>
-                              {stats.todayCompletedCount}
-                            </strong>
-                            /{stats.todayTotalCount} ({stats.todayCompletionRate}%)
-                            {stats.upcomingCount > 0 && ` · 예정 ${stats.upcomingCount}건`}
-                            {stats.recurringCount > 0 && ` · 반복 ${stats.recurringCount}건`}
-                            {isLoadingRemote && (
-                              <span className="ml-1 text-indigo-600">동기화 중...</span>
-                            )}
-                          </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setMobileViewMode('report')}
+                            data-screenshot-click="result"
+                            className="md:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#F2EDE4] border border-[#E5DDD0] text-[11px] font-bold text-[#4D473F] transition-colors cursor-pointer"
+                          >
+                            <i className="fas fa-chart-pie text-indigo-600 text-[10px]"></i>
+                            <span>리포트</span>
+                          </button>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <svg viewBox="0 0 22 22" className="w-6 h-6 -rotate-90 shrink-0" aria-hidden="true">
-                          <circle cx="11" cy="11" r="8" fill="none" stroke="#E5DDD0" strokeWidth="3" />
-                          <circle
-                            cx="11"
-                            cy="11"
-                            r="8"
-                            fill="none"
-                            stroke={isTodayAllDone ? '#047857' : '#4338CA'}
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeDasharray={miniRingCircumference}
-                            strokeDashoffset={miniRingOffset}
+                      <div className="flex items-center gap-2.5">
+                        <svg
+                          viewBox="0 0 100 4"
+                          preserveAspectRatio="none"
+                          className="flex-1 h-1.5 rounded-full overflow-hidden block"
+                          aria-hidden="true"
+                        >
+                          <rect x="0" y="0" width="100" height="4" rx="2" fill="#EFEAE1" />
+                          <rect
+                            x="0"
+                            y="0"
+                            width={stats.todayCompletionRate}
+                            height="4"
+                            rx="2"
+                            fill={isTodayAllDone ? '#059669' : '#4338CA'}
                           />
                         </svg>
-                        {pomodoro.isRunning && (
-                          <span className="px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-[10px] font-mono font-black text-indigo-700 animate-pulse-ring">
-                            <i className="fas fa-stopwatch mr-1"></i>
-                            {pomodoro.formattedTime}
-                          </span>
-                        )}
-                        <Button
-                          label="오늘 리포트"
-                          variant="primary"
-                          size="sm"
-                          onClick={() => setMobileViewMode('report')}
-                          data-screenshot-click="result"
-                          className="md:hidden"
-                          icon={<i className="fas fa-chart-pie text-[10px]"></i>}
-                        />
+                        <span
+                          className={`text-[11px] font-bold tabular-nums shrink-0 ${
+                            isTodayAllDone ? 'text-emerald-700' : 'text-[#6C655B]'
+                          }`}
+                        >
+                          {isTodayAllDone
+                            ? `오늘 100% 완료 (${stats.todayTotalCount}/${stats.todayTotalCount})`
+                            : `${stats.todayCompletedCount}/${stats.todayTotalCount} 완료 (${stats.todayCompletionRate}%)`}
+                        </span>
                       </div>
                     </div>
 
@@ -595,96 +584,105 @@ export function App() {
                       totalCount={stats.totalCount}
                     />
 
-                    {/* 메인 할 일 리스트 (내부 중첩 스크롤 금지 -> 브라우저 단일 스크롤로 자연 확장) */}
-                    <div className="flex-1 min-h-[260px] md:min-h-[420px] p-2.5 space-y-2 bg-[#FAF8F5]/50">
+                    {/* 메인 할 일 리스트 (단일 시트 + 얇은 구분선) */}
+                    <div className="flex-1 min-h-[260px] md:min-h-[420px] bg-white">
                       {filter.status === 'today' && (nonTodayTotalCount > 0 || hiddenWorkdayCount > 0) && (
-                        <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
-                          <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
-                            <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
-                            <span className="truncate">
-                              {hiddenWorkdayCount > 0 && stats.upcomingCount === 0
-                                ? `${nonWorkdayReason ? `${nonWorkdayReason} 휴무 — ` : ''}영업일 반복 ${hiddenWorkdayCount}건은 다음 영업일에 자동 실행됩니다`
-                                : stats.upcomingCount > 0
-                                  ? `내일 이후 예정 ${stats.upcomingCount}건${nonTodayTotalCount > stats.upcomingCount ? ` 포함 오늘 외 ${nonTodayTotalCount}건` : ''}이 등록되어 있습니다`
-                                  : `오늘 외 할 일 ${nonTodayTotalCount}건이 전체 목록에 있습니다`}
-                            </span>
+                        <div className="px-3 pt-2.5 pb-1">
+                          <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
+                            <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
+                              <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
+                              <span className="truncate">
+                                {hiddenWorkdayCount > 0 && stats.upcomingCount === 0
+                                  ? `${nonWorkdayReason ? `${nonWorkdayReason} 휴무 — ` : ''}영업일 반복 ${hiddenWorkdayCount}건은 다음 영업일에 자동 실행됩니다`
+                                  : stats.upcomingCount > 0
+                                    ? `내일 이후 예정 ${stats.upcomingCount}건${nonTodayTotalCount > stats.upcomingCount ? ` 포함 오늘 외 ${nonTodayTotalCount}건` : ''}이 등록되어 있습니다`
+                                    : `오늘 외 할 일 ${nonTodayTotalCount}건이 전체 목록에 있습니다`}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setFilter({ ...filter, status: 'all' })}
+                              className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
+                            >
+                              전체 탭에서 보기 →
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setFilter({ ...filter, status: 'all' })}
-                            className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
-                          >
-                            전체 탭에서 보기 →
-                          </button>
                         </div>
                       )}
                       {filter.status !== 'today' &&
                         filter.status !== 'recurring' &&
                         hiddenWorkdayCount > 0 && (
-                          <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
-                            <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
-                              <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
-                              <span className="truncate">
-                                오늘은 {nonWorkdayReason ? `${nonWorkdayReason}(휴무)` : '비영업일'}입니다 · 영업일 반복 {hiddenWorkdayCount}건 다음 영업일 실행 대기 중
-                              </span>
+                          <div className="px-3 pt-2.5 pb-1">
+                            <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
+                              <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
+                                <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
+                                <span className="truncate">
+                                  오늘은 {nonWorkdayReason ? `${nonWorkdayReason}(휴무)` : '비영업일'}입니다 · 영업일 반복 {hiddenWorkdayCount}건 다음 영업일 실행 대기 중
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setFilter({ ...filter, status: 'today' })}
+                                className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
+                              >
+                                오늘 할 일만 보기 →
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => setFilter({ ...filter, status: 'today' })}
-                              className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
-                            >
-                              오늘 할 일만 보기 →
-                            </button>
                           </div>
                         )}
                       {filteredTodos.length > 0 ? (
-                        filteredTodos.map((item, idx) => {
-                          const prevItem = idx > 0 ? filteredTodos[idx - 1] : null;
-                          const nextItem =
-                            idx < filteredTodos.length - 1 ? filteredTodos[idx + 1] : null;
-                          const isFirstInGroup =
-                            !prevItem ||
-                            prevItem.completed !== item.completed ||
-                            prevItem.priority !== item.priority;
-                          const isLastInGroup =
-                            !nextItem ||
-                            nextItem.completed !== item.completed ||
-                            nextItem.priority !== item.priority;
-                          return (
-                            <TodoItemCard
-                              key={item.id}
-                              item={item}
-                              isPinned={pomodoro.pinnedTodoId === item.id}
-                              canReorder={canReorder}
-                              isFirst={isFirstInGroup}
-                              isLast={isLastInGroup}
-                              onToggle={handleToggleTodo}
-                              onUpdate={updateTodo}
-                              onSoftDelete={softDeleteTodo}
-                              onMoveOrder={moveTodoOrder}
-                              onTogglePin={pomodoro.togglePinTodo}
-                              onAddSubtask={addSubtask}
-                              onToggleSubtask={toggleSubtask}
-                              onRemoveSubtask={removeSubtask}
-                            />
-                          );
-                        })
+                        <div className="divide-y divide-[#F1ECE3]">
+                          {filteredTodos.map((item, idx) => {
+                            const prevItem = idx > 0 ? filteredTodos[idx - 1] : null;
+                            const nextItem =
+                              idx < filteredTodos.length - 1 ? filteredTodos[idx + 1] : null;
+                            const isFirstInGroup =
+                              !prevItem ||
+                              prevItem.completed !== item.completed ||
+                              prevItem.priority !== item.priority;
+                            const isLastInGroup =
+                              !nextItem ||
+                              nextItem.completed !== item.completed ||
+                              nextItem.priority !== item.priority;
+                            return (
+                              <TodoItemCard
+                                key={item.id}
+                                item={item}
+                                isPinned={pomodoro.pinnedTodoId === item.id}
+                                isTodayView={filter.status === 'today'}
+                                canReorder={canReorder}
+                                isFirst={isFirstInGroup}
+                                isLast={isLastInGroup}
+                                onToggle={handleToggleTodo}
+                                onUpdate={updateTodo}
+                                onSoftDelete={softDeleteTodo}
+                                onMoveOrder={moveTodoOrder}
+                                onTogglePin={pomodoro.togglePinTodo}
+                                onAddSubtask={addSubtask}
+                                onToggleSubtask={toggleSubtask}
+                                onRemoveSubtask={removeSubtask}
+                              />
+                            );
+                          })}
+                        </div>
                       ) : (
-                        <TodoEmptyState
-                          isFiltered={isFiltered}
-                          isTodayView={filter.status === 'today'}
-                          hasSecondaryFilter={hasSecondaryFilter}
-                          totalActiveCount={stats.totalCount}
-                          upcomingCount={stats.upcomingCount}
-                          onResetFilters={resetFilters}
-                          onShowAll={() => setFilter((prev) => ({ ...prev, status: 'all' }))}
-                          onAddRoutine={handleAddRoutine}
-                        />
+                        <div className="p-3">
+                          <TodoEmptyState
+                            isFiltered={isFiltered}
+                            isTodayView={filter.status === 'today'}
+                            hasSecondaryFilter={hasSecondaryFilter}
+                            totalActiveCount={stats.totalCount}
+                            upcomingCount={stats.upcomingCount}
+                            onResetFilters={resetFilters}
+                            onShowAll={() => setFilter((prev) => ({ ...prev, status: 'all' }))}
+                            onAddRoutine={handleAddRoutine}
+                          />
+                        </div>
                       )}
                     </div>
 
                     {/* 슬림 보드 푸터 (1줄 휴지통 · 정리 · 복사 유틸 바) */}
-                    <div className="px-2.5 py-1.5 border-t border-[#EFE8DC] bg-[#FCFBF8] flex items-center justify-between gap-1.5 shrink-0">
+                    <div className="px-3 py-2 border-t border-[#F1ECE3] bg-[#FCFBF9] flex items-center justify-between gap-1.5 shrink-0">
                       <Button
                         label={`휴지통 (${stats.trashCount})`}
                         variant="secondary"

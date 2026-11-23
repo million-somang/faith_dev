@@ -1,5 +1,4 @@
-import { useState, type FormEvent } from 'react';
-import { Badge } from '@astryxdesign/core/Badge';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { Button } from '@astryxdesign/core/Button';
 import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { IconButton } from '@astryxdesign/core/IconButton';
@@ -7,7 +6,6 @@ import {
   CATEGORY_LIST,
   CATEGORY_MAP,
   PRIORITY_LIST,
-  PRIORITY_MAP,
   RECURRENCE_LIST,
   WEEKDAY_OPTIONS,
 } from '../constants/todoMeta';
@@ -27,6 +25,7 @@ import { getDueDateBadge } from '../utils/todoAnalytics';
 interface TodoItemCardProps {
   readonly item: TodoItem;
   readonly isPinned: boolean;
+  readonly isTodayView?: boolean;
   readonly canReorder: boolean;
   readonly isFirst: boolean;
   readonly isLast: boolean;
@@ -43,6 +42,7 @@ interface TodoItemCardProps {
 export default function TodoItemCard({
   item,
   isPinned,
+  isTodayView = false,
   canReorder,
   isFirst,
   isLast,
@@ -81,9 +81,9 @@ export default function TodoItemCard({
   const [draftEndDate, setDraftEndDate] = useState<string>(item.recurrence.endDate || '');
   const [subtaskInput, setSubtaskInput] = useState<string>('');
 
-  const priorityMeta = PRIORITY_MAP[item.priority];
   const categoryMeta = CATEGORY_MAP[item.category];
   const isUrgentActive = !item.completed && item.priority === 'urgent';
+  const isImportantActive = !item.completed && item.priority === 'important';
   const isRecurring = item.occurrence.isRecurring;
   const isWorkdayStandby =
     item.recurrence.type === 'workday' && !item.occurrence.isDueToday && !item.completed;
@@ -96,6 +96,74 @@ export default function TodoItemCard({
       ? formatNextOccurrenceLabel(item.occurrence.nextOccurrenceDate, todayStr, item.completed)
       : null;
   const completedSubtasks = item.subtasks.filter((s) => s.completed).length;
+
+  const metaParts: { readonly key: string; readonly node: ReactNode }[] = [];
+  if (isUrgentActive) {
+    metaParts.push({
+      key: 'urgent',
+      node: <span className="text-rose-600 font-extrabold">긴급</span>,
+    });
+  }
+  metaParts.push({
+    key: 'category',
+    node: <span>{categoryMeta.label}</span>,
+  });
+  if (isRecurring && item.occurrence.summaryLabel) {
+    metaParts.push({
+      key: 'recurrence',
+      node: (
+        <span className="inline-flex items-center gap-1 text-[#57534E]">
+          <i className="fas fa-repeat text-[9px] text-indigo-500/80"></i>
+          <span>{item.occurrence.summaryLabel}</span>
+        </span>
+      ),
+    });
+  }
+  if (isRecurring && item.streakCount > 0) {
+    metaParts.push({
+      key: 'streak',
+      node: <span className="text-emerald-700 font-semibold">🔥 {item.streakCount}연속</span>,
+    });
+  }
+  if (isWorkdayStandby) {
+    metaParts.push({
+      key: 'standby',
+      node: <span className="text-amber-700 font-semibold">휴무 대기 · {standbyNextDate}</span>,
+    });
+  }
+  if (nextOccLabel && !(isTodayView && nextOccLabel === '오늘 반복 예정')) {
+    metaParts.push({
+      key: 'next-occ',
+      node: <span>{nextOccLabel}</span>,
+    });
+  }
+  if (dueBadge) {
+    const isOverdue = dueBadge.label.includes('지연');
+    const dueText = dueBadge.label === '오늘 (D-Day)' ? '오늘 마감' : dueBadge.label;
+    metaParts.push({
+      key: 'due',
+      node: (
+        <span className={isOverdue ? 'text-rose-600 font-bold' : undefined}>{dueText}</span>
+      ),
+    });
+  }
+  if (item.subtasks.length > 0) {
+    metaParts.push({
+      key: 'subtasks',
+      node: <span>단계 {completedSubtasks}/{item.subtasks.length}</span>,
+    });
+  }
+  if (!expanded && item.memo) {
+    metaParts.push({
+      key: 'memo',
+      node: (
+        <span className="inline-flex items-center gap-0.5 text-[#8E8579] max-w-[140px] truncate">
+          <i className="far fa-note-sticky text-[9px] shrink-0"></i>
+          <span className="truncate">{item.memo}</span>
+        </span>
+      ),
+    });
+  }
 
   const handleOpenEdit = () => {
     const now = new Date();
@@ -166,191 +234,169 @@ export default function TodoItemCard({
   return (
     <article
       data-workday-standby={isWorkdayStandby ? 'true' : 'false'}
-      className={`group relative overflow-hidden rounded-xl border transition-all ${
+      className={`group px-3.5 py-3 transition-colors ${
         item.completed
-          ? 'bg-[#F6F3EC] border-[#EAE3D7] opacity-75'
-          : isPinned && isUrgentActive
-            ? 'bg-gradient-to-r from-rose-50/75 via-indigo-50/45 to-white border-indigo-300 ring-1 ring-indigo-300 shadow-[0_3px_12px_rgba(225,29,72,0.12)]'
-            : isPinned
-              ? 'bg-indigo-50/45 border-indigo-300 ring-1 ring-indigo-300 shadow-sm'
-              : isUrgentActive
-                ? 'bg-gradient-to-r from-rose-50/85 via-white to-white border-rose-200/90 hover:border-rose-300 shadow-[0_3px_12px_rgba(225,29,72,0.12),0_1px_2px_rgba(36,33,29,0.06)] hover:shadow-[0_6px_18px_rgba(225,29,72,0.18)]'
-                : isWorkdayStandby
-                  ? 'bg-amber-50/35 border-amber-200/90 hover:border-amber-300 shadow-[0_2px_6px_rgba(36,33,29,0.05)] hover:shadow-md'
-                  : 'bg-white border-[#E4DBD0] hover:border-indigo-300 shadow-[0_2px_6px_rgba(36,33,29,0.06)] hover:shadow-md'
+          ? 'bg-[#FAF8F5]/75 opacity-65'
+          : isPinned
+            ? 'bg-indigo-50/40 hover:bg-indigo-50/60'
+            : isUrgentActive
+              ? 'bg-rose-50/35 hover:bg-rose-50/55'
+              : isWorkdayStandby
+                ? 'bg-amber-50/25 hover:bg-amber-50/45'
+                : 'bg-white hover:bg-[#FAF8F5]/80'
       }`}
     >
-      <span
-        aria-hidden="true"
-        className={`absolute inset-y-0 left-0 ${
-          item.completed
-            ? 'w-1.5 bg-stone-300'
-            : isUrgentActive
-              ? 'w-2 bg-gradient-to-b from-rose-500 to-rose-600'
-              : `w-1.5 ${priorityMeta.dotClass}`
-        }`}
-      />
-      <div className="pl-4 pr-2.5 py-2.5 sm:pl-4 sm:pr-3 sm:py-3">
-        <div className="flex items-start gap-2.5">
-          {/* Astryx CheckboxInput */}
-          <div className="pt-0.5 shrink-0">
-            <CheckboxInput
-              label={item.completed ? `${item.title} 완료 해제` : `${item.title} 완료 체크`}
-              isLabelHidden
-              size="md"
-              value={item.completed}
-              onChange={() => onToggle(item.id)}
-            />
-          </div>
+      <div className="flex items-start gap-2.5">
+        {/* Astryx CheckboxInput */}
+        <div className="pt-0.5 shrink-0">
+          <CheckboxInput
+            label={item.completed ? `${item.title} 완료 해제` : `${item.title} 완료 체크`}
+            isLabelHidden
+            size="md"
+            value={item.completed}
+            onChange={() => onToggle(item.id)}
+          />
+        </div>
 
-          {/* 메인 텍스트 + Astryx Badge 행 */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-1.5">
-              <button
-                type="button"
-                onClick={() => setExpanded((prev) => !prev)}
-                className="text-left min-w-0 flex-1 cursor-pointer pt-0.5"
-              >
-                <p
-                  className={`text-[14px] sm:text-[15px] font-extrabold leading-snug tracking-tight break-words transition-colors ${
-                    item.completed
-                      ? 'line-through text-[#8E8579]'
-                      : 'text-[#1C1917] group-hover:text-indigo-700'
-                  }`}
-                >
-                  {item.title}
-                </p>
-              </button>
-
-              {/* 우측 Astryx IconButton 액션 (시선 분산 완화를 위해 기본 톤다운, 호버/포커스 시 선명) */}
-              <div className="flex items-center gap-0.5 shrink-0 opacity-55 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-              {!item.completed && (
-                <IconButton
-                  label="집중 타이머에 고정"
-                  tooltip={isPinned ? '집중 타이머 핀 해제' : '25분 집중 타이머에 고정'}
-                  variant={isPinned ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => onTogglePin(item.id)}
-                  icon={<i className="fas fa-thumbtack text-[10px]"></i>}
-                />
-              )}
-
-              <IconButton
-                label="할 일 수정"
-                tooltip="수정 및 반복 설정"
-                variant="ghost"
-                size="sm"
-                onClick={handleOpenEdit}
-                icon={<i className="fas fa-pen text-[10px]"></i>}
-              />
-
-              {canReorder && (
-                <>
-                  <IconButton
-                    label="위로 이동"
-                    variant="ghost"
-                    size="sm"
-                    isDisabled={isFirst}
-                    onClick={() => onMoveOrder(item.id, 'up')}
-                    icon={<i className="fas fa-chevron-up text-[9px]"></i>}
-                  />
-                  <IconButton
-                    label="아래로 이동"
-                    variant="ghost"
-                    size="sm"
-                    isDisabled={isLast}
-                    onClick={() => onMoveOrder(item.id, 'down')}
-                    icon={<i className="fas fa-chevron-down text-[9px]"></i>}
-                  />
-                </>
-              )}
-
-              <IconButton
-                label={`${item.title} 삭제`}
-                tooltip="휴지통으로 이동"
-                variant="ghost"
-                size="sm"
-                onClick={() => onSoftDelete(item.id)}
-                icon={<i className="fas fa-trash-can text-[10px] text-rose-600"></i>}
-              />
-            </div>
-          </div>
-
-          {/* Astryx Badge 메타 행 (우선순위 · 카테고리 · 반복 · 스트릭 · 예정일) */}
-          <div className="flex flex-wrap items-center gap-1 mt-1.5 opacity-90">
-            <Badge variant={priorityMeta.badgeVariant} label={priorityMeta.shortLabel} />
-            <Badge
-              variant={categoryMeta.badgeVariant}
-              icon={<i className={`${categoryMeta.iconClass} text-[9px]`}></i>}
-              label={categoryMeta.label}
-            />
-
-            {isRecurring && item.occurrence.summaryLabel && (
-              <Badge
-                variant="info"
-                icon={<i className="fas fa-repeat text-[9px]"></i>}
-                label={item.occurrence.summaryLabel}
-              />
-            )}
-
-            {isRecurring && item.streakCount > 0 && (
-              <Badge
-                variant="success"
-                label={`🔥 ${item.streakCount}연속`}
-              />
-            )}
-
-            {isWorkdayStandby && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-amber-200 bg-amber-50 text-[9px] font-extrabold text-amber-800">
-                <i className="far fa-calendar-clock text-[8px]"></i>
-                휴무 대기 · {standbyNextDate} 실행
-              </span>
-            )}
-
-            {nextOccLabel && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-[#E5DDD0] bg-[#FAF8F5] text-[9px] font-bold text-[#6C655B]">
-                <i className="far fa-calendar-check text-[8px]"></i>
-                {nextOccLabel}
-              </span>
-            )}
-
-            {dueBadge && (
-              <span
-                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9px] ${dueBadge.badgeClass}`}
-              >
-                <i className="far fa-clock text-[8px]"></i>
-                {dueBadge.label}
-              </span>
-            )}
-
+        {/* 제목 + 조용한 1줄 텍스트 메타 */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
             <button
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#FAF8F5] hover:bg-[#F2EDE4] border border-[#E5DDD0] text-[9px] font-bold text-[#6C655B] cursor-pointer"
+              className="text-left min-w-0 flex-1 flex items-center gap-1.5 cursor-pointer pt-0.5"
             >
-              <i className="fas fa-list-ul text-[8px]"></i>
-              <span>
-                {item.subtasks.length > 0
-                  ? `단계 ${completedSubtasks}/${item.subtasks.length}`
-                  : '메모·단계'}
-              </span>
-              <i
-                className={`fas fa-chevron-down text-[8px] transition-transform ${
-                  expanded ? 'rotate-180' : ''
+              {isUrgentActive && (
+                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" aria-hidden="true" />
+              )}
+              {isImportantActive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" aria-hidden="true" />
+              )}
+              <span
+                className={`text-[14px] sm:text-[14.5px] font-bold leading-snug tracking-tight break-words transition-colors ${
+                  item.completed
+                    ? 'line-through text-[#9B9183]'
+                    : 'text-[#1C1917] group-hover:text-indigo-700'
                 }`}
-              ></i>
+              >
+                {item.title}
+              </span>
             </button>
+
+            {/* 우측: 고정 핀(활성 시) + 단일 더보기(⋯) 버튼 */}
+            <div className="flex items-center gap-0.5 shrink-0">
+              {isPinned && !item.completed && (
+                <button
+                  type="button"
+                  onClick={() => onTogglePin(item.id)}
+                  aria-label="집중 타이머 핀 해제"
+                  title="집중 타이머에 고정됨 (클릭해 해제)"
+                  className="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center text-[11px] cursor-pointer transition-colors"
+                >
+                  <i className="fas fa-thumbtack"></i>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setExpanded((prev) => !prev)}
+                aria-label={`${item.title} 상세 및 관리`}
+                aria-expanded={expanded}
+                title="상세 · 수정 · 삭제"
+                className={`w-7 h-7 rounded-lg flex items-center justify-center text-[12px] cursor-pointer transition-colors ${
+                  expanded
+                    ? 'bg-[#EFEAE1] text-[#24211D]'
+                    : 'text-[#A8A29E] hover:text-[#4D473F] hover:bg-[#F2EDE4]'
+                }`}
+              >
+                <i className="fas fa-ellipsis"></i>
+              </button>
+            </div>
           </div>
 
-          {!expanded && item.memo && (
-            <p className="text-[10px] text-[#6C655B] mt-1 truncate">{item.memo}</p>
+          {metaParts.length > 0 && (
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-1 text-[11px] leading-tight text-[#78716C] font-medium">
+              {metaParts.map((part, idx) => (
+                <span key={part.key} className="inline-flex items-center gap-1.5">
+                  {idx > 0 && (
+                    <span aria-hidden="true" className="text-[#D6CFC2]">
+                      ·
+                    </span>
+                  )}
+                  {part.node}
+                </span>
+              ))}
+            </div>
           )}
         </div>
       </div>
 
-      {/* 확장 영역: 인라인 수정(반복 규칙 포함) + 서브태스크 */}
+      {/* 확장 영역: 인라인 관리 바 + 수정 폼 + 메모 + 서브태스크 */}
       {expanded && (
-        <div className="mt-2.5 pt-2.5 border-t border-[#EAE3D7] pl-6 space-y-2.5 animate-fade-in">
+        <div className="mt-2.5 pt-2.5 border-t border-[#F1ECE3] pl-8 space-y-2.5 animate-fade-in">
+          {!isEditing && (
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
+              <div className="flex flex-wrap items-center gap-1">
+                {!item.completed && (
+                  <button
+                    type="button"
+                    onClick={() => onTogglePin(item.id)}
+                    className={`px-2 py-1 rounded-lg text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer transition-colors border ${
+                      isPinned
+                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                        : 'bg-[#FAF8F5] hover:bg-[#F2EDE4] border-[#E5DDD0] text-[#4D473F]'
+                    }`}
+                  >
+                    <i className="fas fa-thumbtack text-[10px]"></i>
+                    <span>{isPinned ? '고정 해제' : '집중 고정'}</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleOpenEdit}
+                  className="px-2 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#F2EDE4] border border-[#E5DDD0] text-[11px] font-bold text-[#4D473F] inline-flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <i className="fas fa-pen text-[10px]"></i>
+                  <span>수정</span>
+                </button>
+
+                {canReorder && (
+                  <div className="inline-flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      disabled={isFirst}
+                      onClick={() => onMoveOrder(item.id, 'up')}
+                      aria-label="위로 이동"
+                      className="w-7 h-7 rounded-lg bg-[#FAF8F5] hover:bg-[#F2EDE4] disabled:opacity-35 border border-[#E5DDD0] text-[#4D473F] flex items-center justify-center text-[10px] cursor-pointer disabled:cursor-not-allowed transition-colors"
+                    >
+                      <i className="fas fa-chevron-up"></i>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isLast}
+                      onClick={() => onMoveOrder(item.id, 'down')}
+                      aria-label="아래로 이동"
+                      className="w-7 h-7 rounded-lg bg-[#FAF8F5] hover:bg-[#F2EDE4] disabled:opacity-35 border border-[#E5DDD0] text-[#4D473F] flex items-center justify-center text-[10px] cursor-pointer disabled:cursor-not-allowed transition-colors"
+                    >
+                      <i className="fas fa-chevron-down"></i>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onSoftDelete(item.id)}
+                aria-label={`${item.title} 삭제`}
+                className="px-2 py-1 rounded-lg text-[11px] font-bold text-rose-600 hover:bg-rose-50 inline-flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <i className="fas fa-trash-can text-[10px]"></i>
+                <span>삭제</span>
+              </button>
+            </div>
+          )}
+
           {isEditing ? (
             <form
               onSubmit={handleSaveEdit}
@@ -608,7 +654,6 @@ export default function TodoItemCard({
           </div>
         </div>
       )}
-      </div>
     </article>
   );
 }

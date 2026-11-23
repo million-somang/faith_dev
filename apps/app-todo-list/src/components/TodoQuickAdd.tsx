@@ -1,6 +1,5 @@
 import { useState, type FormEvent, type RefObject } from 'react';
 import { Button } from '@astryxdesign/core/Button';
-import { Card } from '@astryxdesign/core/Card';
 import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/SegmentedControl';
 import { TextInput } from '@astryxdesign/core/TextInput';
 import { ToggleButton } from '@astryxdesign/core/ToggleButton';
@@ -132,7 +131,7 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
   };
 
   return (
-    <Card padding={2} elevation="low" className="shrink-0 bg-white border-[#E5DDD0] rounded-2xl">
+    <div className="shrink-0 bg-white border border-[#E7E0D5] rounded-2xl p-2 shadow-[0_1px_3px_rgba(36,33,29,0.04)]">
       <form onSubmit={handleSubmit} className="space-y-2">
         {/* 1행: Astryx TextInput + 옵션 토글 칩 + Primary Button (모바일 1줄 컴팩트) */}
         <div className="flex items-center gap-1.5">
@@ -155,10 +154,10 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
             onClick={() => setOptionsOpen((prev) => !prev)}
             aria-expanded={optionsOpen}
             aria-label="우선순위, 마감일, 반복 설정 펼치기"
-            className={`shrink-0 h-8 px-2 rounded-xl border text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer ${
+            className={`shrink-0 h-8 px-2.5 rounded-xl border text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer ${
               optionsOpen || recurrenceType !== 'none'
-                ? 'bg-indigo-50 border-indigo-300 text-indigo-800'
-                : 'bg-[#FAF8F5] border-[#E5DDD0] text-[#4D473F] hover:bg-[#F2EDE4]'
+                ? 'bg-indigo-50 border-indigo-200 text-indigo-800'
+                : 'bg-[#F7F4EE] border-transparent text-[#57534E] hover:bg-[#EFEAE0]'
             }`}
           >
             <span className={`w-2 h-2 rounded-full shrink-0 ${selectedPriority.dotClass}`} />
@@ -538,6 +537,6 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
           </div>
         )}
       </form>
-    </Card>
+    </div>
   );
 }

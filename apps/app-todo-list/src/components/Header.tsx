@@ -1,7 +1,4 @@
 import { useState } from 'react';
-import { Badge } from '@astryxdesign/core/Badge';
-import { Button } from '@astryxdesign/core/Button';
-import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
 import type { MainTab } from '../types/todo';
 
@@ -55,33 +52,37 @@ export default function Header({
           </div>
         </a>
 
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="hidden sm:block text-right min-w-0 mr-1">
             <h1 className="text-[13px] font-extrabold text-[#24211D] leading-tight truncate">
               스마트 투두(TO-DO) 플래너
             </h1>
           </div>
 
-          <Badge
-            variant={isAuthenticated ? 'success' : 'neutral'}
-            icon={
-              <StatusDot
-                variant={isAuthenticated ? 'success' : 'warning'}
-                label={isAuthenticated ? 'DB 동기화 활성화' : '로컬 체험 모드'}
-                isPulsing={isAuthenticated}
-              />
-            }
-            label={isAuthenticated ? `${userName || '회원'} DB 동기화` : '로컬 모드'}
-          />
+          <span
+            title={isAuthenticated ? 'DB 동기화 활성화' : '로컬 체험 모드'}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#6C655B] max-w-[140px]"
+          >
+            <span
+              aria-hidden="true"
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                isAuthenticated ? 'bg-emerald-500' : 'bg-amber-400'
+              }`}
+            />
+            <span className="truncate">
+              {isAuthenticated ? `${userName || '회원'} 동기화` : '로컬 모드'}
+            </span>
+          </span>
 
-          <Button
-            label="공유"
-            variant="secondary"
-            size="sm"
+          <button
+            type="button"
             onClick={onShare}
             aria-label="투두 플래너 링크 공유하기"
-            icon={<i className="fas fa-share-nodes text-[10px] text-indigo-600"></i>}
-          />
+            className="px-2 py-1 rounded-lg text-[11px] font-bold text-[#6C655B] hover:text-[#24211D] hover:bg-[#F5F1EA] flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+          >
+            <i className="fas fa-share-nodes text-[10px] text-indigo-600"></i>
+            <span>공유</span>
+          </button>
         </div>
       </div>
 
