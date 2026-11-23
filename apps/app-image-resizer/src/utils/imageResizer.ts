@@ -661,34 +661,36 @@ interface WritableFileStreamLike {
   close(): Promise<void>;
 }
 
-interface FileHandleLike {
+interface SaveFileHandleLike {
+  name?: string;
   createWritable(): Promise<WritableFileStreamLike>;
 }
 
-interface DirectoryHandleLike {
-  name: string;
-  getFileHandle(name: string, options?: { create?: boolean }): Promise<FileHandleLike>;
+interface SaveFilePickerType {
+  readonly description: string;
+  readonly accept: Readonly<Record<string, readonly string[]>>;
 }
 
-interface DirectoryPickerWindow extends Window {
-  showDirectoryPicker?: (options?: {
-    id?: string;
-    mode?: 'read' | 'readwrite';
-    startIn?: 'desktop' | 'documents' | 'downloads' | 'pictures';
-  }) => Promise<DirectoryHandleLike>;
+interface SaveFilePickerWindow extends Window {
+  showSaveFilePicker?: (options?: {
+    suggestedName?: string;
+    types?: readonly SaveFilePickerType[];
+    excludeAcceptAllOption?: boolean;
+  }) => Promise<SaveFileHandleLike>;
 }
 
-export type DirectorySaveResult =
-  | { status: 'saved'; folderName: string; count: number }
-  | { status: 'cancelled' }
-  | { status: 'unsupported' };
+export type FilePickerSaveResult =
+  | { readonly status: 'saved'; readonly fileName: string }
+  | { readonly status: 'cancelled' }
+  | { readonly status: 'unsupported' };
 
 /**
- * File System Access API(폴더 1회 선택 일괄 저장) 지원 여부 확인
+ * File System Access API 단일 파일 저장 대화상자(showSaveFilePicker) 지원 여부 확인
+ * (showDirectoryPicker와 달리 바탕화면·다운로드·사진·문서 등 일반 폴더에서 시스템 파일 차단 오류가 발생하지 않음)
  */
-export function supportsDirectoryPicker(): boolean {
+export function supportsSaveFilePicker(): boolean {
   if (typeof window === 'undefined') return false;
-  const picker = (window as DirectoryPickerWindow).showDirectoryPicker;
+  const picker = (window as SaveFilePickerWindow).showSaveFilePicker;
   return Boolean(window.isSecureContext && typeof picker === 'function');
 }
 
@@ -710,30 +712,55 @@ function makeUniqueFilename(rawName: string, used: Set<string>): string {
   return candidate;
 }
 
-/**
- * 사용자가 선택한 폴더 1곳에 변환된 모든 이미지를 한꺼번에 저장
- */
-export async function saveAllToSingleDirectory(
-  items: ImageFileItem[],
-  settings: ResizeSettings,
-  onProgress?: (saved: number, total: number) => void
-): Promise<DirectorySaveResult> {
-  const validItems = items.filter((item) => item.status === 'done' && item.resizedBlob);
-  if (validItems.length === 0) return { status: 'cancelled' };
-  if (!supportsDirectoryPicker()) return { status: 'unsupported' };
+function buildSavePickerTypes(filename: string, mimeType: string): SaveFilePickerType[] {
+  const lower = filename.toLowerCase();
+  if (mimeType === 'application/zip' || lower.endsWith('.zip')) {
+    return [{ description: 'ZIP 압축 파일', accept: { 'application/zip': ['.zip'] } }];
+  }
+  if (mimeType === 'image/png' || lower.endsWith('.png')) {
+    return [{ description: 'PNG 이미지', accept: { 'image/png': ['.png'] } }];
+  }
+  if (mimeType === 'image/webp' || lower.endsWith('.webp')) {
+    return [{ description: 'WebP 이미지', accept: { 'image/webp': ['.webp'] } }];
+  }
+  return [{ description: 'JPEG 이미지', accept: { 'image/jpeg': ['.jpg', '.jpeg'] } }];
+}
 
-  const picker = (window as DirectoryPickerWindow).showDirectoryPicker;
+export function downloadBlobDirectly(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/**
+ * OS 네이티브 "다른 이름으로 저장" 대화상자로 단일 파일(이미지 또는 ZIP) 저장
+ * - 바탕화면·다운로드·사진·문서 등 어느 폴더를 선택해도 보안 차단 없이 저장됨
+ */
+export async function saveBlobWithFilePicker(
+  blob: Blob,
+  suggestedName: string,
+  mimeType: string
+): Promise<FilePickerSaveResult> {
+  if (!supportsSaveFilePicker()) return { status: 'unsupported' };
+  const picker = (window as SaveFilePickerWindow).showSaveFilePicker;
   if (!picker) return { status: 'unsupported' };
 
-  let dirHandle: DirectoryHandleLike;
+  let fileHandle: SaveFileHandleLike;
   try {
-    dirHandle = await picker({
-      id: 'veranex-image-resizer',
-      mode: 'readwrite',
-      startIn: 'pictures',
+    fileHandle = await picker({
+      suggestedName,
+      types: buildSavePickerTypes(suggestedName, mimeType),
     });
   } catch (err: unknown) {
-    const errName = err && typeof err === 'object' && 'name' in err ? String((err as { name: unknown }).name) : '';
+    const errName =
+      err && typeof err === 'object' && 'name' in err
+        ? String((err as { name: unknown }).name)
+        : '';
     if (errName === 'AbortError' || errName === 'NotAllowedError') {
       return { status: 'cancelled' };
     }
@@ -743,31 +770,26 @@ export async function saveAllToSingleDirectory(
     throw err;
   }
 
-  const usedNames = new Set<string>();
-  for (let i = 0; i < validItems.length; i += 1) {
-    const item = validItems[i];
-    if (!item?.resizedBlob) continue;
-    const rawFilename = getOutputFilename(item.name, settings);
-    const filename = makeUniqueFilename(rawFilename, usedNames);
-    const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
-    const writable = await fileHandle.createWritable();
-    try {
-      await writable.write(item.resizedBlob);
-    } finally {
-      await writable.close();
-    }
-    if (onProgress) onProgress(i + 1, validItems.length);
+  const writable = await fileHandle.createWritable();
+  try {
+    await writable.write(blob);
+  } finally {
+    await writable.close();
   }
 
   return {
     status: 'saved',
-    folderName: dirHandle.name || '선택한 폴더',
-    count: validItems.length,
+    fileName: fileHandle.name || suggestedName,
   };
 }
 
+export function getZipArchiveFilename(): string {
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  return `veranex_resized_${dateStr}.zip`;
+}
+
 /**
- * 폴더 선택 미지원 환경 또는 사용자 요청 시 단일 ZIP 파일 1개로 저장
+ * 변환된 이미지들을 단일 ZIP 파일 1개로 즉시 다운로드
  */
 export async function downloadAllAsSingleZip(
   items: ImageFileItem[],
@@ -778,16 +800,32 @@ export async function downloadAllAsSingleZip(
   if (validItems.length === 0) return 0;
 
   const zipBlob = await createZipArchive(validItems, settings, onProgress);
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const zipName = `veranex_resized_${dateStr}.zip`;
-  const url = URL.createObjectURL(zipBlob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = zipName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  downloadBlobDirectly(zipBlob, getZipArchiveFilename());
+  return validItems.length;
+}
+
+/**
+ * 변환된 이미지들을 압축 없이 1장씩 순차 다운로드
+ */
+export async function downloadAllIndividually(
+  items: ImageFileItem[],
+  settings: ResizeSettings,
+  onProgress?: (saved: number, total: number) => void
+): Promise<number> {
+  const validItems = items.filter((item) => item.status === 'done' && item.resizedBlob);
+  if (validItems.length === 0) return 0;
+
+  const usedNames = new Set<string>();
+  for (let i = 0; i < validItems.length; i += 1) {
+    const item = validItems[i];
+    if (!item?.resizedBlob) continue;
+    const filename = makeUniqueFilename(getOutputFilename(item.name, settings), usedNames);
+    downloadBlobDirectly(item.resizedBlob, filename);
+    if (onProgress) onProgress(i + 1, validItems.length);
+    if (i < validItems.length - 1) {
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 180));
+    }
+  }
   return validItems.length;
 }
 

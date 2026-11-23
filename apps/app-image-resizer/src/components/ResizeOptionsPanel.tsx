@@ -69,6 +69,8 @@ const UPSCALE_TARGETS: readonly {
   { key: '4k', label: '4K 맞춤', sub: '긴 변 3840px' },
 ];
 
+type ResizeSubMode = 'keep_original' | 'percent' | 'pixel' | 'target_kb';
+
 const SHARPEN_OPTIONS: readonly {
   readonly key: SharpenLevel;
   readonly label: string;
@@ -88,21 +90,69 @@ export default function ResizeOptionsPanel({
   onStartProcess,
 }: ResizeOptionsPanelProps) {
   const [selectedPresetId, setSelectedPresetId] = useState<string>('custom');
+  const [lastResizeSubMode, setLastResizeSubMode] = useState<ResizeSubMode>(() => {
+    if (settings.unit === 'pixel') return 'pixel';
+    if (settings.unit === 'target_kb') return 'target_kb';
+    if (settings.unit === 'percent' && settings.percent !== 100) return 'percent';
+    return 'keep_original';
+  });
 
   // '원본 크기 그대로(100%)' 상태 판별
   const isKeepOriginalSize = settings.unit === 'percent' && settings.percent === 100;
+  const isPercentScale = settings.unit === 'percent' && settings.percent !== 100;
   const isUpscaleMode = settings.unit === 'upscale';
+
+  const currentResizeLabel = isUpscaleMode
+    ? '고화질 업스케일링'
+    : isKeepOriginalSize
+      ? '포맷만 변환'
+      : isPercentScale
+        ? '비율로 축소 (%)'
+        : settings.unit === 'pixel'
+          ? '픽셀 · SNS 규격'
+          : '목표 용량 맞춤';
 
   const previewPlan = sampleItem
     ? calculateUpscalePlan(sampleItem.originalWidth, sampleItem.originalHeight, settings)
     : null;
 
   const handleSelectKeepOriginalSize = () => {
+    setLastResizeSubMode('keep_original');
     onChange({ unit: 'percent', percent: 100 });
   };
 
   const handleSelectPercentScale = () => {
+    setLastResizeSubMode('percent');
     onChange({ unit: 'percent', percent: settings.percent === 100 ? 75 : settings.percent });
+  };
+
+  const handleSelectPixelMode = () => {
+    setLastResizeSubMode('pixel');
+    onChange({ unit: 'pixel' });
+  };
+
+  const handleSelectTargetKbMode = () => {
+    setLastResizeSubMode('target_kb');
+    onChange({ unit: 'target_kb' });
+  };
+
+  const handleSelectResizeTab = () => {
+    if (!isUpscaleMode) return;
+    switch (lastResizeSubMode) {
+      case 'percent':
+        handleSelectPercentScale();
+        break;
+      case 'pixel':
+        handleSelectPixelMode();
+        break;
+      case 'target_kb':
+        handleSelectTargetKbMode();
+        break;
+      case 'keep_original':
+      default:
+        handleSelectKeepOriginalSize();
+        break;
+    }
   };
 
   const handlePresetSelect = (preset: PresetOption) => {
@@ -229,126 +279,196 @@ export default function ResizeOptionsPanel({
       </div>
 
       {/* ===================================================================== */}
-      {/* 2. 이미지 크기(해상도) 조절 방식 선택 */}
+      {/* 2. 업스케일링 · 해상도 조절 방식 선택 (2단 탭 분리) */}
       {/* ===================================================================== */}
-      <div className="pt-4 border-t border-[#EBE6DD] space-y-4">
-        <label className="text-xs sm:text-sm font-black text-[#2D2A26] flex items-center gap-1.5">
-          <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center">
-            2
+      <div className="pt-4 border-t border-[#EBE6DD] space-y-3.5">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <label className="text-xs sm:text-sm font-black text-[#2D2A26] flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center">
+              2
+            </span>
+            <span>업스케일링 · 해상도 조절 방식 선택</span>
+          </label>
+          <span className="text-[11px] font-bold text-indigo-600">
+            현재: {currentResizeLabel}
           </span>
-          <span>업스케일링 · 해상도 조절 방식 선택</span>
-        </label>
+        </div>
 
-        {/* 주력 모드: 고화질 업스케일 (최우선 기본 선택 카드) */}
-        <button
-          type="button"
-          onClick={() => onChange({ unit: 'upscale' })}
-          className={`w-full p-3.5 rounded-2xl text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
-            isUpscaleMode
-              ? 'bg-gradient-to-r from-indigo-50 via-white to-violet-50 text-indigo-950 border-2 border-indigo-600 shadow-xs'
-              : 'bg-[#FAF8F5] text-stone-700 border border-[#EBE6DD] hover:bg-stone-100'
-          }`}
+        {/* 상단 2단 세그먼트 탭 바 */}
+        <div
+          role="tablist"
+          aria-label="해상도 및 크기 처리 방식"
+          className="bg-[#F3EFE8] p-1 rounded-2xl border border-[#E5DDD0] grid grid-cols-2 gap-1.5"
         >
-          <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={isUpscaleMode}
+            onClick={() => onChange({ unit: 'upscale' })}
+            className={`px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer flex items-center gap-2.5 ${
+              isUpscaleMode
+                ? 'bg-white text-indigo-950 border-2 border-indigo-600 shadow-xs'
+                : 'bg-transparent text-stone-600 border-2 border-transparent hover:bg-white/60'
+            }`}
+          >
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm ${
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs ${
                 isUpscaleMode
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'bg-white text-indigo-600 border border-[#EBE6DD]'
+                  ? 'bg-indigo-600 text-white shadow-2xs'
+                  : 'bg-white text-stone-500 border border-[#E5DDD0]'
               }`}
             >
               <i className="fas fa-wand-magic-sparkles"></i>
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs sm:text-sm font-black">
-                  고화질 업스케일링 (2× · 3× · 4× · FHD · 4K)
-                </span>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white">
+                <span className="text-xs sm:text-sm font-black truncate">고화질 업스케일링</span>
+                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-indigo-600 text-white shrink-0">
                   CSR 추천
                 </span>
               </div>
-              <p className="text-[11px] text-stone-500 mt-0.5">
-                AI 초해상도(ESRGAN) 또는 초고속 정밀 보간(Lanczos-3)으로 흐린 사진을 선명하게 확대합니다.
+              <p className="text-[10px] text-stone-500 truncate mt-0.5">
+                2×~4× · FHD · 4K 선명 확대
               </p>
             </div>
-          </div>
-          {isUpscaleMode && (
-            <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center shrink-0">
-              <i className="fas fa-check"></i>
-            </span>
-          )}
-        </button>
-
-        {/* 보조 리사이즈 4대 모드 버튼 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <button
-            type="button"
-            onClick={handleSelectKeepOriginalSize}
-            className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
-              isKeepOriginalSize
-                ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
-                : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
-            }`}
-          >
-            <i className={`fas fa-expand text-sm ${isKeepOriginalSize ? 'text-indigo-600' : 'text-stone-400'}`}></i>
-            <span>포맷만 변환</span>
-            <span className="text-[10px] font-normal text-stone-500">원본 크기 유지</span>
           </button>
 
           <button
             type="button"
-            onClick={handleSelectPercentScale}
-            className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
-              settings.unit === 'percent' && settings.percent !== 100
-                ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
-                : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
+            role="tab"
+            aria-selected={!isUpscaleMode}
+            onClick={handleSelectResizeTab}
+            className={`px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer flex items-center gap-2.5 ${
+              !isUpscaleMode
+                ? 'bg-white text-indigo-950 border-2 border-indigo-600 shadow-xs'
+                : 'bg-transparent text-stone-600 border-2 border-transparent hover:bg-white/60'
             }`}
           >
-            <i
-              className={`fas fa-percent text-sm ${
-                settings.unit === 'percent' && settings.percent !== 100 ? 'text-indigo-600' : 'text-stone-400'
+            <div
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs ${
+                !isUpscaleMode
+                  ? 'bg-indigo-600 text-white shadow-2xs'
+                  : 'bg-white text-stone-500 border border-[#E5DDD0]'
               }`}
-            ></i>
-            <span>비율로 축소 (%)</span>
-            <span className="text-[10px] font-normal text-stone-500">25% · 50% · 75%</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onChange({ unit: 'pixel' })}
-            className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
-              settings.unit === 'pixel'
-                ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
-                : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
-            }`}
-          >
-            <i className={`fas fa-th-large text-sm ${settings.unit === 'pixel' ? 'text-indigo-600' : 'text-stone-400'}`}></i>
-            <span>픽셀 · SNS 규격</span>
-            <span className="text-[10px] font-normal text-stone-500">블로그·유튜브·직접입력</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onChange({ unit: 'target_kb' })}
-            className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
-              settings.unit === 'target_kb'
-                ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
-                : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
-            }`}
-          >
-            <i
-              className={`fas fa-weight-hanging text-sm ${
-                settings.unit === 'target_kb' ? 'text-indigo-600' : 'text-stone-400'
-              }`}
-            ></i>
-            <span>목표 용량 맞춤</span>
-            <span className="text-[10px] font-normal text-stone-500">300KB · 500KB 이하</span>
+            >
+              <i className="fas fa-sliders"></i>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs sm:text-sm font-black truncate">
+                  크기 · 용량 · 포맷 조절
+                </span>
+              </div>
+              <p className="text-[10px] text-stone-500 truncate mt-0.5">
+                원본 유지 · 축소 · SNS · KB 맞춤
+              </p>
+            </div>
           </button>
         </div>
 
-        {/* 선택된 크기 모드별 세부 설정 박스 */}
-        <div className="bg-indigo-50/40 rounded-2xl p-4 sm:p-5 border border-indigo-100 space-y-4">
+        {/* 선택된 탭에 따른 단일 통합 설정 패널 */}
+        <div
+          role="tabpanel"
+          aria-label={isUpscaleMode ? '고화질 업스케일링 설정' : '크기 · 용량 · 포맷 조절 설정'}
+          className="bg-indigo-50/40 rounded-2xl p-4 sm:p-5 border border-indigo-100 space-y-4"
+        >
+          {!isUpscaleMode && (
+            <div className="space-y-2 pb-3 border-b border-indigo-100">
+              <span className="block text-xs font-black text-indigo-950">
+                크기 · 용량 변환 방식 선택
+              </span>
+              <div
+                role="radiogroup"
+                aria-label="크기 및 용량 조절 세부 방식"
+                className="grid grid-cols-2 sm:grid-cols-4 gap-2"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={isKeepOriginalSize}
+                  onClick={handleSelectKeepOriginalSize}
+                  className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    isKeepOriginalSize
+                      ? 'bg-white text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                      : 'bg-white/70 text-stone-600 border border-indigo-100 hover:bg-white'
+                  }`}
+                >
+                  <i
+                    className={`fas fa-expand text-sm ${
+                      isKeepOriginalSize ? 'text-indigo-600' : 'text-stone-400'
+                    }`}
+                  ></i>
+                  <span>포맷만 변환</span>
+                  <span className="text-[10px] font-normal text-stone-500">원본 크기 유지</span>
+                </button>
+
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={isPercentScale}
+                  onClick={handleSelectPercentScale}
+                  className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    isPercentScale
+                      ? 'bg-white text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                      : 'bg-white/70 text-stone-600 border border-indigo-100 hover:bg-white'
+                  }`}
+                >
+                  <i
+                    className={`fas fa-percent text-sm ${
+                      isPercentScale ? 'text-indigo-600' : 'text-stone-400'
+                    }`}
+                  ></i>
+                  <span>비율로 축소 (%)</span>
+                  <span className="text-[10px] font-normal text-stone-500">25% · 50% · 75%</span>
+                </button>
+
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.unit === 'pixel'}
+                  onClick={handleSelectPixelMode}
+                  className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    settings.unit === 'pixel'
+                      ? 'bg-white text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                      : 'bg-white/70 text-stone-600 border border-indigo-100 hover:bg-white'
+                  }`}
+                >
+                  <i
+                    className={`fas fa-th-large text-sm ${
+                      settings.unit === 'pixel' ? 'text-indigo-600' : 'text-stone-400'
+                    }`}
+                  ></i>
+                  <span>픽셀 · SNS 규격</span>
+                  <span className="text-[10px] font-normal text-stone-500">
+                    블로그·유튜브·직접입력
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.unit === 'target_kb'}
+                  onClick={handleSelectTargetKbMode}
+                  className={`py-2.5 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    settings.unit === 'target_kb'
+                      ? 'bg-white text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                      : 'bg-white/70 text-stone-600 border border-indigo-100 hover:bg-white'
+                  }`}
+                >
+                  <i
+                    className={`fas fa-weight-hanging text-sm ${
+                      settings.unit === 'target_kb' ? 'text-indigo-600' : 'text-stone-400'
+                    }`}
+                  ></i>
+                  <span>목표 용량 맞춤</span>
+                  <span className="text-[10px] font-normal text-stone-500">
+                    300KB · 500KB 이하
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {isUpscaleMode && (
             <div className="space-y-4">
               {/* CSR 엔진 선택 */}

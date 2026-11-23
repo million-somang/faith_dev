@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatBytes, supportsDirectoryPicker } from './utils/imageResizer';
+import { formatBytes, supportsSaveFilePicker } from './utils/imageResizer';
 import { useImageUpscaler, type WizardStep } from './hooks/useImageUpscaler';
 import SplashScreen from './components/SplashScreen';
 import Header from './components/Header';
@@ -48,7 +48,8 @@ export const App: React.FC = () => {
     handleCancelProcess,
     handleDownloadSingle,
     handleDownloadAllFiles,
-    handleDownloadZipAll,
+    handleSaveToChosenFolder,
+    handleDownloadIndividualAll,
   } = useImageUpscaler();
 
   const doneCount = doneItems.length;
@@ -244,7 +245,7 @@ export const App: React.FC = () => {
                           : '이미지 변환이 완료되었습니다!'}
                       </h2>
                       <p className="text-xs text-stone-500 mt-0.5">
-                        아래 Before/After 분할 비교기에서 결과를 확인한 뒤 폴더 선택 또는 ZIP으로 한꺼번에 저장하세요.
+                        아래 Before/After 분할 비교기에서 결과를 확인한 뒤 바로 저장하거나 원하는 폴더에 저장하세요.
                       </p>
                     </div>
 
@@ -283,54 +284,68 @@ export const App: React.FC = () => {
                         disabled={isSavingAll || isZipping}
                         className="w-full py-4 px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-sm sm:text-base font-black rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
                       >
-                        {isSavingAll ? (
+                        {isZipping ? (
+                          <>
+                            <i className="fas fa-spinner fa-spin"></i>
+                            <span>ZIP 파일 생성 중...</span>
+                          </>
+                        ) : isSavingAll ? (
                           <>
                             <i className="fas fa-spinner fa-spin"></i>
                             <span>
-                              {saveProgress
+                              {saveProgress && doneCount > 1
                                 ? `저장 중... (${saveProgress.current} / ${saveProgress.total}장)`
-                                : '폴더에 이미지 저장 중...'}
+                                : '저장 중...'}
                             </span>
                           </>
                         ) : (
                           <>
-                            <i
-                              className={
-                                supportsDirectoryPicker() ? 'fas fa-folder-open' : 'fas fa-file-zipper'
-                              }
-                            ></i>
+                            <i className={doneCount > 1 ? 'fas fa-file-zipper' : 'fas fa-download'}></i>
                             <span>
-                              {supportsDirectoryPicker()
-                                ? doneCount > 1
-                                  ? `폴더 1개 선택해서 모두 저장하기 (${doneCount}장)`
-                                  : '폴더 선택해서 저장하기'
-                                : doneCount > 1
-                                  ? `ZIP 파일로 한꺼번에 저장하기 (${doneCount}장)`
-                                  : '변환된 이미지 파일 저장하기'}
+                              {doneCount > 1
+                                ? `ZIP 파일로 한꺼번에 저장하기 (${doneCount}장)`
+                                : '변환된 이미지 바로 저장하기'}
                             </span>
                           </>
                         )}
                       </button>
 
-                      {doneCount > 1 && supportsDirectoryPicker() && (
-                        <button
-                          type="button"
-                          onClick={handleDownloadZipAll}
-                          disabled={isSavingAll || isZipping}
-                          className="w-full py-2.5 px-4 bg-[#FAF8F5] hover:bg-stone-200/70 text-[#2D2A26] border border-[#EBE6DD] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      {(supportsSaveFilePicker() || doneCount > 1) && (
+                        <div
+                          className={`grid gap-2 ${
+                            supportsSaveFilePicker() && doneCount > 1
+                              ? 'grid-cols-1 sm:grid-cols-2'
+                              : 'grid-cols-1'
+                          }`}
                         >
-                          {isZipping ? (
-                            <>
-                              <i className="fas fa-spinner fa-spin text-indigo-600"></i>
-                              <span>ZIP 파일 생성 중...</span>
-                            </>
-                          ) : (
-                            <>
-                              <i className="fas fa-file-zipper text-amber-600"></i>
-                              <span>ZIP 파일 1개로 묶어 저장 ({doneCount}장)</span>
-                            </>
+                          {supportsSaveFilePicker() && (
+                            <button
+                              type="button"
+                              onClick={handleSaveToChosenFolder}
+                              disabled={isSavingAll || isZipping}
+                              className="w-full py-2.5 px-4 bg-[#FAF8F5] hover:bg-indigo-50/70 text-[#2D2A26] border border-[#EBE6DD] hover:border-indigo-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              <i className="fas fa-folder-open text-indigo-600"></i>
+                              <span>
+                                {doneCount > 1
+                                  ? `원하는 폴더에 ZIP 저장하기 (${doneCount}장)`
+                                  : '원하는 폴더에 저장하기 (다른 이름으로 저장)'}
+                              </span>
+                            </button>
                           )}
-                        </button>
+
+                          {doneCount > 1 && (
+                            <button
+                              type="button"
+                              onClick={handleDownloadIndividualAll}
+                              disabled={isSavingAll || isZipping}
+                              className="w-full py-2.5 px-4 bg-[#FAF8F5] hover:bg-emerald-50/70 text-[#2D2A26] border border-[#EBE6DD] hover:border-emerald-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              <i className="fas fa-images text-emerald-600"></i>
+                              <span>이미지 1장씩 개별 저장 ({doneCount}장)</span>
+                            </button>
+                          )}
+                        </div>
                       )}
 
                       {saveNotice && (

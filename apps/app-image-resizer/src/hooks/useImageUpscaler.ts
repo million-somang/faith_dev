@@ -7,13 +7,16 @@ import {
 } from '../types/index';
 import {
   calculateTargetSize,
+  createZipArchive,
   downloadAllAsSingleZip,
+  downloadAllIndividually,
+  downloadBlobDirectly,
   getOutputFilename,
+  getZipArchiveFilename,
   isAbortError,
   loadImageDimensions,
   resizeSingleImage,
-  saveAllToSingleDirectory,
-  supportsDirectoryPicker,
+  saveBlobWithFilePicker,
 } from '../utils/imageResizer';
 
 export type WizardStep = 1 | 2 | 3;
@@ -444,58 +447,14 @@ export function useImageUpscaler() {
     (item: ImageFileItem) => {
       if (!item.resizedBlob) return;
       const filename = getOutputFilename(item.name, settings);
-      const downloadUrl = URL.createObjectURL(item.resizedBlob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(downloadUrl), 4000);
+      downloadBlobDirectly(item.resizedBlob, filename);
+      setSaveNotice({
+        type: 'success',
+        text: `"${filename}" 파일이 다운로드 폴더에 저장되었습니다.`,
+      });
     },
     [settings]
   );
-
-  const handleDownloadAllFiles = useCallback(async () => {
-    if (isSavingAll || isZipping) return;
-    const doneItems = itemsRef.current.filter((it) => it.status === 'done' && it.resizedBlob);
-    if (doneItems.length === 0) return;
-
-    if (doneItems.length === 1 && !supportsDirectoryPicker() && doneItems[0]) {
-      handleDownloadSingle(doneItems[0]);
-      return;
-    }
-
-    setIsSavingAll(true);
-    setSaveNotice(null);
-    setSaveProgress({ current: 0, total: doneItems.length });
-    try {
-      const result = await saveAllToSingleDirectory(doneItems, settings, (saved, total) => {
-        setSaveProgress({ current: saved, total });
-      });
-
-      if (result.status === 'saved') {
-        setSaveNotice({
-          type: 'success',
-          text: `선택한 "${result.folderName}" 폴더에 ${result.count}장의 이미지가 한꺼번에 저장되었습니다.`,
-        });
-      } else if (result.status === 'unsupported') {
-        await downloadAllAsSingleZip(doneItems, settings);
-        setSaveNotice({
-          type: 'info',
-          text: `현재 브라우저는 폴더 직접 저장을 지원하지 않아 ${doneItems.length}장을 ZIP 파일 1개로 묶어 저장했습니다.`,
-        });
-      }
-    } catch {
-      setSaveNotice({
-        type: 'error',
-        text: '폴더 저장 중 오류가 발생했습니다. 폴더 쓰기 권한을 확인하거나 아래 ZIP 저장을 이용해 주세요.',
-      });
-    } finally {
-      setIsSavingAll(false);
-      setSaveProgress(null);
-    }
-  }, [handleDownloadSingle, isSavingAll, isZipping, settings]);
 
   const handleDownloadZipAll = useCallback(async () => {
     if (isSavingAll || isZipping) return;
@@ -517,6 +476,104 @@ export function useImageUpscaler() {
       });
     } finally {
       setIsZipping(false);
+    }
+  }, [isSavingAll, isZipping, settings]);
+
+  const handleDownloadAllFiles = useCallback(async () => {
+    if (isSavingAll || isZipping) return;
+    const doneItems = itemsRef.current.filter((it) => it.status === 'done' && it.resizedBlob);
+    if (doneItems.length === 0) return;
+
+    if (doneItems.length === 1 && doneItems[0]) {
+      handleDownloadSingle(doneItems[0]);
+      return;
+    }
+
+    await handleDownloadZipAll();
+  }, [handleDownloadSingle, handleDownloadZipAll, isSavingAll, isZipping]);
+
+  const handleSaveToChosenFolder = useCallback(async () => {
+    if (isSavingAll || isZipping) return;
+    const doneItems = itemsRef.current.filter((it) => it.status === 'done' && it.resizedBlob);
+    if (doneItems.length === 0) return;
+
+    setIsSavingAll(true);
+    setSaveNotice(null);
+    setSaveProgress({ current: 0, total: doneItems.length });
+    try {
+      if (doneItems.length === 1 && doneItems[0]?.resizedBlob) {
+        const single = doneItems[0];
+        const filename = getOutputFilename(single.name, settings);
+        const res = await saveBlobWithFilePicker(
+          single.resizedBlob,
+          filename,
+          single.resizedBlob.type || 'image/jpeg'
+        );
+        if (res.status === 'saved') {
+          setSaveNotice({
+            type: 'success',
+            text: `선택한 위치에 "${res.fileName}" 파일이 저장되었습니다.`,
+          });
+        } else if (res.status === 'unsupported') {
+          downloadBlobDirectly(single.resizedBlob, filename);
+          setSaveNotice({
+            type: 'info',
+            text: `현재 환경에서 위치 지정 저장이 제한되어 "${filename}"을(를) 기본 다운로드로 저장했습니다.`,
+          });
+        }
+        return;
+      }
+
+      const zipBlob = await createZipArchive(doneItems, settings);
+      const zipName = getZipArchiveFilename();
+      const res = await saveBlobWithFilePicker(zipBlob, zipName, 'application/zip');
+      if (res.status === 'saved') {
+        setSaveNotice({
+          type: 'success',
+          text: `선택한 위치에 "${res.fileName}" (${doneItems.length}장) 파일이 저장되었습니다.`,
+        });
+      } else if (res.status === 'unsupported') {
+        downloadBlobDirectly(zipBlob, zipName);
+        setSaveNotice({
+          type: 'info',
+          text: `현재 환경에서 위치 지정 저장이 제한되어 ${doneItems.length}장을 기본 다운로드 ZIP으로 저장했습니다.`,
+        });
+      }
+    } catch {
+      setSaveNotice({
+        type: 'error',
+        text: '파일 저장 중 오류가 발생했습니다. 위의 바로 저장 버튼을 이용해 주세요.',
+      });
+    } finally {
+      setIsSavingAll(false);
+      setSaveProgress(null);
+    }
+  }, [isSavingAll, isZipping, settings]);
+
+  const handleDownloadIndividualAll = useCallback(async () => {
+    if (isSavingAll || isZipping) return;
+    const doneItems = itemsRef.current.filter((it) => it.status === 'done' && it.resizedBlob);
+    if (doneItems.length === 0) return;
+
+    setIsSavingAll(true);
+    setSaveNotice(null);
+    setSaveProgress({ current: 0, total: doneItems.length });
+    try {
+      const count = await downloadAllIndividually(doneItems, settings, (saved, total) => {
+        setSaveProgress({ current: saved, total });
+      });
+      setSaveNotice({
+        type: 'success',
+        text: `변환된 이미지 ${count}장을 개별 파일로 저장했습니다.`,
+      });
+    } catch {
+      setSaveNotice({
+        type: 'error',
+        text: '개별 파일 저장 중 오류가 발생했습니다.',
+      });
+    } finally {
+      setIsSavingAll(false);
+      setSaveProgress(null);
     }
   }, [isSavingAll, isZipping, settings]);
 
@@ -550,5 +607,7 @@ export function useImageUpscaler() {
     handleDownloadSingle,
     handleDownloadAllFiles,
     handleDownloadZipAll,
+    handleSaveToChosenFolder,
+    handleDownloadIndividualAll,
   };
 }
