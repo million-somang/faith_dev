@@ -63,10 +63,13 @@ const UPSCALE_TARGETS: readonly {
   readonly sub: string;
 }[] = [
   { key: '2x', label: '2× 확대', sub: '면적 4배' },
-  { key: '3x', label: '3× 확대', sub: '고정밀 3배' },
-  { key: '4x', label: '4× 확대', sub: '초고배율 16배' },
+  { key: '3x', label: '3× 확대', sub: '면적 9배' },
+  { key: '4x', label: '4× 확대', sub: '면적 16배' },
+  { key: '6x', label: '6× 확대', sub: 'AI 3×→2× · 36배' },
+  { key: '8x', label: '8× 확대', sub: 'AI 4×→2× · 64배' },
   { key: 'fhd', label: 'FHD 맞춤', sub: '긴 변 1920px' },
   { key: '4k', label: '4K 맞춤', sub: '긴 변 3840px' },
+  { key: '8k', label: '8K 맞춤', sub: '긴 변 7680px' },
 ];
 
 type ResizeSubMode = 'keep_original' | 'percent' | 'pixel' | 'target_kb';
@@ -328,7 +331,7 @@ export default function ResizeOptionsPanel({
                 </span>
               </div>
               <p className="text-[10px] text-stone-500 truncate mt-0.5">
-                2×~4× · FHD · 4K 선명 확대
+                2×~8× · FHD · 4K · 8K 실해상도 확대
               </p>
             </div>
           </button>
@@ -492,11 +495,11 @@ export default function ResizeOptionsPanel({
                         AI 초해상도 (ESRGAN)
                       </span>
                       <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                        최대 4K
+                        최대 8× · 16K
                       </span>
                     </div>
                     <p className="text-[11px] text-stone-500 leading-snug">
-                      딥러닝 신경망으로 2~4배 디테일 복원 (첫 실행 시 경량 모델 로드 · WebGL GPU 가속)
+                      원본 축소 없이 타일별 딥러닝 복원 (6×·8×는 2단 연쇄 추론 · WebGL GPU 가속)
                     </p>
                   </button>
 
@@ -515,11 +518,11 @@ export default function ResizeOptionsPanel({
                         초고속 정밀 보간 (Lanczos-3)
                       </span>
                       <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        즉시 · 최대 8K
+                        초고속 · 최대 16K
                       </span>
                     </div>
                     <p className="text-[11px] text-stone-500 leading-snug">
-                      모델 다운로드 0MB · Web Worker 정밀 리샘플링 (문서·스크린샷·대량 배치 추천)
+                      모델 다운로드 0MB · 스트립 스트리밍 정밀 보간 (초고배율 대량 배치 추천)
                     </p>
                   </button>
                 </div>
@@ -530,7 +533,7 @@ export default function ResizeOptionsPanel({
                 <span className="block text-xs font-black text-indigo-950">
                   목표 배율 · 해상도 선택
                 </span>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {UPSCALE_TARGETS.map((target) => {
                     const active = settings.upscaleTarget === target.key;
                     return (
@@ -581,20 +584,56 @@ export default function ResizeOptionsPanel({
                 </div>
 
                 {sampleItem && previewPlan && (
-                  <div className="text-[11px] font-mono font-bold text-indigo-900 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 flex items-center gap-1.5 shrink-0">
+                  <div className="text-[11px] font-mono font-bold text-indigo-900 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 flex items-center gap-1.5 flex-wrap shrink-0">
                     <span className="text-stone-500">예상:</span>
                     <span>
                       {sampleItem.originalWidth}×{sampleItem.originalHeight} ➔ {previewPlan.targetW}×
                       {previewPlan.targetH}
                     </span>
+                    <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px]">
+                      {previewPlan.effectiveScale.toFixed(1)}× · 픽셀{' '}
+                      {Math.max(1, Math.round(previewPlan.pixelMultiplier))}배
+                    </span>
                     {previewPlan.wasCappedForMemory && (
                       <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px]">
-                        4K 안전상한
+                        기기 한계 보정
                       </span>
                     )}
                   </div>
                 )}
               </div>
+
+              {sampleItem && previewPlan && (
+                <div className="space-y-1.5">
+                  {previewPlan.alreadyExceedsTarget && (
+                    <div className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-[11px] font-bold text-amber-900 flex items-center gap-2">
+                      <i className="fas fa-circle-info text-amber-600 shrink-0"></i>
+                      <span>
+                        원본이 이미 목표 해상도 이상입니다. 확대하려면 상단에서 2×~8× 배율을 선택하세요.
+                      </span>
+                    </div>
+                  )}
+
+                  {previewPlan.wasCappedForMemory && (
+                    <div className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-[11px] font-bold text-amber-900 flex items-center gap-2">
+                      <i className="fas fa-triangle-exclamation text-amber-600 shrink-0"></i>
+                      <span>
+                        {previewPlan.deviceLabel} 최대 캔버스 한계(긴 변{' '}
+                        {previewPlan.maxLongEdge.toLocaleString()}px)에 맞춰 자동 보정됩니다.
+                      </span>
+                    </div>
+                  )}
+
+                  {previewPlan.isTwoStageAi && (
+                    <div className="rounded-xl bg-white/80 border border-indigo-200 px-3 py-2 text-[11px] font-bold text-indigo-900 flex items-center gap-2">
+                      <i className="fas fa-microchip text-indigo-600 shrink-0"></i>
+                      <span>
+                        6×·8× AI 2단 연쇄 추론(3×→2× / 4×→2×)은 고해상도일수록 수십 초~수 분이 소요될 수 있으며, 실행 중 언제든 중단할 수 있습니다.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -814,9 +853,9 @@ export default function ResizeOptionsPanel({
         <div className="grid grid-cols-3 gap-2">
           {(
             [
-              { q: 0.95, label: '선명한 최고 화질 (95%)', sub: '인쇄 · 포트폴리오용' },
-              { q: 0.85, label: '표준 권장 화질 (85%)', sub: '화질 유지 + 용량 절약' },
-              { q: 0.7, label: '가벼운 용량 우선 (70%)', sub: '빠른 웹 업로드용' },
+              { q: 1.0, label: '최고 화질 (100%)', sub: '업스케일 · 인쇄 권장' },
+              { q: 0.9, label: '표준 권장 화질 (90%)', sub: '화질 유지 + 용량 절약' },
+              { q: 0.75, label: '가벼운 용량 우선 (75%)', sub: '빠른 웹 업로드용' },
             ] as const
           ).map((item) => {
             const active = Math.abs(settings.quality - item.q) < 0.03;
@@ -837,6 +876,22 @@ export default function ResizeOptionsPanel({
             );
           })}
         </div>
+
+        {isUpscaleMode && settings.format !== 'image/png' && (
+          <div className="rounded-xl bg-indigo-50/70 border border-indigo-200 px-3 py-2 flex items-center justify-between gap-2 text-[11px]">
+            <span className="font-bold text-indigo-950">
+              <i className="fas fa-lightbulb text-amber-500 mr-1.5"></i>
+              업스케일 화질 손실을 0%로 보존하려면 <strong>PNG 고화질(무손실)</strong> 저장을 추천합니다.
+            </span>
+            <button
+              type="button"
+              onClick={() => onChange({ format: 'image/png' })}
+              className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black shrink-0 cursor-pointer"
+            >
+              PNG 무손실로 변경
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ===================================================================== */}

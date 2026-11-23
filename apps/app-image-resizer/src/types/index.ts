@@ -2,12 +2,16 @@ export type ResizeUnit = 'upscale' | 'pixel' | 'percent' | 'longest' | 'target_k
 
 export type UpscaleEngine = 'ai-esrgan' | 'lanczos3';
 
-export type UpscaleTargetMode = '2x' | '3x' | '4x' | 'fhd' | '4k';
+export type UpscaleTargetMode = '2x' | '3x' | '4x' | '6x' | '8x' | 'fhd' | '4k' | '8k';
 
 export type SharpenLevel = 'none' | 'natural' | 'crisp';
 
-export const MAX_AI_LONG_EDGE = 4096;
-export const MAX_LANCZOS_LONG_EDGE = 8192;
+export const MAX_DESKTOP_LONG_EDGE = 16384;
+export const MAX_DESKTOP_PIXELS = 250_000_000;
+export const MAX_ANDROID_LONG_EDGE = 8192;
+export const MAX_ANDROID_PIXELS = 67_108_864;
+export const MAX_IOS_LONG_EDGE = 4096;
+export const MAX_IOS_PIXELS = 16_777_216;
 
 export type FitMode = 'cover' | 'contain' | 'stretch';
 

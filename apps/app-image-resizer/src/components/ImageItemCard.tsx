@@ -30,11 +30,18 @@ export const ImageItemCard: React.FC<ImageItemCardProps> = ({
   const isError = item.status === 'error';
   const engineBadge = getEngineBadgeLabel(item.usedEngine);
 
-  // 계산된 절감률
+  // 계산된 절감률 및 실제 배율
   let savedRatio = 0;
   if (isDone && item.resizedSize && item.originalSize) {
     savedRatio = Math.round(((item.originalSize - item.resizedSize) / item.originalSize) * 100);
   }
+  const actualScale =
+    isDone && item.resizedWidth ? item.resizedWidth / Math.max(1, item.originalWidth) : 1;
+  const pixelMultiplier =
+    isDone && item.resizedWidth && item.resizedHeight
+      ? (item.resizedWidth * item.resizedHeight) /
+        Math.max(1, item.originalWidth * item.originalHeight)
+      : 1;
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all gap-3 text-slate-800">
@@ -97,9 +104,14 @@ export const ImageItemCard: React.FC<ImageItemCardProps> = ({
                   {engineBadge}
                 </span>
               )}
+              {actualScale > 1.02 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-black border border-emerald-200">
+                  {actualScale.toFixed(1)}× 확대 (픽셀 {Math.max(1, Math.round(pixelMultiplier))}배)
+                </span>
+              )}
               {item.wasCappedForMemory && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 font-bold border border-amber-200">
-                  4K 안전 최적화
+                  브라우저 한계 보정
                 </span>
               )}
               {savedRatio > 0 ? (

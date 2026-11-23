@@ -2,43 +2,93 @@ import JSZip from 'jszip';
 import {
   FitMode,
   ImageFileItem,
-  MAX_AI_LONG_EDGE,
-  MAX_LANCZOS_LONG_EDGE,
+  MAX_ANDROID_LONG_EDGE,
+  MAX_ANDROID_PIXELS,
+  MAX_DESKTOP_LONG_EDGE,
+  MAX_DESKTOP_PIXELS,
+  MAX_IOS_LONG_EDGE,
+  MAX_IOS_PIXELS,
   ResizeSettings,
-  SharpenLevel,
   UpscaleEngine,
 } from '../types/index';
-import type {
-  LanczosWorkerRequest,
-  LanczosWorkerResponse,
-} from '../workers/lanczosUpscaler.worker';
-import { applyAdaptiveUnsharpMask, resampleImageDataLanczos3 } from './lanczosResampler';
+import { resampleCanvasLanczos3Streamed } from './lanczosResampler';
 import { upscaleCanvasWithEsrgan } from './aiUpscaler';
+
+export interface BrowserCanvasLimits {
+  readonly maxLongEdge: number;
+  readonly maxPixels: number;
+  readonly isMobile: boolean;
+  readonly deviceLabel: string;
+}
+
+export function getBrowserCanvasLimits(): BrowserCanvasLimits {
+  if (typeof navigator === 'undefined') {
+    return {
+      maxLongEdge: MAX_DESKTOP_LONG_EDGE,
+      maxPixels: MAX_DESKTOP_PIXELS,
+      isMobile: false,
+      deviceLabel: 'PC 브라우저',
+    };
+  }
+  const ua = navigator.userAgent || '';
+  const isIos =
+    /iPad|iPhone|iPod/i.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIos) {
+    return {
+      maxLongEdge: MAX_IOS_LONG_EDGE,
+      maxPixels: MAX_IOS_PIXELS,
+      isMobile: true,
+      deviceLabel: 'iOS Safari',
+    };
+  }
+  if (/Android/i.test(ua)) {
+    return {
+      maxLongEdge: MAX_ANDROID_LONG_EDGE,
+      maxPixels: MAX_ANDROID_PIXELS,
+      isMobile: true,
+      deviceLabel: '모바일 Chrome',
+    };
+  }
+  return {
+    maxLongEdge: MAX_DESKTOP_LONG_EDGE,
+    maxPixels: MAX_DESKTOP_PIXELS,
+    isMobile: false,
+    deviceLabel: 'PC 브라우저',
+  };
+}
 
 export interface UpscalePlan {
   readonly targetW: number;
   readonly targetH: number;
   readonly effectiveScale: number;
+  readonly pixelMultiplier: number;
   readonly wasCappedForMemory: boolean;
+  readonly alreadyExceedsTarget: boolean;
+  readonly isTwoStageAi: boolean;
   readonly maxLongEdge: number;
+  readonly maxPixels: number;
+  readonly deviceLabel: string;
 }
 
 /**
- * 업스케일 모드 목표 해상도 및 브라우저 메모리 안전 상한(AI 4K / Lanczos 8K) 계산
+ * 업스케일 모드 목표 해상도 및 브라우저 물리 한계 계산
+ * - PC: 최대 16,384px / 250MP (원본 사전 축소 및 강제 4K/8K 절삭 없음)
+ * - 모바일(iOS/Android): 기기 캔버스 물리 한계 반영
  */
 export function calculateUpscalePlan(
   origW: number,
   origH: number,
-  settings: Pick<ResizeSettings, 'upscaleEngine' | 'upscaleTarget'>
+  settings: Pick<ResizeSettings, 'upscaleEngine' | 'upscaleTarget'>,
+  limits: BrowserCanvasLimits = getBrowserCanvasLimits()
 ): UpscalePlan {
   const safeW = Math.max(1, origW);
   const safeH = Math.max(1, origH);
   const origLong = Math.max(safeW, safeH);
-  const maxLongEdge =
-    settings.upscaleEngine === 'ai-esrgan' ? MAX_AI_LONG_EDGE : MAX_LANCZOS_LONG_EDGE;
 
   let rawW = safeW;
   let rawH = safeH;
+  let alreadyExceedsTarget = false;
 
   switch (settings.upscaleTarget) {
     case '2x':
@@ -53,18 +103,28 @@ export function calculateUpscalePlan(
       rawW = safeW * 4;
       rawH = safeH * 4;
       break;
-    case 'fhd': {
-      const targetLong = Math.max(origLong, 1920);
-      const ratio = targetLong / origLong;
-      rawW = Math.round(safeW * ratio);
-      rawH = Math.round(safeH * ratio);
+    case '6x':
+      rawW = safeW * 6;
+      rawH = safeH * 6;
       break;
-    }
-    case '4k': {
-      const targetLong = Math.max(origLong, 3840);
-      const ratio = targetLong / origLong;
-      rawW = Math.round(safeW * ratio);
-      rawH = Math.round(safeH * ratio);
+    case '8x':
+      rawW = safeW * 8;
+      rawH = safeH * 8;
+      break;
+    case 'fhd':
+    case '4k':
+    case '8k': {
+      const targetEdge =
+        settings.upscaleTarget === 'fhd' ? 1920 : settings.upscaleTarget === '4k' ? 3840 : 7680;
+      if (origLong >= targetEdge) {
+        alreadyExceedsTarget = true;
+        rawW = safeW;
+        rawH = safeH;
+      } else {
+        const ratio = targetEdge / origLong;
+        rawW = Math.round(safeW * ratio);
+        rawH = Math.round(safeH * ratio);
+      }
       break;
     }
   }
@@ -74,19 +134,32 @@ export function calculateUpscalePlan(
   let wasCappedForMemory = false;
 
   const targetLong = Math.max(targetW, targetH);
-  if (targetLong > maxLongEdge) {
-    const capRatio = maxLongEdge / targetLong;
-    targetW = Math.max(1, Math.round(targetW * capRatio));
-    targetH = Math.max(1, Math.round(targetH * capRatio));
+  const totalPixels = targetW * targetH;
+  if (targetLong > limits.maxLongEdge || totalPixels > limits.maxPixels) {
+    const edgeRatio = targetLong > limits.maxLongEdge ? limits.maxLongEdge / targetLong : 1;
+    const pixelRatio =
+      totalPixels > limits.maxPixels ? Math.sqrt(limits.maxPixels / totalPixels) : 1;
+    const capRatio = Math.min(edgeRatio, pixelRatio);
+    targetW = Math.max(1, Math.floor(targetW * capRatio));
+    targetH = Math.max(1, Math.floor(targetH * capRatio));
     wasCappedForMemory = true;
   }
+
+  const effectiveScale = Math.max(targetW / safeW, targetH / safeH);
+  const pixelMultiplier = (targetW * targetH) / (safeW * safeH);
+  const isTwoStageAi = settings.upscaleEngine === 'ai-esrgan' && effectiveScale > 4.05;
 
   return {
     targetW,
     targetH,
-    effectiveScale: Math.max(targetW / safeW, targetH / safeH),
+    effectiveScale,
+    pixelMultiplier,
     wasCappedForMemory,
-    maxLongEdge,
+    alreadyExceedsTarget,
+    isTwoStageAi,
+    maxLongEdge: limits.maxLongEdge,
+    maxPixels: limits.maxPixels,
+    deviceLabel: limits.deviceLabel,
   };
 }
 
@@ -235,182 +308,12 @@ function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality: numb
   });
 }
 
-interface PendingWorkerJob {
-  resolve: (data: { buffer: ArrayBuffer; width: number; height: number }) => void;
-  reject: (err: Error) => void;
-  onProgress?: (percent: number, statusText: string) => void;
-}
-
-let lanczosWorker: Worker | null = null;
-let workerJobSeq = 0;
-const pendingWorkerJobs = new Map<number, PendingWorkerJob>();
-
-function getOrCreateLanczosWorker(): Worker | null {
-  if (typeof Worker === 'undefined') return null;
-  if (!lanczosWorker) {
-    try {
-      lanczosWorker = new Worker(
-        new URL('../workers/lanczosUpscaler.worker.ts', import.meta.url),
-        { type: 'module' }
-      );
-      lanczosWorker.onmessage = (event: MessageEvent<LanczosWorkerResponse>) => {
-        const msg = event.data;
-        const job = pendingWorkerJobs.get(msg.id);
-        if (!job) return;
-        if (msg.type === 'progress') {
-          if (job.onProgress) {
-            job.onProgress(msg.percent, `Lanczos-3 정밀 보간 중 (${msg.percent}%)`);
-          }
-          return;
-        }
-        pendingWorkerJobs.delete(msg.id);
-        if (msg.type === 'done') {
-          job.resolve({ buffer: msg.buffer, width: msg.width, height: msg.height });
-        } else {
-          job.reject(new Error(msg.message));
-        }
-      };
-      lanczosWorker.onerror = () => {
-        for (const [id, job] of pendingWorkerJobs.entries()) {
-          pendingWorkerJobs.delete(id);
-          job.reject(new Error('Web Worker 실행 중 오류가 발생했습니다.'));
-        }
-        lanczosWorker?.terminate();
-        lanczosWorker = null;
-      };
-    } catch {
-      return null;
-    }
-  }
-  return lanczosWorker;
-}
-
 export function isAbortError(err: unknown): boolean {
   if (err instanceof DOMException && err.name === 'AbortError') return true;
   if (err && typeof err === 'object' && 'name' in err) {
     return (err as { readonly name: unknown }).name === 'AbortError';
   }
   return false;
-}
-
-function createAbortError(): DOMException {
-  return new DOMException('작업이 중단되었습니다.', 'AbortError');
-}
-
-function terminateLanczosWorkerWithAbort(): void {
-  for (const [id, job] of pendingWorkerJobs.entries()) {
-    pendingWorkerJobs.delete(id);
-    job.reject(createAbortError());
-  }
-  if (lanczosWorker) {
-    lanczosWorker.terminate();
-    lanczosWorker = null;
-  }
-}
-
-async function upscaleCanvasWithLanczos(
-  img: HTMLImageElement,
-  targetW: number,
-  targetH: number,
-  sharpenLevel: SharpenLevel,
-  onProgress?: (percent: number, statusText: string) => void,
-  signal?: AbortSignal
-): Promise<HTMLCanvasElement> {
-  if (signal?.aborted) throw createAbortError();
-
-  const origW = img.naturalWidth || img.width;
-  const origH = img.naturalHeight || img.height;
-
-  if (onProgress) onProgress(6, '원본 픽셀 버퍼 준비 중...');
-
-  const srcCanvas = document.createElement('canvas');
-  srcCanvas.width = origW;
-  srcCanvas.height = origH;
-  const srcCtx = srcCanvas.getContext('2d');
-  if (!srcCtx) throw new Error('원본 캔버스 컨텍스트를 생성할 수 없습니다.');
-  srcCtx.drawImage(img, 0, 0, origW, origH);
-  const srcImgData = srcCtx.getImageData(0, 0, origW, origH);
-
-  let outPixels: Uint8ClampedArray;
-  const worker = getOrCreateLanczosWorker();
-
-  if (worker) {
-    try {
-      if (signal?.aborted) throw createAbortError();
-      if (onProgress) onProgress(12, '초고속 Lanczos-3 워커 시작...');
-      const jobId = ++workerJobSeq;
-      const transferCopy = new Uint8ClampedArray(srcImgData.data);
-      const result = await new Promise<{ buffer: ArrayBuffer; width: number; height: number }>(
-        (resolve, reject) => {
-          const onAbort = () => {
-            terminateLanczosWorkerWithAbort();
-          };
-          signal?.addEventListener('abort', onAbort, { once: true });
-
-          pendingWorkerJobs.set(jobId, {
-            resolve: (data) => {
-              signal?.removeEventListener('abort', onAbort);
-              resolve(data);
-            },
-            reject: (err) => {
-              signal?.removeEventListener('abort', onAbort);
-              reject(err);
-            },
-            onProgress,
-          });
-          const payload: LanczosWorkerRequest = {
-            id: jobId,
-            buffer: transferCopy.buffer,
-            srcW: origW,
-            srcH: origH,
-            dstW: targetW,
-            dstH: targetH,
-            sharpenLevel,
-          };
-          worker.postMessage(payload, [payload.buffer]);
-        }
-      );
-      outPixels = new Uint8ClampedArray(result.buffer);
-    } catch (err: unknown) {
-      if (isAbortError(err) || signal?.aborted) {
-        throw createAbortError();
-      }
-      const resampled = resampleImageDataLanczos3(
-        srcImgData.data,
-        origW,
-        origH,
-        targetW,
-        targetH,
-        (pct) => {
-          if (onProgress) onProgress(pct, `Lanczos-3 정밀 보간 중 (${pct}%)`);
-        }
-      );
-      outPixels = applyAdaptiveUnsharpMask(resampled, targetW, targetH, sharpenLevel);
-    }
-  } else {
-    const resampled = resampleImageDataLanczos3(
-      srcImgData.data,
-      origW,
-      origH,
-      targetW,
-      targetH,
-      (pct) => {
-        if (onProgress) onProgress(pct, `Lanczos-3 정밀 보간 중 (${pct}%)`);
-      }
-    );
-    outPixels = applyAdaptiveUnsharpMask(resampled, targetW, targetH, sharpenLevel);
-  }
-
-  if (signal?.aborted) throw createAbortError();
-  if (onProgress) onProgress(98, '고화질 이미지 포맷 인코딩 중...');
-
-  const outCanvas = document.createElement('canvas');
-  outCanvas.width = targetW;
-  outCanvas.height = targetH;
-  const outCtx = outCanvas.getContext('2d');
-  if (!outCtx) throw new Error('출력 캔버스 컨텍스트를 생성할 수 없습니다.');
-  outCtx.putImageData(new ImageData(new Uint8ClampedArray(outPixels), targetW, targetH), 0, 0);
-  return outCanvas;
 }
 
 function flattenTransparentToWhiteIfJpeg(
@@ -432,6 +335,10 @@ function flattenTransparentToWhiteIfJpeg(
 /**
  * 개별 이미지 리사이징 및 CSR 업스케일 실행
  */
+function createAbortError(): DOMException {
+  return new DOMException('작업이 중단되었습니다.', 'AbortError');
+}
+
 export async function resizeSingleImage(
   item: ImageFileItem,
   settings: ResizeSettings,
@@ -483,7 +390,7 @@ export async function resizeSingleImage(
             wasCapped = wasCapped || aiResult.wasCappedForMemory;
             usedEngine = 'ai-esrgan';
           } else {
-            outCanvas = await upscaleCanvasWithLanczos(
+            outCanvas = await resampleCanvasLanczos3Streamed(
               img,
               plan.targetW,
               plan.targetH,
@@ -495,6 +402,15 @@ export async function resizeSingleImage(
           }
 
           if (signal?.aborted) throw createAbortError();
+          const outMp = (outCanvas.width * outCanvas.height) / 1_000_000;
+          if (onProgress) {
+            onProgress(
+              97,
+              outMp >= 40
+                ? '초고해상도 파일 인코딩 중... (수 초 소요될 수 있습니다)'
+                : '고화질 이미지 포맷 인코딩 중...'
+            );
+          }
           const finalCanvas = flattenTransparentToWhiteIfJpeg(outCanvas, mimeType);
           const blob = await canvasToBlob(finalCanvas, mimeType, settings.quality);
           if (signal?.aborted) throw createAbortError();

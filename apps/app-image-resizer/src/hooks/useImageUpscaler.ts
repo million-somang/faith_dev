@@ -35,7 +35,7 @@ export const DEFAULT_SETTINGS: ResizeSettings = {
   lockAspectRatio: true,
   preventUpscale: false,
   format: 'original',
-  quality: 0.95,
+  quality: 1.0,
   filenameSuffix: '_resized',
 };
 
@@ -53,9 +53,13 @@ function resolveStageIndex(percent: number): UpscaleProcessingStage {
 
 function resolveEngineLabel(settings: ResizeSettings): string {
   if (settings.unit === 'upscale') {
-    return settings.upscaleEngine === 'ai-esrgan'
-      ? `AI 초해상도 (${settings.upscaleTarget.toUpperCase()})`
-      : `초고속 Lanczos-3 (${settings.upscaleTarget.toUpperCase()})`;
+    if (settings.upscaleEngine === 'ai-esrgan') {
+      const isTwoStage = settings.upscaleTarget === '6x' || settings.upscaleTarget === '8x';
+      return isTwoStage
+        ? `AI 2단 초해상도 (${settings.upscaleTarget.toUpperCase()})`
+        : `AI 초해상도 (${settings.upscaleTarget.toUpperCase()})`;
+    }
+    return `초고속 Lanczos-3 (${settings.upscaleTarget.toUpperCase()})`;
   }
   if (settings.unit === 'target_kb') return `목표 용량 맞춤 (${settings.targetKb}KB)`;
   if (settings.unit === 'pixel') return '픽셀 · SNS 규격 변환';
