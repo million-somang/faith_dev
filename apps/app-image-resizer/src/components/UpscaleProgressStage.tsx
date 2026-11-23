@@ -3,6 +3,10 @@ import { UpscaleProcessingState } from '../types/index';
 
 interface UpscaleProgressStageProps {
   readonly state: UpscaleProcessingState;
+  readonly notifyOnComplete: boolean;
+  readonly notificationSupported: boolean;
+  readonly onToggleNotify: () => void;
+  readonly onMinimizeToBackground: () => void;
   readonly onCancel: () => void;
 }
 
@@ -18,6 +22,10 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 export const UpscaleProgressStage: React.FC<UpscaleProgressStageProps> = ({
   state,
+  notifyOnComplete,
+  notificationSupported,
+  onToggleNotify,
+  onMinimizeToBackground,
   onCancel,
 }) => {
   const [logoError, setLogoError] = useState(false);
@@ -30,6 +38,7 @@ export const UpscaleProgressStage: React.FC<UpscaleProgressStageProps> = ({
   return (
     <section
       data-progress-stage={state.isCompleting ? 'completing' : 'active'}
+      data-execution-thread={state.executionThread}
       aria-live="polite"
       className={`bg-white rounded-3xl p-4 sm:p-7 border border-[#EBE6DD] border-t-4 shadow-lg space-y-4 animate-fade-in transition-colors duration-300 ${
         state.isCompleting ? 'border-t-emerald-500' : 'border-t-indigo-600'
@@ -37,7 +46,7 @@ export const UpscaleProgressStage: React.FC<UpscaleProgressStageProps> = ({
     >
       {/* 상단 엔진 · 배치 진행 배지 바 */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EBE6DD] pb-3">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span
             className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black shadow-2xs ${
               state.isCompleting
@@ -54,6 +63,22 @@ export const UpscaleProgressStage: React.FC<UpscaleProgressStageProps> = ({
           </span>
           <span className="px-2 py-0.5 rounded-md bg-[#FAF8F5] border border-[#DFD9CE] text-[10px] font-extrabold text-[#2D2A26]">
             {state.engineLabel}
+          </span>
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-extrabold ${
+              state.executionThread === 'worker'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-indigo-50 border-indigo-200 text-indigo-800'
+            }`}
+          >
+            <i
+              className={`fas ${
+                state.executionThread === 'worker' ? 'fa-bolt text-emerald-600' : 'fa-layer-group text-indigo-600'
+              } text-[9px]`}
+            ></i>
+            <span>
+              {state.executionThread === 'worker' ? 'Web Worker 백그라운드 실행' : '백그라운드 연속 실행'}
+            </span>
           </span>
         </div>
 
@@ -347,22 +372,48 @@ export const UpscaleProgressStage: React.FC<UpscaleProgressStageProps> = ({
         </span>
       </div>
 
-      {/* 하단 안내 + 작업 중단 버튼 */}
-      <div className="flex items-center justify-between gap-2 pt-1">
+      {/* 하단 안내 + 백그라운드/알림/작업 중단 버튼 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
         <span className="text-[11px] font-semibold text-stone-500 flex items-center gap-1.5">
-          <i className="fas fa-shield-alt text-emerald-600"></i>
-          <span>서버 전송 없이 브라우저 내에서만 연산됩니다</span>
+          <i className="fas fa-shield-alt text-emerald-600 shrink-0"></i>
+          <span>다른 탭으로 이동하거나 화면을 축소해도 백그라운드에서 계속 진행됩니다</span>
         </span>
 
         {!state.isCompleting && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-black transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
-          >
-            <i className="fas fa-stop-circle"></i>
-            <span>작업 중단</span>
-          </button>
+          <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0">
+            {notificationSupported && (
+              <button
+                type="button"
+                onClick={onToggleNotify}
+                className={`px-3 py-2 rounded-xl border text-xs font-extrabold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  notifyOnComplete
+                    ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                    : 'bg-[#FAF8F5] hover:bg-stone-200/70 text-[#2D2A26] border-[#EBE6DD]'
+                }`}
+              >
+                <i className={`fas ${notifyOnComplete ? 'fa-bell text-emerald-600' : 'fa-bell-slash text-stone-400'}`}></i>
+                <span>{notifyOnComplete ? '완료 알림 켜짐' : '완료 시 알림 받기'}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onMinimizeToBackground}
+              className="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-black transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <i className="fas fa-window-minimize text-[10px]"></i>
+              <span>작게 보기 (백그라운드)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-black transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <i className="fas fa-stop-circle"></i>
+              <span>작업 중단</span>
+            </button>
+          </div>
         )}
       </div>
     </section>

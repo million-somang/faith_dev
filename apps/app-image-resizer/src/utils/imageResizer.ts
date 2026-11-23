@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import {
+  ExecutionThread,
   FitMode,
   ImageFileItem,
   MAX_ANDROID_LONG_EDGE,
@@ -17,6 +18,11 @@ import {
   resampleCanvasLanczos3Streamed,
 } from './lanczosResampler';
 import { upscaleCanvasWithRealEsrgan } from './aiUpscaler';
+import {
+  runUpscaleInBackgroundWorker,
+  supportsBackgroundUpscaleWorker,
+  WorkerUnavailableError,
+} from './upscaleWorkerClient';
 
 export interface BrowserCanvasLimits {
   readonly maxLongEdge: number;
@@ -361,9 +367,50 @@ export async function resizeSingleImage(
   wasCappedForMemory: boolean;
   usedEngine: UpscaleEngine | 'canvas';
   runtimeBackend?: RuntimeBackend;
+  executionThread?: ExecutionThread;
   sharpnessGainPercent?: number;
 }> {
   if (signal?.aborted) throw createAbortError();
+
+  let resolvedMimeType = item.file.type || 'image/jpeg';
+  if (settings.format !== 'original') {
+    resolvedMimeType = settings.format;
+  }
+
+  if (settings.unit === 'upscale' && supportsBackgroundUpscaleWorker()) {
+    try {
+      const workerResult = await runUpscaleInBackgroundWorker({
+        file: item.file,
+        settings,
+        mimeType: resolvedMimeType,
+        limits: getBrowserCanvasLimits(),
+        onProgress,
+        signal,
+      });
+      if (signal?.aborted) throw createAbortError();
+      const url = URL.createObjectURL(workerResult.blob);
+      return {
+        blob: workerResult.blob,
+        url,
+        width: workerResult.width,
+        height: workerResult.height,
+        size: workerResult.size,
+        wasCappedForMemory: workerResult.wasCappedForMemory,
+        usedEngine: workerResult.usedEngine,
+        runtimeBackend: workerResult.runtimeBackend,
+        executionThread: 'worker',
+        sharpnessGainPercent: workerResult.sharpnessGainPercent,
+      };
+    } catch (err: unknown) {
+      if (isAbortError(err) || signal?.aborted) {
+        throw createAbortError();
+      }
+      if (!(err instanceof WorkerUnavailableError)) {
+        throw err;
+      }
+      console.warn('[Upscale] Worker 불가, 무스로틀 메인 스레드로 전환:', err);
+    }
+  }
 
   return new Promise((resolve, reject) => {
     const sourceUrl = URL.createObjectURL(item.file);
@@ -444,6 +491,7 @@ export async function resizeSingleImage(
             wasCappedForMemory: wasCapped,
             usedEngine,
             runtimeBackend,
+            executionThread: 'main',
             sharpnessGainPercent,
           });
           return;

@@ -1,4 +1,5 @@
 import type { SharpenLevel } from '../types/index';
+import { yieldWithoutBackgroundThrottle } from './backgroundKeepAlive';
 
 const LANCZOS_RADIUS = 3;
 
@@ -321,7 +322,7 @@ export function applyAdaptiveUnsharpMask(
   return result;
 }
 
-function computeMeanSobelMagnitude(rgba: Uint8ClampedArray, w: number, h: number): number {
+export function computeMeanSobelMagnitude(rgba: Uint8ClampedArray, w: number, h: number): number {
   if (w < 3 || h < 3) return 0;
   const luma = new Float32Array(w * h);
   for (let i = 0; i < w * h; i += 1) {
@@ -688,7 +689,7 @@ export async function resampleCanvasLanczos3Streamed(
         const pct = Math.min(95, 15 + Math.round((y1 / dstH) * 80));
         onProgress(pct, `선명화 보정 중 (${pct}%)`);
       }
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+      await yieldWithoutBackgroundThrottle();
     }
     return outCanvas;
   }
@@ -811,7 +812,7 @@ export async function resampleCanvasLanczos3Streamed(
       onProgress(pct, `Lanczos-3 정밀 보간 중 (${pct}%)`);
     }
 
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+    await yieldWithoutBackgroundThrottle();
   }
 
   return outCanvas;

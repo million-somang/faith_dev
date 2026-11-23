@@ -6,6 +6,8 @@ export type AiModelEngine = 'ai-realesrgan-v3' | 'ai-realesrgan-x4plus';
 
 export type RuntimeBackend = 'webgpu' | 'wasm' | 'cpu';
 
+export type ExecutionThread = 'worker' | 'main';
+
 export type UpscaleTargetMode = '1x' | '2x' | '3x' | '4x' | '6x' | '8x' | 'fhd' | '4k' | '8k';
 
 export type SharpenLevel = 'none' | 'natural' | 'crisp';
@@ -79,6 +81,8 @@ export interface UpscaleProcessingState {
   readonly stageIndex: UpscaleProcessingStage;
   readonly statusText: string;
   readonly engineLabel: string;
+  readonly executionThread: ExecutionThread;
+  readonly wakeLockActive: boolean;
   readonly elapsedMs: number;
 }
 

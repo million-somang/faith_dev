@@ -1,5 +1,6 @@
 import type * as OrtTypes from 'onnxruntime-web';
 import type { AiModelEngine, RuntimeBackend, SharpenLevel } from '../types/index';
+import { yieldWithoutBackgroundThrottle } from './backgroundKeepAlive';
 import {
   applyAdaptiveUnsharpMask,
   getAdaptiveUnsharpRadius,
@@ -143,11 +144,7 @@ function throwIfAborted(signal?: AbortSignal): void {
 }
 
 async function yieldUiFrame(): Promise<void> {
-  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
-    return;
-  }
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  await yieldWithoutBackgroundThrottle();
 }
 
 async function loadOrtModule(): Promise<typeof OrtTypes> {

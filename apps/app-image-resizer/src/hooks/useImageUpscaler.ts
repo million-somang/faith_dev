@@ -1,10 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ExecutionThread,
   ImageFileItem,
   ResizeSettings,
   UpscaleProcessingStage,
   UpscaleProcessingState,
 } from '../types/index';
+import {
+  acquireBackgroundGuards,
+  captureOriginalTitle,
+  getNotificationPermission,
+  requestNotificationPermission,
+  restoreDocumentTitle,
+  sendBackgroundCompletionNotification,
+  setCompletedTabTitle,
+  setProcessingTabTitle,
+  supportsDesktopNotification,
+  type BackgroundGuardHandle,
+} from '../utils/backgroundKeepAlive';
 import {
   calculateTargetSize,
   createZipArchive,
@@ -18,6 +31,10 @@ import {
   resizeSingleImage,
   saveBlobWithFilePicker,
 } from '../utils/imageResizer';
+import {
+  supportsBackgroundUpscaleWorker,
+  terminateUpscaleWorker,
+} from '../utils/upscaleWorkerClient';
 
 export type WizardStep = 1 | 2 | 3;
 
@@ -75,6 +92,11 @@ export function useImageUpscaler() {
   const [compareItemId, setCompareItemId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingState, setProcessingState] = useState<UpscaleProcessingState | null>(null);
+  const [isBackgroundMinimized, setIsBackgroundMinimized] = useState(false);
+  const [notifyOnComplete, setNotifyOnComplete] = useState<boolean>(
+    () => getNotificationPermission() === 'granted'
+  );
+  const [backgroundCompletedCount, setBackgroundCompletedCount] = useState<number | null>(null);
   const [processNotice, setProcessNotice] = useState<SaveNotice | null>(null);
   const [isSavingAll, setIsSavingAll] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
@@ -82,13 +104,25 @@ export function useImageUpscaler() {
   const [saveNotice, setSaveNotice] = useState<SaveNotice | null>(null);
 
   const itemsRef = useRef<ImageFileItem[]>([]);
+  const activeTabRef = useRef<'app' | 'guide' | 'faq'>(activeTab);
+  const notifyOnCompleteRef = useRef<boolean>(notifyOnComplete);
   const abortControllerRef = useRef<AbortController | null>(null);
   const elapsedTimerRef = useRef<number | null>(null);
   const completionTimerRef = useRef<number | null>(null);
+  const bgGuardsRef = useRef<BackgroundGuardHandle | null>(null);
+  const titleRestoreCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  useEffect(() => {
+    notifyOnCompleteRef.current = notifyOnComplete;
+  }, [notifyOnComplete]);
 
   const stopElapsedTimer = useCallback(() => {
     if (elapsedTimerRef.current !== null) {
@@ -97,19 +131,87 @@ export function useImageUpscaler() {
     }
   }, []);
 
+  const clearTitleRestoreListener = useCallback(() => {
+    if (titleRestoreCleanupRef.current) {
+      titleRestoreCleanupRef.current();
+      titleRestoreCleanupRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort();
       stopElapsedTimer();
+      clearTitleRestoreListener();
       if (completionTimerRef.current !== null) {
         window.clearTimeout(completionTimerRef.current);
       }
+      if (bgGuardsRef.current) {
+        void bgGuardsRef.current.release();
+        bgGuardsRef.current = null;
+      }
+      terminateUpscaleWorker();
       itemsRef.current.forEach((item) => {
         if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
         if (item.resizedUrl) URL.revokeObjectURL(item.resizedUrl);
       });
     };
-  }, [stopElapsedTimer]);
+  }, [clearTitleRestoreListener, stopElapsedTimer]);
+
+  const handleChangeTab = useCallback((tab: 'app' | 'guide' | 'faq') => {
+    setActiveTab(tab);
+    if (tab === 'app') {
+      setBackgroundCompletedCount(null);
+    }
+  }, []);
+
+  const handleMinimizeToBackground = useCallback(() => {
+    setIsBackgroundMinimized(true);
+  }, []);
+
+  const handleExpandFromBackground = useCallback(() => {
+    setActiveTab('app');
+    setIsBackgroundMinimized(false);
+    setBackgroundCompletedCount(null);
+  }, []);
+
+  const handleJumpToCompletedResults = useCallback(() => {
+    setBackgroundCompletedCount(null);
+    setActiveTab('app');
+    setCurrentStep(3);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleToggleNotifyOnComplete = useCallback(async () => {
+    if (!supportsDesktopNotification()) return;
+    if (notifyOnCompleteRef.current) {
+      setNotifyOnComplete(false);
+      return;
+    }
+
+    const currentPerm = getNotificationPermission();
+    if (currentPerm === 'granted') {
+      setNotifyOnComplete(true);
+      return;
+    }
+    if (currentPerm === 'denied') {
+      setProcessNotice({
+        type: 'info',
+        text: '브라우저 알림이 차단되어 있습니다. 주소창 왼쪽 권한 설정에서 알림을 허용해 주세요.',
+      });
+      return;
+    }
+
+    const nextPerm = await requestNotificationPermission();
+    if (nextPerm === 'granted') {
+      setNotifyOnComplete(true);
+    } else if (nextPerm === 'denied') {
+      setProcessNotice({
+        type: 'info',
+        text: '완료 알림 권한이 거부되어 브라우저 탭 제목 표시로만 완료를 안내합니다.',
+      });
+    }
+  }, []);
 
   const handleUpdateSettings = useCallback((updated: Partial<ResizeSettings>) => {
     setProcessNotice(null);
@@ -206,14 +308,23 @@ export function useImageUpscaler() {
     const snapshot = [...itemsRef.current];
     if (isProcessing || snapshot.length === 0) return;
 
+    clearTitleRestoreListener();
     setSaveNotice(null);
     setProcessNotice(null);
+    setBackgroundCompletedCount(null);
+    setIsBackgroundMinimized(false);
     setIsProcessing(true);
+
+    const originalTitle = captureOriginalTitle();
+    const bgGuards = await acquireBackgroundGuards();
+    bgGuardsRef.current = bgGuards;
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
     const startTime = Date.now();
     const engineLabel = resolveEngineLabel(settings);
+    const executionThread: ExecutionThread =
+      settings.unit === 'upscale' && supportsBackgroundUpscaleWorker() ? 'worker' : 'main';
 
     const firstTarget = calculateTargetSize(
       snapshot[0]!.originalWidth,
@@ -241,11 +352,26 @@ export function useImageUpscaler() {
             : 'Lanczos-3 정밀 보간 준비 중...'
           : '이미지 변환 준비 중...',
       engineLabel,
+      executionThread,
+      wakeLockActive: bgGuards.wakeLockActive,
       elapsedMs: 0,
     });
+    setProcessingTabTitle(1, 1, snapshot.length);
+
+    const syncElapsedOnVisible = (): void => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        setProcessingState((prev) =>
+          prev && !prev.isCompleting ? { ...prev, elapsedMs: Date.now() - startTime } : prev
+        );
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', syncElapsedOnVisible);
+    }
 
     stopElapsedTimer();
     elapsedTimerRef.current = window.setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       setProcessingState((prev) =>
         prev && !prev.isCompleting ? { ...prev, elapsedMs: Date.now() - startTime } : prev
       );
@@ -287,6 +413,7 @@ export function useImageUpscaler() {
             }
           : prev
       );
+      setProcessingTabTitle(initialBatchPct, i + 1, snapshot.length);
 
       setItems((prev) =>
         prev.map((it) =>
@@ -325,6 +452,7 @@ export function useImageUpscaler() {
                   }
                 : prev
             );
+            setProcessingTabTitle(overallPct, i + 1, snapshot.length);
 
             setItems((prev) =>
               prev.map((it) =>
@@ -334,6 +462,14 @@ export function useImageUpscaler() {
           },
           controller.signal
         );
+
+        if (result.executionThread) {
+          setProcessingState((prev) =>
+            prev && prev.executionThread !== result.executionThread
+              ? { ...prev, executionThread: result.executionThread! }
+              : prev
+          );
+        }
 
         if (oldResizedUrl) {
           URL.revokeObjectURL(oldResizedUrl);
@@ -402,10 +538,19 @@ export function useImageUpscaler() {
     }
 
     stopElapsedTimer();
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', syncElapsedOnVisible);
+    }
     abortControllerRef.current = null;
+    if (bgGuardsRef.current) {
+      await bgGuardsRef.current.release();
+      bgGuardsRef.current = null;
+    }
 
     if (wasAborted) {
+      restoreDocumentTitle(originalTitle);
       setProcessingState(null);
+      setIsBackgroundMinimized(false);
       setIsProcessing(false);
       setProcessNotice({
         type: 'info',
@@ -421,7 +566,39 @@ export function useImageUpscaler() {
       setCompareItemId(firstDoneId);
     }
 
-    // 100% 도달 축하 연출(0.6초) 후 STEP 3 자동 전환
+    const isHiddenAtFinish = typeof document !== 'undefined' && document.hidden;
+
+    if (isHiddenAtFinish) {
+      setCompletedTabTitle(completedCountInRun);
+      const restoreOnReturn = (): void => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+        restoreDocumentTitle(originalTitle);
+        clearTitleRestoreListener();
+      };
+      if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+        document.addEventListener('visibilitychange', restoreOnReturn);
+        window.addEventListener('focus', restoreOnReturn);
+        titleRestoreCleanupRef.current = () => {
+          document.removeEventListener('visibilitychange', restoreOnReturn);
+          window.removeEventListener('focus', restoreOnReturn);
+        };
+      }
+      if (notifyOnCompleteRef.current) {
+        sendBackgroundCompletionNotification(completedCountInRun, settings.unit === 'upscale');
+      }
+      setProcessingState(null);
+      setIsBackgroundMinimized(false);
+      setIsProcessing(false);
+      setCurrentStep(3);
+      if (activeTabRef.current !== 'app') {
+        setBackgroundCompletedCount(completedCountInRun);
+      }
+      return;
+    }
+
+    restoreDocumentTitle(originalTitle);
+
+    // 포그라운드 완료 시 100% 도달 축하 연출(0.6초) 후 STEP 3 자동 전환
     setProcessingState((prev) =>
       prev
         ? {
@@ -444,10 +621,16 @@ export function useImageUpscaler() {
     });
 
     setProcessingState(null);
+    setIsBackgroundMinimized(false);
     setIsProcessing(false);
     setCurrentStep(3);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [isProcessing, settings, stopElapsedTimer]);
+
+    if (activeTabRef.current === 'app') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setBackgroundCompletedCount(completedCountInRun);
+    }
+  }, [clearTitleRestoreListener, isProcessing, settings, stopElapsedTimer]);
 
   const handleDownloadSingle = useCallback(
     (item: ImageFileItem) => {
@@ -589,7 +772,7 @@ export function useImageUpscaler() {
 
   return {
     activeTab,
-    setActiveTab,
+    setActiveTab: handleChangeTab,
     currentStep,
     settings,
     items,
@@ -598,6 +781,10 @@ export function useImageUpscaler() {
     setCompareItemId,
     isProcessing,
     processingState,
+    isBackgroundMinimized,
+    notifyOnComplete,
+    notificationSupported: supportsDesktopNotification(),
+    backgroundCompletedCount,
     processNotice,
     isSavingAll,
     isZipping,
@@ -610,6 +797,10 @@ export function useImageUpscaler() {
     handleClearAll,
     handleStartProcess,
     handleCancelProcess,
+    handleMinimizeToBackground,
+    handleExpandFromBackground,
+    handleJumpToCompletedResults,
+    handleToggleNotifyOnComplete,
     handleDownloadSingle,
     handleDownloadAllFiles,
     handleDownloadZipAll,

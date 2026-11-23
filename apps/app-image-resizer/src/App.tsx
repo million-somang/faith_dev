@@ -34,6 +34,10 @@ export const App: React.FC = () => {
     setCompareItemId,
     isProcessing,
     processingState,
+    isBackgroundMinimized,
+    notifyOnComplete,
+    notificationSupported,
+    backgroundCompletedCount,
     processNotice,
     isSavingAll,
     isZipping,
@@ -46,6 +50,10 @@ export const App: React.FC = () => {
     handleClearAll,
     handleStartProcess,
     handleCancelProcess,
+    handleMinimizeToBackground,
+    handleExpandFromBackground,
+    handleJumpToCompletedResults,
+    handleToggleNotifyOnComplete,
     handleDownloadSingle,
     handleDownloadAllFiles,
     handleSaveToChosenFolder,
@@ -60,6 +68,14 @@ export const App: React.FC = () => {
 
   const progressWidthClass =
     currentStep === 1 ? 'w-0' : currentStep === 2 ? 'w-1/2' : 'w-full';
+  const showFullProgressStage = Boolean(processingState?.isActive && !isBackgroundMinimized);
+  const showMiniProgressBar = Boolean(
+    processingState?.isActive && (isBackgroundMinimized || activeTab !== 'app')
+  );
+  const miniBarPercent = processingState
+    ? Math.max(1, Math.min(100, Math.round(processingState.overallPercent)))
+    : 0;
+  const miniBarElapsedSec = processingState ? (processingState.elapsedMs / 1000).toFixed(1) : '0.0';
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#2D2A26] flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
@@ -71,7 +87,24 @@ export const App: React.FC = () => {
         <Header activeTab={activeTab} onChangeTab={setActiveTab} />
 
         {/* 메인 콘텐츠 영역 (내부 중첩 스크롤 금지 -> 브라우저 단일 스크롤 흐름) */}
-        <main className="flex-1 pb-10 space-y-5">
+        <main className={`flex-1 space-y-5 ${showMiniProgressBar ? 'pb-28' : 'pb-10'}`}>
+          {!processingState?.isActive && backgroundCompletedCount !== null && activeTab !== 'app' && (
+            <div className="rounded-2xl px-4 py-3 bg-emerald-50 border border-emerald-200 text-emerald-900 shadow-xs flex flex-wrap items-center justify-between gap-2 animate-fade-in">
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-black">
+                <i className="fas fa-circle-check text-emerald-600"></i>
+                <span>백그라운드 업스케일 완료 ({backgroundCompletedCount}장)!</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleJumpToCompletedResults}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <span>결과 비교하러 가기</span>
+                <i className="fas fa-arrow-right text-[10px]"></i>
+              </button>
+            </div>
+          )}
+
           {activeTab === 'app' && (
             <>
               {/* Zone 2: 연결선형 3단계 진행 스텝퍼 */}
@@ -129,9 +162,13 @@ export const App: React.FC = () => {
               </div>
 
               {/* 전용 포커스 프로그레스 스테이지 (1~100% 3D 로고 & 컬러 채움 연출) */}
-              {processingState?.isActive ? (
+              {showFullProgressStage && processingState ? (
                 <UpscaleProgressStage
                   state={processingState}
+                  notifyOnComplete={notifyOnComplete}
+                  notificationSupported={notificationSupported}
+                  onToggleNotify={handleToggleNotifyOnComplete}
+                  onMinimizeToBackground={handleMinimizeToBackground}
                   onCancel={handleCancelProcess}
                 />
               ) : (
@@ -419,6 +456,73 @@ export const App: React.FC = () => {
           {activeTab === 'faq' && <FaqSection />}
         </main>
       </div>
+
+      {/* 백그라운드 실행 미니 진행 바 (축소 보기 또는 다른 탭 열람 시) */}
+      {showMiniProgressBar && processingState && (
+        <div
+          data-background-mini-bar="true"
+          aria-live="polite"
+          className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1.5rem)] max-w-3xl bg-white/95 backdrop-blur-md border border-indigo-200 shadow-xl rounded-2xl p-3 space-y-2 animate-fade-in"
+        >
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <span className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs shrink-0 shadow-2xs">
+                <i className="fas fa-spinner fa-spin"></i>
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-black text-[#2D2A26] truncate">
+                    {processingState.currentFileName}
+                  </span>
+                  <span className="text-[11px] font-mono font-black text-indigo-700 shrink-0">
+                    {miniBarPercent}%
+                  </span>
+                </div>
+                <p className="text-[10px] font-bold text-stone-500 truncate">
+                  {processingState.currentIndex}/{processingState.totalCount}장 · {miniBarElapsedSec}s ·{' '}
+                  {processingState.statusText}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={handleExpandFromBackground}
+                className="px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <i className="fas fa-up-right-and-down-left-from-center text-[9px]"></i>
+                <span>크게 보기</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelProcess}
+                className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-black transition-colors cursor-pointer"
+              >
+                중단
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full h-1.5 rounded-full bg-[#ECE6DA] overflow-hidden">
+            <svg
+              viewBox="0 0 100 4"
+              preserveAspectRatio="none"
+              className="w-full h-full block"
+              aria-hidden="true"
+            >
+              <rect
+                x="0"
+                y="0"
+                width={miniBarPercent}
+                height="4"
+                rx="2"
+                fill={processingState.isCompleting ? '#10B981' : '#4F46E5'}
+              />
+            </svg>
+          </div>
+        </div>
+      )}
 
       {/* 하단 푸터 */}
       <footer className="mt-auto border-t border-[#EBE6DD] bg-white/70 py-4 px-4 text-center text-xs text-stone-500">
