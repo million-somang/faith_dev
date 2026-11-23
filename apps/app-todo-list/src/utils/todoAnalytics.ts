@@ -129,6 +129,29 @@ export function roundPercent(numerator: number, denominator: number): number {
   return Math.min(100, Math.round((numerator * 100) / denominator));
 }
 
+export function isTodoForToday(
+  item: Pick<TodoItem, 'dueDate' | 'recurrence' | 'occurrence'>,
+  todayStr: string = getLocalDateString()
+): boolean {
+  if (item.recurrence.type !== 'none') {
+    return item.occurrence.isDueToday;
+  }
+  return item.dueDate === todayStr;
+}
+
+export function isTodoUpcoming(
+  item: Pick<TodoItem, 'dueDate' | 'recurrence' | 'occurrence'>,
+  todayStr: string = getLocalDateString()
+): boolean {
+  if (isTodoForToday(item, todayStr)) return false;
+  if (item.recurrence.type !== 'none') {
+    return Boolean(
+      item.occurrence.nextOccurrenceDate && item.occurrence.nextOccurrenceDate > todayStr
+    );
+  }
+  return item.dueDate !== null && item.dueDate > todayStr;
+}
+
 export function computeTodoStats(
   items: readonly TodoItem[],
   todayStr: string = getLocalDateString()
@@ -150,13 +173,15 @@ export function computeTodoStats(
       item.dueDate < todayStr
   ).length;
 
-  const todayDueCount = activeList.filter((item) => {
-    if (item.completed) return false;
-    if (item.recurrence.type !== 'none') {
-      return item.occurrence.isDueToday;
-    }
-    return item.dueDate === todayStr;
-  }).length;
+  const todayItems = activeList.filter((item) => isTodoForToday(item, todayStr));
+  const todayTotalCount = todayItems.length;
+  const todayCompletedCount = todayItems.filter((item) => item.completed).length;
+  const todayActiveCount = todayTotalCount - todayCompletedCount;
+  const todayDueCount = todayActiveCount;
+  const todayCompletionRate = roundPercent(todayCompletedCount, todayTotalCount);
+  const upcomingCount = activeList.filter(
+    (item) => !item.completed && isTodoUpcoming(item, todayStr)
+  ).length;
 
   const byPriority: PriorityBreakdown[] = PRIORITY_LIST.map((meta) => {
     const subset = activeList.filter((item) => item.priority === meta.key);
@@ -188,6 +213,11 @@ export function computeTodoStats(
     maxStreak,
     overdueCount,
     todayDueCount,
+    todayTotalCount,
+    todayCompletedCount,
+    todayActiveCount,
+    todayCompletionRate,
+    upcomingCount,
     trashCount,
     completionRate: roundPercent(completedCount, totalCount),
     byPriority,

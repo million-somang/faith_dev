@@ -91,6 +91,11 @@ export interface TodoStatsReport {
   readonly maxStreak: number;
   readonly overdueCount: number;
   readonly todayDueCount: number;
+  readonly todayTotalCount: number;
+  readonly todayCompletedCount: number;
+  readonly todayActiveCount: number;
+  readonly todayCompletionRate: number;
+  readonly upcomingCount: number;
   readonly trashCount: number;
   readonly completionRate: number;
   readonly byPriority: readonly PriorityBreakdown[];

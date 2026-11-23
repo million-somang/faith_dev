@@ -14,11 +14,11 @@ interface TodoFilterBarProps {
 }
 
 const STATUS_TABS: { key: TodoStatusFilter; label: string }[] = [
-  { key: 'all', label: '전체' },
+  { key: 'today', label: '오늘' },
   { key: 'active', label: '진행' },
   { key: 'recurring', label: '반복' },
-  { key: 'today', label: '오늘' },
   { key: 'completed', label: '완료' },
+  { key: 'all', label: '전체' },
 ];
 
 export default function TodoFilterBar({

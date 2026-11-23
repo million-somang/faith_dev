@@ -163,6 +163,9 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
           >
             <span className={`w-2 h-2 rounded-full shrink-0 ${selectedPriority.dotClass}`} />
             <span>{selectedPriority.shortLabel}</span>
+            {dueDate !== todayStr && (
+              <span className="sm:hidden text-indigo-700 font-black">· {dueShortLabel}</span>
+            )}
             {recurrenceType !== 'none' && (
               <i className="fas fa-repeat text-[9px] text-indigo-600"></i>
             )}

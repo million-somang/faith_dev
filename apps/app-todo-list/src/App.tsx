@@ -9,7 +9,12 @@ import { usePortalMessenger } from './hooks/usePortalMessenger';
 import { useTodos } from './hooks/useTodos';
 import { useViewMode } from './hooks/useViewMode';
 import type { MainTab, MobileViewMode, TodoDraftInput } from './types/todo';
-import { formatTodayKoreanLabel, getLocalDateString, getOffsetDateString } from './utils/todoAnalytics';
+import {
+  formatTodayKoreanLabel,
+  getLocalDateString,
+  getOffsetDateString,
+  isTodoForToday,
+} from './utils/todoAnalytics';
 import {
   createBackupJson,
   downloadTextFile,
@@ -47,21 +52,27 @@ export function App() {
   const [mobileViewMode, setMobileViewMode] = useState<MobileViewMode>('board');
   const [showTrashModal, setShowTrashModal] = useState<boolean>(false);
   const [legalDoc, setLegalDoc] = useState<LegalDocType>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastState, setToastState] = useState<{
+    readonly message: string;
+    readonly showAllAction?: boolean;
+  } | null>(null);
   const [showConfetti, setShowConfetti] = useState<boolean>(false);
   const [localBannerDismissed, setLocalBannerDismissed] = useState<boolean>(false);
 
   const quickAddInputRef = useRef<HTMLInputElement | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showToast = useCallback((message: string) => {
-    setToastMessage(message);
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => {
-      setToastMessage(null);
-      toastTimerRef.current = null;
-    }, 2600);
-  }, []);
+  const showToast = useCallback(
+    (message: string, options?: { readonly showAllAction?: boolean }) => {
+      setToastState({ message, showAllAction: options?.showAllAction });
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => {
+        setToastState(null);
+        toastTimerRef.current = null;
+      }, options?.showAllAction ? 4200 : 2600);
+    },
+    []
+  );
 
   useEffect(() => {
     return () => {
@@ -74,9 +85,6 @@ export function App() {
     filteredTodos,
     trashItems,
     stats,
-    visibleTotalCount,
-    visibleActiveCount,
-    visibleCompletedCount,
     hiddenWorkdayCount,
     nonWorkdayReason,
     filter,
@@ -197,25 +205,65 @@ export function App() {
       const { added } = addTodo(draft);
       if (added) {
         audio.playAdd();
-        if (added.recurrence.type === 'workday' && !added.occurrence.isDueToday) {
-          if (filter.status === 'today') {
-            setFilter((prev) => ({ ...prev, status: 'all' }));
+        const todayStr = getLocalDateString();
+        const tomorrowStr = getOffsetDateString(1);
+        const shortTitle = added.title.slice(0, 16);
+
+        if (!isTodoForToday(added, todayStr)) {
+          if (added.recurrence.type === 'workday') {
+            const nextLabel = added.occurrence.nextOccurrenceDate
+              ? added.occurrence.nextOccurrenceDate.slice(5).replace('-', '/')
+              : '다음 영업일';
+            showToast(
+              `'${shortTitle}' (${added.occurrence.summaryLabel || '영업일 반복'}) 등록 완료 · 다음 영업일(${nextLabel}) 실행 예정`,
+              { showAllAction: true }
+            );
+            return;
           }
-          const nextLabel = added.occurrence.nextOccurrenceDate
-            ? added.occurrence.nextOccurrenceDate.slice(5).replace('-', '/')
-            : '다음 영업일';
-          showToast(
-            `'${added.title.slice(0, 16)}' (${added.occurrence.summaryLabel || '영업일 반복'}) 등록 완료 · 다음 영업일(${nextLabel}) 실행 예정`
-          );
+          if (added.recurrence.type !== 'none') {
+            const nextLabel = added.occurrence.nextOccurrenceDate
+              ? added.occurrence.nextOccurrenceDate.slice(5).replace('-', '/')
+              : '다음 주기';
+            showToast(
+              `'${shortTitle}' (${added.occurrence.summaryLabel}) 등록 완료 · ${nextLabel} 실행 예정`,
+              { showAllAction: true }
+            );
+            return;
+          }
+          if (added.dueDate === tomorrowStr) {
+            const dateLabel = added.dueDate.slice(5).replace('-', '/');
+            showToast(`'${shortTitle}' 내일(${dateLabel}) 예정으로 등록됨`, {
+              showAllAction: true,
+            });
+            return;
+          }
+          if (added.dueDate && added.dueDate > todayStr) {
+            const dateLabel = added.dueDate.slice(5).replace('-', '/');
+            showToast(`'${shortTitle}' ${dateLabel} 예정으로 등록됨`, {
+              showAllAction: true,
+            });
+            return;
+          }
+          if (added.dueDate === null) {
+            showToast(`'${shortTitle}' 기한없음으로 등록됨`, {
+              showAllAction: true,
+            });
+            return;
+          }
+          const pastLabel = added.dueDate.slice(5).replace('-', '/');
+          showToast(`'${shortTitle}' ${pastLabel} 마감으로 등록됨`, {
+            showAllAction: true,
+          });
           return;
         }
+
         const recSuffix = added.occurrence.summaryLabel
           ? ` (${added.occurrence.summaryLabel})`
           : '';
-        showToast(`'${added.title.slice(0, 16)}'${recSuffix} 추가됨`);
+        showToast(`'${shortTitle}'${recSuffix} 추가됨`);
       }
     },
-    [addTodo, audio, filter.status, setFilter, showToast]
+    [addTodo, audio, showToast]
   );
 
   const handleAddRoutine = useCallback(
@@ -241,7 +289,7 @@ export function App() {
         audio.playFanfare();
         setShowConfetti(true);
         sendToPortal('MISSION_CLEAR');
-        showToast('모든 할 일을 100% 완료했습니다!');
+        showToast('오늘의 모든 할 일을 100% 완료했습니다!');
       } else if (completed) {
         audio.playComplete();
       }
@@ -338,17 +386,23 @@ export function App() {
     [audio, importBackupJson, showToast]
   );
 
-  const isFiltered =
-    filter.status !== 'all' ||
+  const hasSecondaryFilter =
     filter.category !== 'all' ||
     filter.priority !== 'all' ||
     filter.searchQuery.trim().length > 0;
 
-  const canReorder = filter.sortBy === 'manual' && !isFiltered;
+  const isFiltered = filter.status !== 'today' || hasSecondaryFilter;
 
+  const canReorder =
+    filter.sortBy === 'manual' &&
+    (filter.status === 'today' || filter.status === 'all') &&
+    !hasSecondaryFilter;
+
+  const isTodayAllDone = stats.todayTotalCount > 0 && stats.todayActiveCount === 0;
+  const nonTodayTotalCount = Math.max(0, stats.totalCount - stats.todayTotalCount);
   const miniRingCircumference = 2 * Math.PI * 8;
   const miniRingOffset =
-    miniRingCircumference - (miniRingCircumference * stats.completionRate) / 100;
+    miniRingCircumference - (miniRingCircumference * stats.todayCompletionRate) / 100;
 
   return (
     <ErrorBoundary>
@@ -462,26 +516,33 @@ export function App() {
                     {/* 보드 상단 시그니처 헤더 */}
                     <div className="px-3 py-2 border-b border-[#EFE8DC] bg-gradient-to-r from-indigo-50/65 via-white to-white flex items-center justify-between gap-2 shrink-0">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm shrink-0">
-                          <i className="fas fa-list-check text-xs"></i>
+                        <div
+                          className={`w-7 h-7 rounded-xl text-white flex items-center justify-center shadow-sm shrink-0 ${
+                            isTodayAllDone ? 'bg-emerald-600' : 'bg-indigo-600'
+                          }`}
+                        >
+                          <i className={`fas ${isTodayAllDone ? 'fa-check-double' : 'fa-list-check'} text-xs`}></i>
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <h2 className="text-[14px] sm:text-[15px] font-black text-[#1C1917] tracking-tight">
                               오늘의 할 일
                             </h2>
-                            <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black tabular-nums">
-                              진행중 {visibleActiveCount}건
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-white text-[10px] font-black tabular-nums ${
+                                isTodayAllDone ? 'bg-emerald-600' : 'bg-indigo-600'
+                              }`}
+                            >
+                              {isTodayAllDone ? '오늘 100% 완료' : `진행중 ${stats.todayActiveCount}건`}
                             </span>
                           </div>
                           <div className="text-[10px] font-bold text-[#6C655B] truncate">
                             {formatTodayKoreanLabel()} · 완료{' '}
-                            <strong className="text-indigo-700">{visibleCompletedCount}</strong>/
-                            {visibleTotalCount} (
-                            {visibleTotalCount > 0
-                              ? Math.round((visibleCompletedCount / visibleTotalCount) * 100)
-                              : 0}
-                            %)
+                            <strong className={isTodayAllDone ? 'text-emerald-700' : 'text-indigo-700'}>
+                              {stats.todayCompletedCount}
+                            </strong>
+                            /{stats.todayTotalCount} ({stats.todayCompletionRate}%)
+                            {stats.upcomingCount > 0 && ` · 예정 ${stats.upcomingCount}건`}
                             {stats.recurringCount > 0 && ` · 반복 ${stats.recurringCount}건`}
                             {isLoadingRemote && (
                               <span className="ml-1 text-indigo-600">동기화 중...</span>
@@ -498,7 +559,7 @@ export function App() {
                             cy="11"
                             r="8"
                             fill="none"
-                            stroke="#4338CA"
+                            stroke={isTodayAllDone ? '#047857' : '#4338CA'}
                             strokeWidth="3"
                             strokeLinecap="round"
                             strokeDasharray={miniRingCircumference}
@@ -527,39 +588,55 @@ export function App() {
                     <TodoFilterBar
                       filter={filter}
                       onChangeFilter={setFilter}
-                      activeCount={visibleActiveCount}
-                      completedCount={visibleCompletedCount}
+                      activeCount={stats.activeCount}
+                      completedCount={stats.completedCount}
                       recurringCount={stats.recurringCount}
-                      todayCount={stats.todayDueCount}
-                      totalCount={visibleTotalCount}
+                      todayCount={stats.todayTotalCount}
+                      totalCount={stats.totalCount}
                     />
 
                     {/* 메인 할 일 리스트 (내부 중첩 스크롤 금지 -> 브라우저 단일 스크롤로 자연 확장) */}
                     <div className="flex-1 min-h-[260px] md:min-h-[420px] p-2.5 space-y-2 bg-[#FAF8F5]/50">
-                      {hiddenWorkdayCount > 0 && filter.status !== 'recurring' && (
+                      {filter.status === 'today' && (nonTodayTotalCount > 0 || hiddenWorkdayCount > 0) && (
                         <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
                           <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
                             <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
                             <span className="truncate">
-                              {filter.status === 'today'
+                              {hiddenWorkdayCount > 0 && stats.upcomingCount === 0
                                 ? `${nonWorkdayReason ? `${nonWorkdayReason} 휴무 — ` : ''}영업일 반복 ${hiddenWorkdayCount}건은 다음 영업일에 자동 실행됩니다`
-                                : `오늘은 ${nonWorkdayReason ? `${nonWorkdayReason}(휴무)` : '비영업일'}입니다 · 영업일 반복 ${hiddenWorkdayCount}건 다음 영업일 실행 대기 중`}
+                                : stats.upcomingCount > 0
+                                  ? `내일 이후 예정 ${stats.upcomingCount}건${nonTodayTotalCount > stats.upcomingCount ? ` 포함 오늘 외 ${nonTodayTotalCount}건` : ''}이 등록되어 있습니다`
+                                  : `오늘 외 할 일 ${nonTodayTotalCount}건이 전체 목록에 있습니다`}
                             </span>
                           </div>
                           <button
                             type="button"
-                            onClick={() =>
-                              setFilter({
-                                ...filter,
-                                status: filter.status === 'today' ? 'all' : 'today',
-                              })
-                            }
+                            onClick={() => setFilter({ ...filter, status: 'all' })}
                             className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
                           >
-                            {filter.status === 'today' ? '전체 목록에서 보기 →' : '오늘 할 일만 보기 →'}
+                            전체 탭에서 보기 →
                           </button>
                         </div>
                       )}
+                      {filter.status !== 'today' &&
+                        filter.status !== 'recurring' &&
+                        hiddenWorkdayCount > 0 && (
+                          <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
+                            <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
+                              <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
+                              <span className="truncate">
+                                오늘은 {nonWorkdayReason ? `${nonWorkdayReason}(휴무)` : '비영업일'}입니다 · 영업일 반복 {hiddenWorkdayCount}건 다음 영업일 실행 대기 중
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setFilter({ ...filter, status: 'today' })}
+                              className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
+                            >
+                              오늘 할 일만 보기 →
+                            </button>
+                          </div>
+                        )}
                       {filteredTodos.length > 0 ? (
                         filteredTodos.map((item, idx) => {
                           const prevItem = idx > 0 ? filteredTodos[idx - 1] : null;
@@ -595,7 +672,12 @@ export function App() {
                       ) : (
                         <TodoEmptyState
                           isFiltered={isFiltered}
+                          isTodayView={filter.status === 'today'}
+                          hasSecondaryFilter={hasSecondaryFilter}
+                          totalActiveCount={stats.totalCount}
+                          upcomingCount={stats.upcomingCount}
                           onResetFilters={resetFilters}
+                          onShowAll={() => setFilter((prev) => ({ ...prev, status: 'all' }))}
                           onAddRoutine={handleAddRoutine}
                         />
                       )}
@@ -725,10 +807,22 @@ export function App() {
         )}
 
         {/* 일반 피드백 토스트 */}
-        {!lastDeletedItem && toastMessage && (
-          <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 bg-[#24211D] text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-fade-in max-w-[92vw]">
+        {!lastDeletedItem && toastState && (
+          <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 bg-[#24211D] text-white text-xs font-bold px-3.5 py-2 rounded-full shadow-lg flex items-center gap-2 animate-fade-in max-w-[92vw]">
             <i className="fas fa-circle-check text-emerald-400 shrink-0"></i>
-            <span className="truncate">{toastMessage}</span>
+            <span className="truncate">{toastState.message}</span>
+            {toastState.showAllAction && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilter((prev) => ({ ...prev, status: 'all' }));
+                  setToastState(null);
+                }}
+                className="px-2 py-0.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-[11px] font-black shrink-0 cursor-pointer"
+              >
+                전체 보기
+              </button>
+            )}
           </div>
         )}
 

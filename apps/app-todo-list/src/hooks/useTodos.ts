@@ -37,10 +37,11 @@ import {
   computeTodoStats,
   getLocalDateString,
   hydrateTodoOccurrence,
+  isTodoForToday,
 } from '../utils/todoAnalytics';
 
 const DEFAULT_FILTER: TodoFilterState = {
-  status: 'all',
+  status: 'today',
   category: 'all',
   priority: 'all',
   searchQuery: '',
@@ -344,9 +345,15 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
         };
       });
 
-      const active = updatedNext.filter((item) => !item.isDeleted);
+      const toggledItem = updatedNext.find((item) => item.id === id);
+      const todayItems = updatedNext.filter(
+        (item) => !item.isDeleted && isTodoForToday(item, todayStr)
+      );
       const allCompletedNow =
-        nextDone && active.length > 0 && active.every((item) => item.completed);
+        nextDone &&
+        Boolean(toggledItem && isTodoForToday(toggledItem, todayStr)) &&
+        todayItems.length > 0 &&
+        todayItems.every((item) => item.completed);
 
       itemsRef.current = updatedNext;
       setItems(updatedNext);
@@ -545,7 +552,7 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
       }
       setLastDeletedItem((prev) => (prev && prev.id === id ? null : prev));
     },
-    [commitLocalItems, isAuthenticated, refreshFromDb]
+    [commitLocalItems, filter.status, isAuthenticated, refreshFromDb]
   );
 
   const undoLastDelete = useCallback(() => {
@@ -650,14 +657,26 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
         )
         .sort(sortWithinGroup);
 
-      const index = groupSorted.findIndex((item) => item.id === id);
-      if (index < 0) return;
-      const swapIndex = direction === 'up' ? index - 1 : index + 1;
-      if (swapIndex < 0 || swapIndex >= groupSorted.length) return;
+      const todayStr = getLocalDateString();
+      const visibleGroup =
+        filter.status === 'today'
+          ? groupSorted.filter((item) => isTodoForToday(item, todayStr))
+          : groupSorted;
+
+      const visibleIndex = visibleGroup.findIndex((item) => item.id === id);
+      if (visibleIndex < 0) return;
+      const visibleSwapIndex = direction === 'up' ? visibleIndex - 1 : visibleIndex + 1;
+      if (visibleSwapIndex < 0 || visibleSwapIndex >= visibleGroup.length) return;
+
+      const movedItem = visibleGroup[visibleIndex];
+      const swapTarget = visibleGroup[visibleSwapIndex];
+      const fullIndex = groupSorted.findIndex((item) => item.id === movedItem.id);
+      const fullSwapIndex = groupSorted.findIndex((item) => item.id === swapTarget.id);
+      if (fullIndex < 0 || fullSwapIndex < 0) return;
 
       const reorderedGroup = [...groupSorted];
-      const [moved] = reorderedGroup.splice(index, 1);
-      reorderedGroup.splice(swapIndex, 0, moved);
+      reorderedGroup[fullIndex] = swapTarget;
+      reorderedGroup[fullSwapIndex] = movedItem;
 
       const buckets: ReadonlyArray<readonly [boolean, TodoItem['priority']]> = [
         [false, 'urgent'],
@@ -715,7 +734,7 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
         }
       })();
     },
-    [commitLocalItems, isAuthenticated, refreshFromDb]
+    [commitLocalItems, filter.status, isAuthenticated, refreshFromDb]
   );
 
   const addSubtask = useCallback(
@@ -851,11 +870,7 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
       if (filter.status === 'active' && item.completed) return false;
       if (filter.status === 'completed' && !item.completed) return false;
       if (filter.status === 'recurring' && item.recurrence.type === 'none') return false;
-      if (filter.status === 'today') {
-        const isRecurringToday = item.recurrence.type !== 'none' && item.occurrence.isDueToday;
-        const isOneOffToday = item.recurrence.type === 'none' && item.dueDate === todayStr;
-        if (!isRecurringToday && !isOneOffToday) return false;
-      }
+      if (filter.status === 'today' && !isTodoForToday(item, todayStr)) return false;
       if (filter.category !== 'all' && item.category !== filter.category) return false;
       if (filter.priority !== 'all' && item.priority !== filter.priority) return false;
       if (query) {

@@ -58,6 +58,11 @@ export interface PortalTodoStats {
   readonly recurringCount: number;
   readonly maxStreak: number;
   readonly todayDueCount: number;
+  readonly todayTotalCount: number;
+  readonly todayCompletedCount: number;
+  readonly todayActiveCount: number;
+  readonly todayCompletionRate: number;
+  readonly upcomingCount: number;
   readonly overdueCount: number;
   readonly trashCount: number;
   readonly completionRate: number;
@@ -202,6 +207,85 @@ function addPortalDays(dateStr: string, delta: number): string {
 function getPortalWeekday(dateStr: string): number {
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+function diffPortalDays(fromStr: string, toStr: string): number {
+  const [fy, fm, fd] = fromStr.split('-').map(Number);
+  const [ty, tm, td] = toStr.split('-').map(Number);
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000);
+}
+
+function evaluatePortalRecurringToday(
+  recurrence: PortalTodoRecurrence,
+  anchorDate: string,
+  targetDate: string
+): boolean {
+  if (recurrence.endDate && targetDate > recurrence.endDate) return false;
+  const interval = Math.max(1, recurrence.interval);
+  if (recurrence.type === 'daily') {
+    const delta = diffPortalDays(anchorDate, targetDate);
+    return delta >= 0 && delta % interval === 0;
+  }
+  if (recurrence.type === 'weekly') {
+    if (targetDate < anchorDate) return false;
+    const weekdays =
+      recurrence.weekdays && recurrence.weekdays.length > 0
+        ? recurrence.weekdays
+        : [getPortalWeekday(anchorDate)];
+    const anchorSun = addPortalDays(anchorDate, -getPortalWeekday(anchorDate));
+    const targetSun = addPortalDays(targetDate, -getPortalWeekday(targetDate));
+    const wkDiff = Math.floor(diffPortalDays(anchorSun, targetSun) / 7);
+    return wkDiff >= 0 && wkDiff % interval === 0 && weekdays.includes(getPortalWeekday(targetDate));
+  }
+  if (recurrence.type === 'monthly') {
+    const [ay, am, ad] = anchorDate.split('-').map(Number);
+    const [ty, tm] = targetDate.split('-').map(Number);
+    const monthDay = recurrence.monthDay ?? ad;
+    const maxDay = new Date(Date.UTC(ty, tm, 0)).getUTCDate();
+    const clampedDay = Math.min(Math.max(1, monthDay), maxDay);
+    const mm = tm < 10 ? `0${tm}` : String(tm);
+    const dd = clampedDay < 10 ? `0${clampedDay}` : String(clampedDay);
+    const occDate = `${ty}-${mm}-${dd}`;
+    const monthDiff = (ty - ay) * 12 + (tm - am);
+    return monthDiff >= 0 && monthDiff % interval === 0 && occDate >= anchorDate && targetDate === occDate;
+  }
+  if (recurrence.type === 'yearly') {
+    const [ay, am, ad] = anchorDate.split('-').map(Number);
+    const [ty] = targetDate.split('-').map(Number);
+    const yearMonth = recurrence.yearMonth ?? am;
+    const yearDay = recurrence.yearDay ?? ad;
+    const maxDay = new Date(Date.UTC(ty, yearMonth, 0)).getUTCDate();
+    const clampedDay = Math.min(Math.max(1, yearDay), maxDay);
+    const mm = yearMonth < 10 ? `0${yearMonth}` : String(yearMonth);
+    const dd = clampedDay < 10 ? `0${clampedDay}` : String(clampedDay);
+    const occDate = `${ty}-${mm}-${dd}`;
+    const yearDiff = ty - ay;
+    return yearDiff >= 0 && yearDiff % interval === 0 && occDate >= anchorDate && targetDate === occDate;
+  }
+  return false;
+}
+
+export function isPortalTodoForToday(
+  item: Pick<PortalTodoItem, 'dueDate' | 'recurrence' | 'occurrence'>,
+  todayStr: string = getTodayLocalDateStr()
+): boolean {
+  if (item.recurrence.type !== 'none') {
+    return item.occurrence.isDueToday;
+  }
+  return item.dueDate === todayStr;
+}
+
+export function isPortalTodoUpcoming(
+  item: Pick<PortalTodoItem, 'dueDate' | 'recurrence' | 'occurrence'>,
+  todayStr: string = getTodayLocalDateStr()
+): boolean {
+  if (isPortalTodoForToday(item, todayStr)) return false;
+  if (item.recurrence.type !== 'none') {
+    return Boolean(
+      item.occurrence.nextOccurrenceDate && item.occurrence.nextOccurrenceDate > todayStr
+    );
+  }
+  return item.dueDate !== null && item.dueDate > todayStr;
 }
 
 function getPortalHolidayName(dateStr: string): string | null {
@@ -391,11 +475,23 @@ function normalizeLocalRecord(raw: unknown, idx: number, todayStr: string): Port
     recType === 'none' ? Boolean(raw.completed) : Boolean(periodKey && lastCompletedPeriod === periodKey);
 
   const occObj = isRecord(raw.occurrence) ? raw.occurrence : null;
-  const dueStr = typeof raw.dueDate === 'string' ? raw.dueDate : null;
+  const dueStr = typeof raw.dueDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.dueDate) ? raw.dueDate : null;
+  const createdDateStr =
+    typeof raw.createdAt === 'string' && /^\d{4}-\d{2}-\d{2}/.test(raw.createdAt)
+      ? raw.createdAt.slice(0, 10)
+      : todayStr;
+  const anchorStr = dueStr || createdDateStr;
   const workdayEval =
     recType === 'workday'
-      ? evaluatePortalWorkday(recurrence.interval, dueStr || todayStr, todayStr, completed)
+      ? evaluatePortalWorkday(recurrence.interval, anchorStr, todayStr, completed)
       : null;
+
+  const isDueTodayFallback =
+    recType === 'none'
+      ? dueStr === todayStr
+      : occObj && occObj.currentPeriodKey === periodKey
+        ? Boolean(occObj.isDueToday)
+        : evaluatePortalRecurringToday(recurrence, anchorStr, todayStr);
 
   const occurrence: PortalTodoOccurrence = workdayEval
     ? {
@@ -410,7 +506,7 @@ function normalizeLocalRecord(raw: unknown, idx: number, todayStr: string): Port
       ? {
           isRecurring: recType !== 'none',
           isCompletedForPeriod: completed,
-          isDueToday: Boolean(occObj.isDueToday),
+          isDueToday: isDueTodayFallback,
           currentPeriodKey: periodKey,
           nextOccurrenceDate:
             typeof occObj.nextOccurrenceDate === 'string' ? occObj.nextOccurrenceDate : null,
@@ -422,7 +518,7 @@ function normalizeLocalRecord(raw: unknown, idx: number, todayStr: string): Port
       : {
           isRecurring: recType !== 'none',
           isCompletedForPeriod: completed,
-          isDueToday: raw.dueDate === todayStr,
+          isDueToday: isDueTodayFallback,
           currentPeriodKey: periodKey,
           nextOccurrenceDate: null,
           summaryLabel: formatSummary(recurrence),
@@ -927,6 +1023,13 @@ export function usePortalTodos() {
     });
   }, [visibleItems]);
 
+  const todayTodos = useMemo(() => {
+    const todayStr = getTodayLocalDateStr();
+    return sortedTodos.filter((item) => isPortalTodoForToday(item, todayStr));
+  }, [sortedTodos]);
+
+  const nonTodayCount = sortedTodos.length - todayTodos.length;
+
   const stats: PortalTodoStats = useMemo(() => {
     const todayStr = getTodayLocalDateStr();
     const totalCount = visibleItems.length;
@@ -934,11 +1037,16 @@ export function usePortalTodos() {
     const activeCount = totalCount - completedCount;
     const recurringCount = activeItems.filter((item) => item.recurrence.type !== 'none').length;
     const maxStreak = activeItems.reduce((acc, item) => Math.max(acc, item.streakCount), 0);
-    const todayDueCount = visibleItems.filter((item) => {
-      if (item.completed) return false;
-      if (item.recurrence.type !== 'none') return item.occurrence.isDueToday;
-      return item.dueDate === todayStr;
-    }).length;
+    const todayItems = visibleItems.filter((item) => isPortalTodoForToday(item, todayStr));
+    const todayTotalCount = todayItems.length;
+    const todayCompletedCount = todayItems.filter((item) => item.completed).length;
+    const todayActiveCount = todayTotalCount - todayCompletedCount;
+    const todayDueCount = todayActiveCount;
+    const todayCompletionRate =
+      todayTotalCount > 0 ? Math.min(100, Math.round((todayCompletedCount * 100) / todayTotalCount)) : 0;
+    const upcomingCount = visibleItems.filter(
+      (item) => !item.completed && isPortalTodoUpcoming(item, todayStr)
+    ).length;
     const overdueCount = visibleItems.filter(
       (item) =>
         !item.completed &&
@@ -957,6 +1065,11 @@ export function usePortalTodos() {
       recurringCount,
       maxStreak,
       todayDueCount,
+      todayTotalCount,
+      todayCompletedCount,
+      todayActiveCount,
+      todayCompletionRate,
+      upcomingCount,
       overdueCount,
       trashCount,
       completionRate,
@@ -968,6 +1081,8 @@ export function usePortalTodos() {
     hydrated,
     isLoading,
     todos: sortedTodos,
+    todayTodos,
+    nonTodayCount,
     stats,
     hiddenWorkdayCount,
     nonWorkdayReason,

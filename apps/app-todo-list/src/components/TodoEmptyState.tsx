@@ -7,18 +7,28 @@ import { getLocalDateString } from '../utils/todoAnalytics';
 
 interface TodoEmptyStateProps {
   readonly isFiltered: boolean;
+  readonly isTodayView?: boolean;
+  readonly hasSecondaryFilter?: boolean;
+  readonly totalActiveCount?: number;
+  readonly upcomingCount?: number;
   readonly onResetFilters: () => void;
+  readonly onShowAll?: () => void;
   readonly onAddRoutine: (routine: QuickRoutineStarter) => void;
 }
 
 export default function TodoEmptyState({
   isFiltered,
+  isTodayView = false,
+  hasSecondaryFilter = false,
+  totalActiveCount = 0,
+  upcomingCount = 0,
   onResetFilters,
+  onShowAll,
   onAddRoutine,
 }: TodoEmptyStateProps) {
   const todayStr = getLocalDateString();
 
-  if (isFiltered) {
+  if (hasSecondaryFilter || (!isTodayView && isFiltered)) {
     return (
       <div className="h-full min-h-[200px] flex flex-col items-center justify-center p-5 bg-white/85 rounded-2xl border border-dashed border-[#D9D0C1] animate-fade-in">
         <EmptyState
@@ -33,6 +43,34 @@ export default function TodoEmptyState({
               size="sm"
               onClick={onResetFilters}
             />
+          }
+        />
+      </div>
+    );
+  }
+
+  if (isTodayView && totalActiveCount > 0) {
+    const description =
+      upcomingCount > 0
+        ? `내일 이후 예정된 할 일 ${upcomingCount}건(전체 ${totalActiveCount}건)이 등록되어 있습니다.`
+        : `전체 목록에 ${totalActiveCount}건의 할 일이 등록되어 있습니다.`;
+
+    return (
+      <div className="h-full min-h-[200px] flex flex-col items-center justify-center p-5 bg-white/85 rounded-2xl border border-dashed border-[#D9D0C1] animate-fade-in">
+        <EmptyState
+          isCompact
+          icon={<i className="far fa-calendar-check text-xl text-indigo-600"></i>}
+          title="오늘 예정된 할 일이 없습니다"
+          description={description}
+          actions={
+            onShowAll ? (
+              <Button
+                label="전체 목록에서 보기"
+                variant="primary"
+                size="sm"
+                onClick={onShowAll}
+              />
+            ) : undefined
           }
         />
       </div>

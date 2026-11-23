@@ -85,6 +85,8 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
     source,
     hydrated,
     todos,
+    todayTodos,
+    nonTodayCount,
     stats,
     hiddenWorkdayCount,
     nonWorkdayReason,
@@ -102,7 +104,7 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
   const [quickPriority, setQuickPriority] = useState<LocalTodoPriority>('important');
   const [quickRecurrence, setQuickRecurrence] = useState<PortalRecurrenceType>('none');
   const [showCompleted, setShowCompleted] = useState<boolean>(false);
-  const [hideStandbyWorkday, setHideStandbyWorkday] = useState<boolean>(false);
+  const [showAllScope, setShowAllScope] = useState<boolean>(false);
   const [quickNotice, setQuickNotice] = useState<string | null>(null);
   const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -114,18 +116,16 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
 
   const todayStr = getTodayLocalDateStr();
   const maxVisible = variant === 'compact' ? 4 : 6;
-  const activeCount = todos.filter((item) => !item.completed).length;
+  const scopedTodos = showAllScope ? todos : todayTodos;
+  const scopedActiveCount = showAllScope ? stats.activeCount : stats.todayActiveCount;
+  const scopedCompletedCount = showAllScope ? stats.completedCount : stats.todayCompletedCount;
+  const isTodayAllDone = stats.todayCompletionRate === 100 && stats.todayTotalCount > 0;
   const selectedPri = PRIORITY_BADGE[quickPriority];
   const selectedRecLabel =
     RECURRENCE_PILLS.find((r) => r.key === quickRecurrence)?.label ?? '1회';
 
-  const visibleList = todos
+  const visibleList = scopedTodos
     .filter((item) => (showCompleted ? true : !item.completed))
-    .filter((item) =>
-      hideStandbyWorkday
-        ? !(item.recurrence.type === 'workday' && !item.occurrence.isDueToday && !item.completed)
-        : true
-    )
     .slice(0, maxVisible);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -135,7 +135,7 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
     addQuickTodo(trimmed, quickPriority, true, quickRecurrence);
     setQuickTitle('');
     if (quickRecurrence === 'workday' && nonWorkdayReason) {
-      setHideStandbyWorkday(false);
+      setShowAllScope(true);
       if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
       setQuickNotice(
         `'${trimmed.slice(0, 18)}' 영업일 반복 등록 완료 — ${nonWorkdayReason} 휴무 후 다음 영업일에 자동 실행됩니다.`
@@ -176,8 +176,14 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                 ></span>
                 {source === 'db' ? 'DB 영구 저장' : '로컬 임시 모드'}
               </span>
-              <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 tabular-nums">
-                완료 {stats.completedCount} / {stats.totalCount}건 · {stats.completionRate}%
+              <span
+                className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border tabular-nums ${
+                  isTodayAllDone
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                }`}
+              >
+                오늘 완료 {stats.todayCompletedCount} / {stats.todayTotalCount}건 · {stats.todayCompletionRate}%
               </span>
               {stats.recurringCount > 0 && (
                 <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white text-indigo-700 border border-[#E5DDD0]">
@@ -231,26 +237,26 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
         </div>
       )}
 
-      {/* SVG 달성률 프로그레스 바 */}
+      {/* SVG 달성률 프로그레스 바 (오늘 할 일 기준) */}
       <div className="space-y-1">
         <svg
           viewBox="0 0 100 4"
           preserveAspectRatio="none"
           className="w-full h-2 rounded-full overflow-hidden"
           role="progressbar"
-          aria-valuenow={stats.completionRate}
+          aria-valuenow={stats.todayCompletionRate}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label="전체 할 일 달성률"
+          aria-label="오늘 할 일 달성률"
         >
           <rect x="0" y="0" width="100" height="4" rx="2" fill="#E5DDD0" />
           <rect
             x="0"
             y="0"
-            width={stats.completionRate}
+            width={stats.todayCompletionRate}
             height="4"
             rx="2"
-            fill={stats.completionRate === 100 && stats.totalCount > 0 ? '#047857' : '#4338CA'}
+            fill={isTodayAllDone ? '#047857' : '#4338CA'}
           />
         </svg>
       </div>
@@ -368,17 +374,23 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
       <div className="bg-white rounded-2xl border-2 border-[#D9CEBC] shadow-[0_4px_16px_rgba(36,33,29,0.06)] overflow-hidden">
         <div className="px-3.5 sm:px-4 py-2.5 border-b border-[#EFE8DC] bg-gradient-to-r from-indigo-50/60 via-white to-white flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
-            <h3 className="text-sm font-black text-[#1C1917] tracking-tight">오늘의 할 일</h3>
-            <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black tabular-nums">
-              진행중 {activeCount}건
+            <h3 className="text-sm font-black text-[#1C1917] tracking-tight">
+              {showAllScope ? '전체 할 일' : '오늘의 할 일'}
+            </h3>
+            <span
+              className={`px-2 py-0.5 rounded-full text-white text-[10px] font-black tabular-nums ${
+                !showAllScope && isTodayAllDone ? 'bg-emerald-600' : 'bg-indigo-600'
+              }`}
+            >
+              {!showAllScope && isTodayAllDone ? '오늘 100% 완료' : `진행중 ${scopedActiveCount}건`}
             </span>
             <span className="text-[11px] font-bold text-[#6C655B]">
-              완료 {stats.completedCount}건
+              완료 {scopedCompletedCount}건
             </span>
           </div>
 
           <div className="flex items-center gap-3 text-[11px]">
-            {stats.completedCount > 0 && (
+            {scopedCompletedCount > 0 && (
               <button
                 type="button"
                 onClick={() => setShowCompleted((prev) => !prev)}
@@ -386,39 +398,39 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
               >
                 {showCompleted
                   ? '진행 중인 할 일만 보기'
-                  : `완료된 항목 ${stats.completedCount}건 함께 보기`}
+                  : `완료된 항목 ${scopedCompletedCount}건 함께 보기`}
               </button>
             )}
-            {todos.length > maxVisible && (
+            {scopedTodos.length > maxVisible && (
               <button
                 type="button"
                 onClick={() => launchApp('/app/todo-list/', 'todo-list')}
                 className="font-bold text-[#6C655B] hover:text-indigo-600 cursor-pointer"
               >
-                +{todos.length - maxVisible}건 더 보기 →
+                +{scopedTodos.length - maxVisible}건 더 보기 →
               </button>
             )}
           </div>
         </div>
 
         <div className="p-3 sm:p-3.5 bg-[#FAF8F5]/45 space-y-2.5">
-          {hydrated && hiddenWorkdayCount > 0 && (
+          {hydrated && (nonTodayCount > 0 || hiddenWorkdayCount > 0) && (
             <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
               <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
                 <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
                 <span className="truncate">
-                  {nonWorkdayReason
-                    ? `${nonWorkdayReason} 휴무 · 영업일 반복 ${hiddenWorkdayCount}건은 다음 영업일 실행 대기 중`
-                    : `비영업일 대기 영업일 반복 ${hiddenWorkdayCount}건`}
+                  {hiddenWorkdayCount > 0 && nonWorkdayReason
+                    ? `${nonWorkdayReason} 휴무 영업일 대기 ${hiddenWorkdayCount}건 포함 · 오늘 외 할 일 ${nonTodayCount}건`
+                    : `내일 이후 예정 · 대기 할 일 ${nonTodayCount}건 (전체 ${todos.length}건)`}
                 </span>
               </div>
               <button
                 type="button"
                 data-mypage-standby-toggle="true"
-                onClick={() => setHideStandbyWorkday((prev) => !prev)}
+                onClick={() => setShowAllScope((prev) => !prev)}
                 className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
               >
-                {hideStandbyWorkday ? '대기 항목 함께 보기' : '오늘 할 일만 보기'}
+                {showAllScope ? '오늘 할 일만 보기' : '전체 할 일 함께 보기'}
               </button>
             </div>
           )}
@@ -439,25 +451,31 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                 위 입력창에 바로 추가하거나 전체 플래너 팝업에서 세부 반복 주기와 집중 타이머를 설정해 보세요.
               </p>
             </div>
-          ) : visibleList.length === 0 && hideStandbyWorkday && hiddenWorkdayCount > 0 ? (
+          ) : !showAllScope && stats.todayTotalCount === 0 ? (
             <div className="rounded-2xl bg-amber-50/75 border border-amber-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-xs font-extrabold text-amber-900">
                 <i className="fas fa-calendar-clock text-amber-600 text-sm"></i>
-                <span>오늘은 휴무일이라 예정된 할 일이 없습니다. (대기 {hiddenWorkdayCount}건)</span>
+                <span>
+                  오늘 예정된 할 일이 없습니다. (전체·예정 {todos.length}건)
+                </span>
               </div>
               <button
                 type="button"
-                onClick={() => setHideStandbyWorkday(false)}
+                onClick={() => setShowAllScope(true)}
                 className="text-[11px] font-black text-indigo-700 hover:underline cursor-pointer shrink-0"
               >
-                대기 항목 함께 보기
+                전체 할 일 보기
               </button>
             </div>
           ) : visibleList.length === 0 ? (
             <div className="rounded-2xl bg-emerald-50/80 border border-emerald-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-900">
                 <i className="fas fa-circle-check text-emerald-600 text-sm"></i>
-                <span>진행 중인 모든 할 일을 완료했습니다! ({stats.completedCount}건 완료)</span>
+                <span>
+                  {showAllScope
+                    ? `진행 중인 모든 할 일을 완료했습니다! (${stats.completedCount}건 완료)`
+                    : `오늘의 모든 할 일을 완료했습니다! (100% · ${stats.todayCompletedCount}건 완료)`}
+                </span>
               </div>
               <button
                 type="button"

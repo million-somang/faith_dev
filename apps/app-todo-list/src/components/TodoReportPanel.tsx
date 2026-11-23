@@ -58,18 +58,20 @@ export default function TodoReportPanel({
 }: TodoReportPanelProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const dashOffset =
-    DONUT_CIRCUMFERENCE - (DONUT_CIRCUMFERENCE * stats.completionRate) / 100;
+    DONUT_CIRCUMFERENCE - (DONUT_CIRCUMFERENCE * stats.todayCompletionRate) / 100;
 
   const motivationalMessage =
-    stats.totalCount === 0
-      ? '할 일이나 반복 루틴을 등록하면 오늘의 달성률 리포트가 실시간으로 생성됩니다.'
-      : stats.completionRate === 100
+    stats.todayTotalCount === 0
+      ? stats.upcomingCount > 0
+        ? `오늘 예정된 할 일은 없고, 내일 이후 예정 ${stats.upcomingCount}건이 등록되어 있습니다.`
+        : '오늘 할 일이나 반복 루틴을 등록하면 오늘의 달성률 리포트가 실시간으로 생성됩니다.'
+      : stats.todayCompletionRate === 100
         ? '오늘 계획한 모든 할 일을 완벽하게 마무리했습니다!'
         : stats.overdueCount > 0
-          ? `마감이 지난 할 일 ${stats.overdueCount}건을 먼저 처리해 보세요.`
-          : stats.completionRate >= 60
-            ? '절반 이상 달성했습니다. 마지막 스퍼트까지 힘내세요!'
-            : '가장 중요한 P1·반복 루틴부터 하나씩 완료해 보세요.';
+          ? `마감이 지난 할 일 ${stats.overdueCount}건이 전체 목록에 있습니다.`
+          : stats.todayCompletionRate >= 60
+            ? '오늘 목표의 절반 이상 달성했습니다. 마지막 스퍼트까지 힘내세요!'
+            : '가장 중요한 긴급·반복 루틴부터 하나씩 완료해 보세요.';
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -142,7 +144,7 @@ export default function TodoReportPanel({
                 cy="50"
                 r={DONUT_RADIUS}
                 fill="none"
-                stroke={stats.completionRate === 100 && stats.totalCount > 0 ? '#047857' : '#4338CA'}
+                stroke={stats.todayCompletionRate === 100 && stats.todayTotalCount > 0 ? '#047857' : '#4338CA'}
                 strokeWidth="9"
                 strokeLinecap="round"
                 strokeDasharray={DONUT_CIRCUMFERENCE}
@@ -152,10 +154,10 @@ export default function TodoReportPanel({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-xl font-black text-[#24211D] tabular-nums leading-none">
-                {stats.completionRate}%
+                {stats.todayCompletionRate}%
               </span>
               <span className="text-[9px] font-bold text-[#6C655B] mt-0.5">
-                {stats.completedCount}/{stats.totalCount}건
+                오늘 {stats.todayCompletedCount}/{stats.todayTotalCount}건
               </span>
             </div>
           </div>
