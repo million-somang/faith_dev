@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  AiModelEngine,
   ImageFileItem,
   OutputFormat,
   PresetOption,
@@ -9,6 +10,11 @@ import {
   UpscaleTargetMode,
 } from '../types/index';
 import { calculateUpscalePlan } from '../utils/imageResizer';
+import {
+  detectWebGpuCapabilities,
+  getCachedModelStatus,
+  type WebGpuCapabilities,
+} from '../utils/aiUpscaler';
 
 interface ResizeOptionsPanelProps {
   settings: ResizeSettings;
@@ -62,11 +68,12 @@ const UPSCALE_TARGETS: readonly {
   readonly label: string;
   readonly sub: string;
 }[] = [
+  { key: '1x', label: '1× 화질 복원', sub: '크기 유지 · 선명화' },
   { key: '2x', label: '2× 확대', sub: '면적 4배' },
   { key: '3x', label: '3× 확대', sub: '면적 9배' },
-  { key: '4x', label: '4× 확대', sub: '면적 16배' },
-  { key: '6x', label: '6× 확대', sub: 'AI 3×→2× · 36배' },
-  { key: '8x', label: '8× 확대', sub: 'AI 4×→2× · 64배' },
+  { key: '4x', label: '4× 확대', sub: '네이티브 AI 16배' },
+  { key: '6x', label: '6× 확대', sub: '면적 36배 · 고배율' },
+  { key: '8x', label: '8× 확대', sub: '면적 64배 · 초대형' },
   { key: 'fhd', label: 'FHD 맞춤', sub: '긴 변 1920px' },
   { key: '4k', label: '4K 맞춤', sub: '긴 변 3840px' },
   { key: '8k', label: '8K 맞춤', sub: '긴 변 7680px' },
@@ -93,6 +100,23 @@ export default function ResizeOptionsPanel({
   onStartProcess,
 }: ResizeOptionsPanelProps) {
   const [selectedPresetId, setSelectedPresetId] = useState<string>('custom');
+  const [webGpuCaps, setWebGpuCaps] = useState<WebGpuCapabilities | null>(null);
+  const [cachedModels, setCachedModels] = useState<Record<AiModelEngine, boolean>>({
+    'ai-realesrgan-v3': false,
+    'ai-realesrgan-x4plus': false,
+  });
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all([detectWebGpuCapabilities(), getCachedModelStatus()]).then(([caps, cached]) => {
+      if (!active) return;
+      setWebGpuCaps(caps);
+      setCachedModels(cached);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
   const [lastResizeSubMode, setLastResizeSubMode] = useState<ResizeSubMode>(() => {
     if (settings.unit === 'pixel') return 'pixel';
     if (settings.unit === 'target_kb') return 'target_kb';
@@ -331,7 +355,7 @@ export default function ResizeOptionsPanel({
                 </span>
               </div>
               <p className="text-[10px] text-stone-500 truncate mt-0.5">
-                2×~8× · FHD · 4K · 8K 실해상도 확대
+                1× 화질복원 · 2×~8× · 4K · 8K 실해상도 확대
               </p>
             </div>
           </button>
@@ -476,54 +500,138 @@ export default function ResizeOptionsPanel({
             <div className="space-y-4">
               {/* CSR 엔진 선택 */}
               <div className="space-y-2">
-                <span className="block text-xs font-black text-indigo-950">
-                  CSR 업스케일 엔진 선택 (100% 브라우저 로컬)
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="block text-xs font-black text-indigo-950">
+                    CSR 화질 복원 · 업스케일 엔진 선택 (100% 브라우저 로컬)
+                  </span>
+                  {webGpuCaps && (
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        webGpuCaps.hasWebGpu
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-stone-100 text-stone-600 border-stone-200'
+                      }`}
+                    >
+                      {webGpuCaps.hasWebGpu ? 'WebGPU GPU 가속 지원' : 'WASM CPU 모드 동작'}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <button
                     type="button"
-                    onClick={() => onChange({ upscaleEngine: 'ai-esrgan' })}
-                    className={`p-3 rounded-xl text-left transition-all cursor-pointer border ${
-                      settings.upscaleEngine === 'ai-esrgan'
+                    onClick={() => onChange({ upscaleEngine: 'ai-realesrgan-v3' })}
+                    className={`p-3 rounded-xl text-left transition-all cursor-pointer border flex flex-col justify-between gap-2 ${
+                      settings.upscaleEngine === 'ai-realesrgan-v3'
                         ? 'bg-white border-2 border-indigo-600 shadow-xs'
                         : 'bg-white/75 border-indigo-100 hover:bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-xs font-black text-[#2D2A26] flex items-center gap-1.5">
-                        <i className="fas fa-microchip text-indigo-600"></i>
-                        AI 초해상도 (ESRGAN)
+                    <div>
+                      <div className="flex items-center justify-between gap-1.5 mb-1">
+                        <span className="text-xs font-black text-[#2D2A26] flex items-center gap-1.5">
+                          <i className="fas fa-wand-magic-sparkles text-indigo-600"></i>
+                          Real-ESRGAN v3
+                        </span>
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
+                          4.6MB · 추천
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-500 leading-snug">
+                        흐림·JPEG 노이즈·상세페이지 글자 복원에 최적화된 표준 AI 신경망
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-stone-100">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-stone-100 text-stone-700">
+                        {webGpuCaps ? (webGpuCaps.hasWebGpu ? 'WebGPU' : 'WASM') : '자동 감지'}
                       </span>
-                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                        최대 8× · 16K
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          cachedModels['ai-realesrgan-v3']
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-amber-50 text-amber-800'
+                        }`}
+                      >
+                        {cachedModels['ai-realesrgan-v3'] ? '브라우저 캐시됨' : '최초 1회 다운로드'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-stone-500 leading-snug">
-                      원본 축소 없이 타일별 딥러닝 복원 (6×·8×는 2단 연쇄 추론 · WebGL GPU 가속)
-                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onChange({ upscaleEngine: 'ai-realesrgan-x4plus' })}
+                    className={`p-3 rounded-xl text-left transition-all cursor-pointer border flex flex-col justify-between gap-2 ${
+                      settings.upscaleEngine === 'ai-realesrgan-x4plus'
+                        ? 'bg-white border-2 border-indigo-600 shadow-xs'
+                        : 'bg-white/75 border-indigo-100 hover:bg-white'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1.5 mb-1">
+                        <span className="text-xs font-black text-[#2D2A26] flex items-center gap-1.5">
+                          <i className="fas fa-microchip text-violet-600"></i>
+                          Real-ESRGAN x4plus
+                        </span>
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200 shrink-0">
+                          32.2MB · 최고화질
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-500 leading-snug">
+                        23블록 대형 신경망으로 사진 질감·미세 디테일을 극대화 (시간 소요)
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-stone-100">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-stone-100 text-stone-700">
+                        {webGpuCaps
+                          ? webGpuCaps.hasWebGpu && webGpuCaps.hasShaderF16
+                            ? 'WebGPU FP16'
+                            : 'WASM CPU'
+                          : '자동 감지'}
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          cachedModels['ai-realesrgan-x4plus']
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-amber-50 text-amber-800'
+                        }`}
+                      >
+                        {cachedModels['ai-realesrgan-x4plus']
+                          ? '브라우저 캐시됨'
+                          : '최초 1회 다운로드'}
+                      </span>
+                    </div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => onChange({ upscaleEngine: 'lanczos3' })}
-                    className={`p-3 rounded-xl text-left transition-all cursor-pointer border ${
+                    className={`p-3 rounded-xl text-left transition-all cursor-pointer border flex flex-col justify-between gap-2 ${
                       settings.upscaleEngine === 'lanczos3'
                         ? 'bg-white border-2 border-indigo-600 shadow-xs'
                         : 'bg-white/75 border-indigo-100 hover:bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-xs font-black text-[#2D2A26] flex items-center gap-1.5">
-                        <i className="fas fa-bolt text-emerald-600"></i>
-                        초고속 정밀 보간 (Lanczos-3)
+                    <div>
+                      <div className="flex items-center justify-between gap-1.5 mb-1">
+                        <span className="text-xs font-black text-[#2D2A26] flex items-center gap-1.5">
+                          <i className="fas fa-bolt text-emerald-600"></i>
+                          Lanczos-3 보간
+                        </span>
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                          0MB · 초고속
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-500 leading-snug">
+                        모델 다운로드 없이 즉시 확대 · 대량 배치 및 초대형 8K·16K 추천
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-stone-100">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">
+                        다운로드 없음
                       </span>
-                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        초고속 · 최대 16K
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-stone-100 text-stone-700">
+                        다중스케일 선명화
                       </span>
                     </div>
-                    <p className="text-[11px] text-stone-500 leading-snug">
-                      모델 다운로드 0MB · 스트립 스트리밍 정밀 보간 (초고배율 대량 배치 추천)
-                    </p>
                   </button>
                 </div>
               </div>
@@ -533,7 +641,7 @@ export default function ResizeOptionsPanel({
                 <span className="block text-xs font-black text-indigo-950">
                   목표 배율 · 해상도 선택
                 </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {UPSCALE_TARGETS.map((target) => {
                     const active = settings.upscaleTarget === target.key;
                     return (
@@ -591,8 +699,9 @@ export default function ResizeOptionsPanel({
                       {previewPlan.targetH}
                     </span>
                     <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px]">
-                      {previewPlan.effectiveScale.toFixed(1)}× · 픽셀{' '}
-                      {Math.max(1, Math.round(previewPlan.pixelMultiplier))}배
+                      {previewPlan.effectiveScale <= 1.02
+                        ? '1× 화질 복원'
+                        : `${previewPlan.effectiveScale.toFixed(1)}× · 픽셀 ${Math.max(1, Math.round(previewPlan.pixelMultiplier))}배`}
                     </span>
                     {previewPlan.wasCappedForMemory && (
                       <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px]">
@@ -609,7 +718,9 @@ export default function ResizeOptionsPanel({
                     <div className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-[11px] font-bold text-amber-900 flex items-center gap-2">
                       <i className="fas fa-circle-info text-amber-600 shrink-0"></i>
                       <span>
-                        원본이 이미 목표 해상도 이상입니다. 확대하려면 상단에서 2×~8× 배율을 선택하세요.
+                        {settings.upscaleEngine === 'lanczos3'
+                          ? '원본이 이미 목표 해상도 이상입니다. 확대하려면 2×~8× 배율을 선택하세요.'
+                          : '원본이 이미 목표 해상도 이상이므로 원본 크기를 유지한 채 AI 화질 복원·선명화를 진행합니다. 더 키우려면 2×~8×를 선택하세요.'}
                       </span>
                     </div>
                   )}
@@ -624,11 +735,11 @@ export default function ResizeOptionsPanel({
                     </div>
                   )}
 
-                  {previewPlan.isTwoStageAi && (
-                    <div className="rounded-xl bg-white/80 border border-indigo-200 px-3 py-2 text-[11px] font-bold text-indigo-900 flex items-center gap-2">
-                      <i className="fas fa-microchip text-indigo-600 shrink-0"></i>
+                  {previewPlan.isHeavyAi && (
+                    <div className="rounded-xl bg-white/80 border border-violet-200 px-3 py-2 text-[11px] font-bold text-violet-900 flex items-center gap-2">
+                      <i className="fas fa-microchip text-violet-600 shrink-0"></i>
                       <span>
-                        6×·8× AI 2단 연쇄 추론(3×→2× / 4×→2×)은 고해상도일수록 수십 초~수 분이 소요될 수 있으며, 실행 중 언제든 중단할 수 있습니다.
+                        Real-ESRGAN x4plus(23블록 대형 신경망)는 고해상도 이미지에서 수십 초~수 분이 소요될 수 있습니다. 빠른 처리를 원하면 v3 모델을 권장합니다.
                       </span>
                     </div>
                   )}

@@ -7,14 +7,37 @@ interface BeforeAfterComparePanelProps {
   onSelectCompareItem: (id: string) => void;
 }
 
+type ZoomLevel = 'fit' | 1 | 2 | 4;
 type PanPreset = 'center' | 'tl' | 'tr' | 'bl' | 'br';
+
+interface FocusPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+interface DragSession {
+  readonly mode: 'split' | 'pan';
+  readonly startClientX: number;
+  readonly startClientY: number;
+  readonly startFocusX: number;
+  readonly startFocusY: number;
+  readonly rectWidth: number;
+  readonly rectHeight: number;
+}
+
+const ZOOM_OPTIONS: readonly { readonly key: ZoomLevel; readonly label: string }[] = [
+  { key: 'fit', label: '전체 맞춤' },
+  { key: 1, label: '100% (1:1)' },
+  { key: 2, label: '200%' },
+  { key: 4, label: '400%' },
+];
 
 const PAN_COORDS: Record<PanPreset, { x: number; y: number; label: string }> = {
   center: { x: 0.5, y: 0.5, label: '중앙' },
-  tl: { x: 0.25, y: 0.25, label: '좌상' },
-  tr: { x: 0.75, y: 0.25, label: '우상' },
-  bl: { x: 0.25, y: 0.75, label: '좌하' },
-  br: { x: 0.75, y: 0.75, label: '우하' },
+  tl: { x: 0.2, y: 0.2, label: '좌상' },
+  tr: { x: 0.8, y: 0.2, label: '우상' },
+  bl: { x: 0.2, y: 0.8, label: '좌하' },
+  br: { x: 0.8, y: 0.8, label: '우하' },
 };
 
 function loadHtmlImage(src: string): Promise<HTMLImageElement> {
@@ -27,9 +50,16 @@ function loadHtmlImage(src: string): Promise<HTMLImageElement> {
 }
 
 function getEngineLabel(engine?: ImageFileItem['usedEngine']): string {
-  if (engine === 'ai-esrgan') return 'AI 초해상도 (ESRGAN)';
+  if (engine === 'ai-realesrgan-v3') return 'Real-ESRGAN v3';
+  if (engine === 'ai-realesrgan-x4plus') return 'Real-ESRGAN x4plus';
   if (engine === 'lanczos3') return '초고속 Lanczos-3';
   return '표준 리사이즈';
+}
+
+function getBackendLabel(backend?: ImageFileItem['runtimeBackend']): string | null {
+  if (backend === 'webgpu') return 'WebGPU GPU';
+  if (backend === 'wasm') return 'WASM CPU';
+  return null;
 }
 
 export const BeforeAfterComparePanel: React.FC<BeforeAfterComparePanelProps> = ({
@@ -40,12 +70,16 @@ export const BeforeAfterComparePanel: React.FC<BeforeAfterComparePanelProps> = (
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const beforeImgRef = useRef<HTMLImageElement | null>(null);
   const afterImgRef = useRef<HTMLImageElement | null>(null);
-  const isDraggingRef = useRef(false);
+  const dragSessionRef = useRef<DragSession | null>(null);
 
   const [splitRatio, setSplitRatio] = useState<number>(0.5);
-  const [zoomMode, setZoomMode] = useState<'fit' | '200'>('fit');
-  const [panPreset, setPanPreset] = useState<PanPreset>('center');
+  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('fit');
+  const [focusPoint, setFocusPoint] = useState<FocusPoint>({ x: 0.5, y: 0.5 });
   const [imagesReady, setImagesReady] = useState<boolean>(false);
+
+  useEffect(() => {
+    setFocusPoint({ x: 0.5, y: 0.5 });
+  }, [item.id]);
 
   const renderComparison = useCallback(() => {
     const canvas = canvasRef.current;
@@ -55,10 +89,13 @@ export const BeforeAfterComparePanel: React.FC<BeforeAfterComparePanelProps> = (
 
     const parentWidth = canvas.parentElement?.clientWidth ?? 640;
     const cssWidth = Math.max(280, Math.round(parentWidth));
-    const aspect =
-      (afterImg.naturalHeight || item.originalHeight || 9) /
-      Math.max(1, afterImg.naturalWidth || item.originalWidth || 16);
-    const cssHeight = Math.max(200, Math.min(440, Math.round(cssWidth * aspect)));
+    const afterW = Math.max(1, afterImg.naturalWidth || afterImg.width || item.resizedWidth || 16);
+    const afterH = Math.max(1, afterImg.naturalHeight || afterImg.height || item.resizedHeight || 9);
+    const beforeW = Math.max(1, beforeImg.naturalWidth || beforeImg.width || item.originalWidth || 16);
+    const beforeH = Math.max(1, beforeImg.naturalHeight || beforeImg.height || item.originalHeight || 9);
+
+    const aspect = afterH / afterW;
+    const cssHeight = Math.max(220, Math.min(460, Math.round(cssWidth * aspect)));
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     canvas.width = Math.round(cssWidth * dpr);
@@ -78,26 +115,21 @@ export const BeforeAfterComparePanel: React.FC<BeforeAfterComparePanelProps> = (
       }
     }
 
-    const focus = PAN_COORDS[panPreset];
-
-    const drawSourceMapped = (
-      source: HTMLImageElement,
-      clipStartX: number,
-      clipEndX: number,
-      smooth: boolean
-    ) => {
+    const drawSide = (side: 'before' | 'after', clipStartX: number, clipEndX: number) => {
       if (clipEndX <= clipStartX) return;
-      const srcW = source.naturalWidth || source.width;
-      const srcH = source.naturalHeight || source.height;
+      const source = side === 'before' ? beforeImg : afterImg;
 
       ctx.save();
       ctx.beginPath();
       ctx.rect(clipStartX, 0, clipEndX - clipStartX, cssHeight);
       ctx.clip();
-      ctx.imageSmoothingEnabled = smooth;
-      ctx.imageSmoothingQuality = smooth ? 'high' : 'low';
+      // 좌/우 동일 고화질 샘플링으로 진짜 복원 차이만 정직하게 비교
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
-      if (zoomMode === 'fit') {
+      if (zoomLevel === 'fit') {
+        const srcW = side === 'before' ? beforeW : afterW;
+        const srcH = side === 'before' ? beforeH : afterH;
         const scale = Math.min(cssWidth / srcW, cssHeight / srcH);
         const drawW = srcW * scale;
         const drawH = srcH * scale;
@@ -105,23 +137,39 @@ export const BeforeAfterComparePanel: React.FC<BeforeAfterComparePanelProps> = (
         const dy = (cssHeight - drawH) / 2;
         ctx.drawImage(source, 0, 0, srcW, srcH, dx, dy, drawW, drawH);
       } else {
-        // 200% 돋보기: 전체 폭의 절반 영역을 크롭하여 두 이미지의 1:1 픽셀 차이를 확대 비교
-        const cropFrac = 0.42;
-        const sCropW = srcW * cropFrac;
-        const sCropH = srcH * cropFrac;
-        const sx = Math.max(0, Math.min(srcW - sCropW, focus.x * srcW - sCropW / 2));
-        const sy = Math.max(0, Math.min(srcH - sCropH, focus.y * srcH - sCropH / 2));
-        ctx.drawImage(source, sx, sy, sCropW, sCropH, 0, 0, cssWidth, cssHeight);
+        const zoom = zoomLevel;
+        const drawW = Math.min(cssWidth, afterW * zoom);
+        const drawH = Math.min(cssHeight, afterH * zoom);
+        const dstX = (cssWidth - drawW) / 2;
+        const dstY = (cssHeight - drawH) / 2;
+
+        const aCropW = drawW / zoom;
+        const aCropH = drawH / zoom;
+        const aX =
+          afterW > aCropW
+            ? Math.max(0, Math.min(afterW - aCropW, focusPoint.x * afterW - aCropW / 2))
+            : 0;
+        const aY =
+          afterH > aCropH
+            ? Math.max(0, Math.min(afterH - aCropH, focusPoint.y * afterH - aCropH / 2))
+            : 0;
+
+        if (side === 'after') {
+          ctx.drawImage(source, aX, aY, aCropW, aCropH, dstX, dstY, drawW, drawH);
+        } else {
+          const bX = (aX / afterW) * beforeW;
+          const bY = (aY / afterH) * beforeH;
+          const bCropW = (aCropW / afterW) * beforeW;
+          const bCropH = (aCropH / afterH) * beforeH;
+          ctx.drawImage(source, bX, bY, bCropW, bCropH, dstX, dstY, drawW, drawH);
+        }
       }
       ctx.restore();
     };
 
     const splitX = Math.max(0, Math.min(cssWidth, splitRatio * cssWidth));
-
-    // 좌측 Before (돋보기 시 최근접 이웃 픽셀화로 원본 저해상도 한계 대비)
-    drawSourceMapped(beforeImg, 0, splitX, zoomMode === 'fit');
-    // 우측 After (업스케일 결과는 항상 고화질 렌더링)
-    drawSourceMapped(afterImg, splitX, cssWidth, true);
+    drawSide('before', 0, splitX);
+    drawSide('after', splitX, cssWidth);
 
     // 중앙 분할선 + 핸들
     ctx.save();
@@ -150,7 +198,16 @@ export const BeforeAfterComparePanel: React.FC<BeforeAfterComparePanelProps> = (
     ctx.textBaseline = 'middle';
     ctx.fillText('◀ ▶', splitX, handleY);
     ctx.restore();
-  }, [item.originalHeight, item.originalWidth, panPreset, splitRatio, zoomMode]);
+  }, [
+    focusPoint.x,
+    focusPoint.y,
+    item.originalHeight,
+    item.originalWidth,
+    item.resizedHeight,
+    item.resizedWidth,
+    splitRatio,
+    zoomLevel,
+  ]);
 
   useEffect(() => {
     let active = true;
@@ -197,20 +254,32 @@ export const BeforeAfterComparePanel: React.FC<BeforeAfterComparePanelProps> = (
     return null;
   }
 
-  const scaleFactor = (item.resizedWidth / Math.max(1, item.originalWidth)).toFixed(1);
+  const rawScale = item.resizedWidth / Math.max(1, item.originalWidth);
+  const scaleBadge = rawScale <= 1.02 ? '1× 화질 복원' : `${rawScale.toFixed(1)}× 확대`;
+  const backendLabel = getBackendLabel(item.runtimeBackend);
 
   return (
     <div className="bg-[#FAF8F5] rounded-2xl p-3.5 sm:p-4 border border-[#E5DDD0] space-y-3">
       {/* 상단 비교 컨트롤 바 */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-black">
             <i className="fas fa-columns"></i>
-            Before / After 비교
+            Before / After
           </span>
           <span className="text-[11px] font-extrabold text-[#2D2A26]">
-            {getEngineLabel(item.usedEngine)} · {scaleFactor}× 확대
+            {getEngineLabel(item.usedEngine)} · {scaleBadge}
           </span>
+          {backendLabel && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white text-stone-600 border border-[#DFD9CE]">
+              {backendLabel}
+            </span>
+          )}
+          {item.sharpnessGainPercent !== undefined && item.sharpnessGainPercent > 0 && (
+            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+              선명도 +{item.sharpnessGainPercent}% 실측
+            </span>
+          )}
           {allDoneItems.length > 1 && (
             <select
               value={item.id}
@@ -227,31 +296,27 @@ export const BeforeAfterComparePanel: React.FC<BeforeAfterComparePanelProps> = (
           )}
         </div>
 
-        {/* 보기 배율 전환 */}
+        {/* 진짜 픽셀 배율 전환 */}
         <div className="flex items-center gap-1 bg-white p-0.5 rounded-xl border border-[#DFD9CE]">
-          <button
-            type="button"
-            onClick={() => setZoomMode('fit')}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-black cursor-pointer transition-colors ${
-              zoomMode === 'fit'
-                ? 'bg-[#2D2A26] text-white'
-                : 'text-stone-600 hover:text-[#2D2A26]'
-            }`}
-          >
-            전체 맞춤
-          </button>
-          <button
-            type="button"
-            onClick={() => setZoomMode('200')}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-black cursor-pointer transition-colors ${
-              zoomMode === '200'
-                ? 'bg-indigo-600 text-white'
-                : 'text-stone-600 hover:text-[#2D2A26]'
-            }`}
-          >
-            <i className="fas fa-magnifying-glass-plus mr-1"></i>
-            200% 돋보기
-          </button>
+          {ZOOM_OPTIONS.map((opt) => (
+            <button
+              key={String(opt.key)}
+              type="button"
+              onClick={() => setZoomLevel(opt.key)}
+              className={`px-2 py-1 rounded-lg text-[10px] font-black cursor-pointer transition-colors ${
+                zoomLevel === opt.key
+                  ? opt.key === 'fit'
+                    ? 'bg-[#2D2A26] text-white'
+                    : 'bg-indigo-600 text-white'
+                  : 'text-stone-600 hover:text-[#2D2A26]'
+              }`}
+            >
+              {opt.key !== 'fit' && zoomLevel === opt.key && (
+                <i className="fas fa-magnifying-glass-plus mr-1"></i>
+              )}
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -260,21 +325,56 @@ export const BeforeAfterComparePanel: React.FC<BeforeAfterComparePanelProps> = (
         <canvas
           ref={canvasRef}
           onPointerDown={(e) => {
-            isDraggingRef.current = true;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const localX = e.clientX - rect.left;
+            const splitX = splitRatio * rect.width;
+            const nearHandle = zoomLevel === 'fit' || Math.abs(localX - splitX) <= 26;
+
+            dragSessionRef.current = {
+              mode: nearHandle ? 'split' : 'pan',
+              startClientX: e.clientX,
+              startClientY: e.clientY,
+              startFocusX: focusPoint.x,
+              startFocusY: focusPoint.y,
+              rectWidth: rect.width,
+              rectHeight: rect.height,
+            };
             e.currentTarget.setPointerCapture(e.pointerId);
-            updateSplitFromClientX(e.clientX);
+
+            if (nearHandle) {
+              updateSplitFromClientX(e.clientX);
+            }
           }}
           onPointerMove={(e) => {
-            if (!isDraggingRef.current) return;
-            updateSplitFromClientX(e.clientX);
+            const session = dragSessionRef.current;
+            if (!session) return;
+            if (session.mode === 'split') {
+              updateSplitFromClientX(e.clientX);
+              return;
+            }
+            const afterImg = afterImgRef.current;
+            if (!afterImg || zoomLevel === 'fit') return;
+            const afterW = Math.max(1, afterImg.naturalWidth || afterImg.width);
+            const afterH = Math.max(1, afterImg.naturalHeight || afterImg.height);
+            const zoom = zoomLevel;
+            const deltaFracX = -(e.clientX - session.startClientX) / (afterW * zoom);
+            const deltaFracY = -(e.clientY - session.startClientY) / (afterH * zoom);
+            const minFracX = Math.min(0.5, session.rectWidth / (2 * zoom * afterW));
+            const minFracY = Math.min(0.5, session.rectHeight / (2 * zoom * afterH));
+            setFocusPoint({
+              x: Math.max(minFracX, Math.min(1 - minFracX, session.startFocusX + deltaFracX)),
+              y: Math.max(minFracY, Math.min(1 - minFracY, session.startFocusY + deltaFracY)),
+            });
           }}
           onPointerUp={() => {
-            isDraggingRef.current = false;
+            dragSessionRef.current = null;
           }}
           onPointerCancel={() => {
-            isDraggingRef.current = false;
+            dragSessionRef.current = null;
           }}
-          className="w-full block cursor-ew-resize touch-none"
+          className={`w-full block touch-none ${
+            zoomLevel === 'fit' ? 'cursor-ew-resize' : 'cursor-grab active:cursor-grabbing'
+          }`}
         />
 
         {/* 좌/우 라벨 배지 */}
@@ -284,9 +384,14 @@ export const BeforeAfterComparePanel: React.FC<BeforeAfterComparePanelProps> = (
         <div className="pointer-events-none absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-indigo-600/90 text-white text-[10px] font-mono font-bold">
           결과 {item.resizedWidth}×{item.resizedHeight}
         </div>
+        {zoomLevel !== 'fit' && (
+          <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-bold whitespace-nowrap">
+            실제 {zoomLevel * 100}% 픽셀 · 화면 드래그 이동 / 파란 핸들로 비교
+          </div>
+        )}
       </div>
 
-      {/* 하단 슬라이더 + 200% 돋보기 초점 위치 선택 */}
+      {/* 하단 슬라이더 + 확대 초점 위치 빠른 선택 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-0.5">
         <div className="flex items-center gap-2 flex-1">
           <span className="text-[10px] font-bold text-stone-500 shrink-0">좌: 원본</span>
@@ -302,23 +407,29 @@ export const BeforeAfterComparePanel: React.FC<BeforeAfterComparePanelProps> = (
           <span className="text-[10px] font-bold text-indigo-700 shrink-0">우: 결과</span>
         </div>
 
-        {zoomMode === '200' && (
+        {zoomLevel !== 'fit' && (
           <div className="flex items-center gap-1 flex-wrap shrink-0">
-            <span className="text-[10px] font-bold text-stone-500 mr-1">확대 부위:</span>
-            {(Object.keys(PAN_COORDS) as PanPreset[]).map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setPanPreset(key)}
-                className={`px-2 py-0.5 rounded-md text-[10px] font-bold border cursor-pointer ${
-                  panPreset === key
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-white text-stone-600 border-[#DFD9CE] hover:bg-stone-100'
-                }`}
-              >
-                {PAN_COORDS[key].label}
-              </button>
-            ))}
+            <span className="text-[10px] font-bold text-stone-500 mr-1">빠른 위치:</span>
+            {(Object.keys(PAN_COORDS) as PanPreset[]).map((key) => {
+              const target = PAN_COORDS[key];
+              const isSelected =
+                Math.abs(focusPoint.x - target.x) < 0.03 &&
+                Math.abs(focusPoint.y - target.y) < 0.03;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFocusPoint({ x: target.x, y: target.y })}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border cursor-pointer ${
+                    isSelected
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-white text-stone-600 border-[#DFD9CE] hover:bg-stone-100'
+                  }`}
+                >
+                  {target.label}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

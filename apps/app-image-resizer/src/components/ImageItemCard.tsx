@@ -12,8 +12,15 @@ interface ImageItemCardProps {
 }
 
 function getEngineBadgeLabel(engine?: ImageFileItem['usedEngine']): string | null {
-  if (engine === 'ai-esrgan') return 'AI ESRGAN';
+  if (engine === 'ai-realesrgan-v3') return 'Real-ESRGAN v3';
+  if (engine === 'ai-realesrgan-x4plus') return 'Real-ESRGAN x4plus';
   if (engine === 'lanczos3') return 'Lanczos-3';
+  return null;
+}
+
+function getBackendBadgeLabel(backend?: ImageFileItem['runtimeBackend']): string | null {
+  if (backend === 'webgpu') return 'WebGPU';
+  if (backend === 'wasm') return 'WASM';
   return null;
 }
 
@@ -29,6 +36,9 @@ export const ImageItemCard: React.FC<ImageItemCardProps> = ({
   const isProcessing = item.status === 'processing';
   const isError = item.status === 'error';
   const engineBadge = getEngineBadgeLabel(item.usedEngine);
+  const backendBadge = getBackendBadgeLabel(item.runtimeBackend);
+  const isAiEngine =
+    item.usedEngine === 'ai-realesrgan-v3' || item.usedEngine === 'ai-realesrgan-x4plus';
 
   // 계산된 절감률 및 실제 배율
   let savedRatio = 0;
@@ -102,11 +112,23 @@ export const ImageItemCard: React.FC<ImageItemCardProps> = ({
               {engineBadge && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-black border border-indigo-200">
                   {engineBadge}
+                  {backendBadge ? ` · ${backendBadge}` : ''}
                 </span>
               )}
-              {actualScale > 1.02 && (
+              {actualScale > 1.02 ? (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-black border border-emerald-200">
                   {actualScale.toFixed(1)}× 확대 (픽셀 {Math.max(1, Math.round(pixelMultiplier))}배)
+                </span>
+              ) : (
+                isAiEngine && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-black border border-emerald-200">
+                    1× 화질 복원
+                  </span>
+                )
+              )}
+              {item.sharpnessGainPercent !== undefined && item.sharpnessGainPercent > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 font-black border border-amber-200">
+                  선명도 +{item.sharpnessGainPercent}% 실측
                 </span>
               )}
               {item.wasCappedForMemory && (

@@ -1,8 +1,12 @@
 export type ResizeUnit = 'upscale' | 'pixel' | 'percent' | 'longest' | 'target_kb';
 
-export type UpscaleEngine = 'ai-esrgan' | 'lanczos3';
+export type UpscaleEngine = 'ai-realesrgan-v3' | 'ai-realesrgan-x4plus' | 'lanczos3';
 
-export type UpscaleTargetMode = '2x' | '3x' | '4x' | '6x' | '8x' | 'fhd' | '4k' | '8k';
+export type AiModelEngine = 'ai-realesrgan-v3' | 'ai-realesrgan-x4plus';
+
+export type RuntimeBackend = 'webgpu' | 'wasm' | 'cpu';
+
+export type UpscaleTargetMode = '1x' | '2x' | '3x' | '4x' | '6x' | '8x' | 'fhd' | '4k' | '8k';
 
 export type SharpenLevel = 'none' | 'natural' | 'crisp';
 
@@ -48,6 +52,8 @@ export interface ImageFileItem {
   statusText?: string;
   wasCappedForMemory?: boolean;
   usedEngine?: UpscaleEngine | 'canvas';
+  runtimeBackend?: RuntimeBackend;
+  sharpnessGainPercent?: number;
   resizedBlob?: Blob;
   resizedUrl?: string;
   resizedWidth?: number;

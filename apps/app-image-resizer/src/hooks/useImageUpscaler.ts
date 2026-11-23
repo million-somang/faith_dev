@@ -23,7 +23,7 @@ export type WizardStep = 1 | 2 | 3;
 
 export const DEFAULT_SETTINGS: ResizeSettings = {
   unit: 'upscale',
-  upscaleEngine: 'ai-esrgan',
+  upscaleEngine: 'ai-realesrgan-v3',
   upscaleTarget: '2x',
   sharpenLevel: 'natural',
   width: 1200,
@@ -53,11 +53,11 @@ function resolveStageIndex(percent: number): UpscaleProcessingStage {
 
 function resolveEngineLabel(settings: ResizeSettings): string {
   if (settings.unit === 'upscale') {
-    if (settings.upscaleEngine === 'ai-esrgan') {
-      const isTwoStage = settings.upscaleTarget === '6x' || settings.upscaleTarget === '8x';
-      return isTwoStage
-        ? `AI 2단 초해상도 (${settings.upscaleTarget.toUpperCase()})`
-        : `AI 초해상도 (${settings.upscaleTarget.toUpperCase()})`;
+    if (settings.upscaleEngine === 'ai-realesrgan-v3') {
+      return `Real-ESRGAN v3 (${settings.upscaleTarget.toUpperCase()})`;
+    }
+    if (settings.upscaleEngine === 'ai-realesrgan-x4plus') {
+      return `Real-ESRGAN x4plus (${settings.upscaleTarget.toUpperCase()})`;
     }
     return `초고속 Lanczos-3 (${settings.upscaleTarget.toUpperCase()})`;
   }
@@ -236,9 +236,9 @@ export function useImageUpscaler() {
       stageIndex: 0,
       statusText:
         settings.unit === 'upscale'
-          ? settings.upscaleEngine === 'ai-esrgan'
-            ? 'AI 초해상도 엔진 초기화 중...'
-            : 'Lanczos-3 워커 초기화 중...'
+          ? settings.upscaleEngine !== 'lanczos3'
+            ? 'Real-ESRGAN AI 엔진 초기화 중...'
+            : 'Lanczos-3 정밀 보간 준비 중...'
           : '이미지 변환 준비 중...',
       engineLabel,
       elapsedMs: 0,
@@ -354,6 +354,8 @@ export function useImageUpscaler() {
                   statusText: '변환 완료',
                   wasCappedForMemory: result.wasCappedForMemory,
                   usedEngine: result.usedEngine,
+                  runtimeBackend: result.runtimeBackend,
+                  sharpnessGainPercent: result.sharpnessGainPercent,
                   resizedBlob: result.blob,
                   resizedUrl: result.url,
                   resizedWidth: result.width,

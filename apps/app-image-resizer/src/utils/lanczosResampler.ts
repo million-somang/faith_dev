@@ -203,20 +203,67 @@ export function resampleImageDataLanczos3(
 }
 
 /**
- * 휘도(Y) 채널 적응형 언샤프 마스크 (엣지 경계만 선명화해 평탄 영역 노이즈 억제)
+ * 배율에 비례하는 분리형 가우시안 언샤프 마스크 반경 계산
+ * - 2×~8× 확대 시 고정 3×3(반경 1px) 커널이 무력해지는 문제를 방지
+ */
+export function getAdaptiveUnsharpSigma(effectiveScale: number): number {
+  return Math.max(0.85, Math.min(2.4, 0.85 * Math.sqrt(Math.max(1, effectiveScale))));
+}
+
+export function getAdaptiveUnsharpRadius(effectiveScale: number): number {
+  const sigma = getAdaptiveUnsharpSigma(effectiveScale);
+  return Math.max(1, Math.min(6, Math.ceil(sigma * 2.5)));
+}
+
+function buildGaussianKernel1D(sigma: number, radius: number): Float32Array {
+  const size = radius * 2 + 1;
+  const kernel = new Float32Array(size);
+  const twoSigmaSq = 2 * sigma * sigma;
+  let sum = 0;
+
+  for (let k = -radius; k <= radius; k += 1) {
+    const w = Math.exp(-(k * k) / twoSigmaSq);
+    kernel[k + radius] = w;
+    sum += w;
+  }
+
+  if (sum > 0) {
+    const invSum = 1 / sum;
+    for (let i = 0; i < size; i += 1) {
+      kernel[i] *= invSum;
+    }
+  }
+  return kernel;
+}
+
+/**
+ * 휘도(Y) 채널 배율 비례 분리형 가우시안 언샤프 마스크
+ * - 엣지 경계만 선명화해 평탄 영역 노이즈·링잉 억제
  */
 export function applyAdaptiveUnsharpMask(
   pixels: Uint8ClampedArray,
   width: number,
   height: number,
-  level: SharpenLevel
+  level: SharpenLevel,
+  effectiveScale = 1,
+  isAiOutput = false
 ): Uint8ClampedArray {
   if (level === 'none' || width < 3 || height < 3) {
     return pixels;
   }
 
-  const amount = level === 'crisp' ? 0.85 : 0.45;
-  const threshold = 4;
+  const amount = isAiOutput
+    ? level === 'crisp'
+      ? 0.6
+      : 0.28
+    : level === 'crisp'
+      ? 1.35
+      : 0.75;
+  const threshold = 3;
+
+  const sigma = getAdaptiveUnsharpSigma(effectiveScale);
+  const radius = Math.max(1, Math.min(6, Math.ceil(sigma * 2.5)));
+  const kernel = buildGaussianKernel1D(sigma, radius);
 
   const totalPixels = width * height;
   const luma = new Float32Array(totalPixels);
@@ -226,26 +273,37 @@ export function applyAdaptiveUnsharpMask(
     luma[i] = 0.299 * pixels[pIdx]! + 0.587 * pixels[pIdx + 1]! + 0.114 * pixels[pIdx + 2]!;
   }
 
-  const result = new Uint8ClampedArray(pixels);
-
-  for (let y = 1; y < height - 1; y += 1) {
+  // 1패스: 수평 1D 가우시안 블러
+  const horizBlur = new Float32Array(totalPixels);
+  const maxX = width - 1;
+  for (let y = 0; y < height; y += 1) {
     const row = y * width;
-    for (let x = 1; x < width - 1; x += 1) {
+    for (let x = 0; x < width; x += 1) {
+      let acc = 0;
+      for (let k = -radius; k <= radius; k += 1) {
+        const sx = x + k < 0 ? 0 : x + k > maxX ? maxX : x + k;
+        acc += luma[row + sx]! * kernel[k + radius]!;
+      }
+      horizBlur[row + x] = acc;
+    }
+  }
+
+  // 2패스: 수직 1D 가우시안 블러 + 휘도 적응형 코어링 샤프닝
+  const result = new Uint8ClampedArray(pixels);
+  const maxY = height - 1;
+
+  for (let y = 0; y < height; y += 1) {
+    const row = y * width;
+    for (let x = 0; x < width; x += 1) {
       const idx = row + x;
       const pIdx = idx * 4;
       if (pixels[pIdx + 3]! === 0) continue;
 
-      const blurY =
-        (luma[idx - width - 1]! +
-          luma[idx - width]! * 2 +
-          luma[idx - width + 1]! +
-          luma[idx - 1]! * 2 +
-          luma[idx]! * 4 +
-          luma[idx + 1]! * 2 +
-          luma[idx + width - 1]! +
-          luma[idx + width]! * 2 +
-          luma[idx + width + 1]!) /
-        16;
+      let blurY = 0;
+      for (let k = -radius; k <= radius; k += 1) {
+        const sy = y + k < 0 ? 0 : y + k > maxY ? maxY : y + k;
+        blurY += horizBlur[sy * width + x]! * kernel[k + radius]!;
+      }
 
       const diff = luma[idx]! - blurY;
       const absDiff = Math.abs(diff);
@@ -261,6 +319,106 @@ export function applyAdaptiveUnsharpMask(
   }
 
   return result;
+}
+
+function computeMeanSobelMagnitude(rgba: Uint8ClampedArray, w: number, h: number): number {
+  if (w < 3 || h < 3) return 0;
+  const luma = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i += 1) {
+    const idx = i * 4;
+    luma[i] = 0.299 * rgba[idx]! + 0.587 * rgba[idx + 1]! + 0.114 * rgba[idx + 2]!;
+  }
+
+  let totalGrad = 0;
+  let count = 0;
+  for (let y = 1; y < h - 1; y += 1) {
+    const rowPrev = (y - 1) * w;
+    const rowCurr = y * w;
+    const rowNext = (y + 1) * w;
+    for (let x = 1; x < w - 1; x += 1) {
+      const gx =
+        -luma[rowPrev + x - 1]! +
+        luma[rowPrev + x + 1]! -
+        2 * luma[rowCurr + x - 1]! +
+        2 * luma[rowCurr + x + 1]! -
+        luma[rowNext + x - 1]! +
+        luma[rowNext + x + 1]!;
+      const gy =
+        -luma[rowPrev + x - 1]! -
+        2 * luma[rowPrev + x]! -
+        luma[rowPrev + x + 1]! +
+        luma[rowNext + x - 1]! +
+        2 * luma[rowNext + x]! +
+        luma[rowNext + x + 1]!;
+      totalGrad += Math.hypot(gx, gy);
+      count += 1;
+    }
+  }
+  return count > 0 ? totalGrad / count : 0;
+}
+
+/**
+ * 원본 이중선형 기준선 대비 결과 캔버스의 실측 엣지 선명도 개선율(%) 계산
+ * - 가짜 수치 없이 실제 픽셀 Sobel 그래디언트 에너지만 비교
+ */
+export function measureSharpnessGainPercent(
+  origImg: HTMLImageElement,
+  outCanvas: HTMLCanvasElement
+): number {
+  const outW = outCanvas.width;
+  const outH = outCanvas.height;
+  const origW = origImg.naturalWidth || origImg.width;
+  const origH = origImg.naturalHeight || origImg.height;
+  if (outW < 16 || outH < 16 || origW < 4 || origH < 4) return 0;
+
+  const outCtx = outCanvas.getContext('2d');
+  if (!outCtx) return 0;
+
+  const sampleW = Math.min(384, outW);
+  const sampleH = Math.min(384, outH);
+  const dstX = Math.max(0, Math.floor((outW - sampleW) / 2));
+
+  const baseCanvas = document.createElement('canvas');
+  baseCanvas.width = sampleW;
+  baseCanvas.height = sampleH;
+  const baseCtx = baseCanvas.getContext('2d');
+  if (!baseCtx) return 0;
+  baseCtx.imageSmoothingEnabled = true;
+  baseCtx.imageSmoothingQuality = 'high';
+
+  const measureAtCenterY = (centerFracY: number) => {
+    const dstY = Math.max(0, Math.min(outH - sampleH, Math.floor(outH * centerFracY - sampleH / 2)));
+    const srcX = (dstX / outW) * origW;
+    const srcY = (dstY / outH) * origH;
+    const srcW = (sampleW / outW) * origW;
+    const srcH = (sampleH / outH) * origH;
+
+    baseCtx.clearRect(0, 0, sampleW, sampleH);
+    baseCtx.drawImage(origImg, srcX, srcY, srcW, srcH, 0, 0, sampleW, sampleH);
+    const baseData = baseCtx.getImageData(0, 0, sampleW, sampleH).data;
+    const outData = outCtx.getImageData(dstX, dstY, sampleW, sampleH).data;
+
+    return {
+      baseEnergy: computeMeanSobelMagnitude(baseData, sampleW, sampleH),
+      outEnergy: computeMeanSobelMagnitude(outData, sampleW, sampleH),
+    };
+  };
+
+  let best = measureAtCenterY(0.5);
+  // 중앙이 빈 여백(예: 긴 상세페이지 흰 구분선)이면 상·하단 본문 영역을 자동 탐색
+  if (best.baseEnergy < 1.2 && outH > sampleH * 2) {
+    for (const frac of [0.25, 0.75, 0.15, 0.85]) {
+      const candidate = measureAtCenterY(frac);
+      if (candidate.baseEnergy > best.baseEnergy) {
+        best = candidate;
+      }
+      if (best.baseEnergy >= 3.0) break;
+    }
+  }
+
+  if (best.baseEnergy < 0.05 && best.outEnergy < 0.05) return 0;
+  const gain = ((best.outEnergy - best.baseEnergy) / Math.max(0.25, best.baseEnergy)) * 100;
+  return Math.max(-99, Math.min(999, Math.round(gain)));
 }
 
 /**
@@ -496,6 +654,8 @@ export async function resampleCanvasLanczos3Streamed(
   const STRIP_ROWS = 256;
   const maxSrcX = origW - 1;
   const maxSrcY = origH - 1;
+  const effectiveScale = Math.max(dstW / Math.max(1, origW), dstH / Math.max(1, origH));
+  const usmMargin = getAdaptiveUnsharpRadius(effectiveScale);
 
   if (origW === dstW && origH === dstH) {
     if (sharpenLevel === 'none') {
@@ -507,11 +667,18 @@ export async function resampleCanvasLanczos3Streamed(
     for (let y0 = 0; y0 < dstH; y0 += STRIP_ROWS) {
       if (signal?.aborted) throw new DOMException('작업이 중단되었습니다.', 'AbortError');
       const y1 = Math.min(dstH, y0 + STRIP_ROWS);
-      const marginY0 = Math.max(0, y0 - 1);
-      const marginY1 = Math.min(dstH, y1 + 1);
+      const marginY0 = Math.max(0, y0 - usmMargin);
+      const marginY1 = Math.min(dstH, y1 + usmMargin);
       const bandH = marginY1 - marginY0;
       const bandSlice = srcData.subarray(marginY0 * dstW * 4, marginY1 * dstW * 4);
-      const sharpenedBand = applyAdaptiveUnsharpMask(bandSlice, dstW, bandH, sharpenLevel);
+      const sharpenedBand = applyAdaptiveUnsharpMask(
+        bandSlice,
+        dstW,
+        bandH,
+        sharpenLevel,
+        1,
+        false
+      );
       const innerStart = (y0 - marginY0) * dstW * 4;
       const innerEnd = innerStart + (y1 - y0) * dstW * 4;
       const innerRgba = new Uint8ClampedArray(sharpenedBand.subarray(innerStart, innerEnd));
@@ -535,8 +702,8 @@ export async function resampleCanvasLanczos3Streamed(
     }
 
     const y1 = Math.min(dstH, y0 + STRIP_ROWS);
-    const marginY0 = Math.max(0, y0 - 1);
-    const marginY1 = Math.min(dstH, y1 + 1);
+    const marginY0 = Math.max(0, y0 - usmMargin);
+    const marginY1 = Math.min(dstH, y1 + usmMargin);
     const stripMarginH = marginY1 - marginY0;
 
     let srcYMin = maxSrcY;
@@ -628,7 +795,9 @@ export async function resampleCanvasLanczos3Streamed(
       stripMarginRgba,
       dstW,
       stripMarginH,
-      sharpenLevel
+      sharpenLevel,
+      effectiveScale,
+      false
     );
     const innerRowOffset = (y0 - marginY0) * dstW * 4;
     const innerRowBytes = (y1 - y0) * dstW * 4;

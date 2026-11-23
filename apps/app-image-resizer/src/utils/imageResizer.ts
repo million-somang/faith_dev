@@ -9,10 +9,14 @@ import {
   MAX_IOS_LONG_EDGE,
   MAX_IOS_PIXELS,
   ResizeSettings,
+  RuntimeBackend,
   UpscaleEngine,
 } from '../types/index';
-import { resampleCanvasLanczos3Streamed } from './lanczosResampler';
-import { upscaleCanvasWithEsrgan } from './aiUpscaler';
+import {
+  measureSharpnessGainPercent,
+  resampleCanvasLanczos3Streamed,
+} from './lanczosResampler';
+import { upscaleCanvasWithRealEsrgan } from './aiUpscaler';
 
 export interface BrowserCanvasLimits {
   readonly maxLongEdge: number;
@@ -65,7 +69,7 @@ export interface UpscalePlan {
   readonly pixelMultiplier: number;
   readonly wasCappedForMemory: boolean;
   readonly alreadyExceedsTarget: boolean;
-  readonly isTwoStageAi: boolean;
+  readonly isHeavyAi: boolean;
   readonly maxLongEdge: number;
   readonly maxPixels: number;
   readonly deviceLabel: string;
@@ -91,6 +95,10 @@ export function calculateUpscalePlan(
   let alreadyExceedsTarget = false;
 
   switch (settings.upscaleTarget) {
+    case '1x':
+      rawW = safeW;
+      rawH = safeH;
+      break;
     case '2x':
       rawW = safeW * 2;
       rawH = safeH * 2;
@@ -147,7 +155,7 @@ export function calculateUpscalePlan(
 
   const effectiveScale = Math.max(targetW / safeW, targetH / safeH);
   const pixelMultiplier = (targetW * targetH) / (safeW * safeH);
-  const isTwoStageAi = settings.upscaleEngine === 'ai-esrgan' && effectiveScale > 4.05;
+  const isHeavyAi = settings.upscaleEngine === 'ai-realesrgan-x4plus';
 
   return {
     targetW,
@@ -156,7 +164,7 @@ export function calculateUpscalePlan(
     pixelMultiplier,
     wasCappedForMemory,
     alreadyExceedsTarget,
-    isTwoStageAi,
+    isHeavyAi,
     maxLongEdge: limits.maxLongEdge,
     maxPixels: limits.maxPixels,
     deviceLabel: limits.deviceLabel,
@@ -352,6 +360,8 @@ export async function resizeSingleImage(
   size: number;
   wasCappedForMemory: boolean;
   usedEngine: UpscaleEngine | 'canvas';
+  runtimeBackend?: RuntimeBackend;
+  sharpnessGainPercent?: number;
 }> {
   if (signal?.aborted) throw createAbortError();
 
@@ -376,19 +386,25 @@ export async function resizeSingleImage(
           let outCanvas: HTMLCanvasElement;
           let wasCapped = plan.wasCappedForMemory;
           let usedEngine: UpscaleEngine = settings.upscaleEngine;
+          let runtimeBackend: RuntimeBackend = 'cpu';
 
-          if (settings.upscaleEngine === 'ai-esrgan') {
-            const aiResult = await upscaleCanvasWithEsrgan(
+          if (
+            settings.upscaleEngine === 'ai-realesrgan-v3' ||
+            settings.upscaleEngine === 'ai-realesrgan-x4plus'
+          ) {
+            const aiResult = await upscaleCanvasWithRealEsrgan(
               img,
               plan.targetW,
               plan.targetH,
+              settings.upscaleEngine,
               settings.sharpenLevel,
               onProgress,
               signal
             );
             outCanvas = aiResult.canvas;
             wasCapped = wasCapped || aiResult.wasCappedForMemory;
-            usedEngine = 'ai-esrgan';
+            usedEngine = settings.upscaleEngine;
+            runtimeBackend = aiResult.runtimeBackend;
           } else {
             outCanvas = await resampleCanvasLanczos3Streamed(
               img,
@@ -399,9 +415,11 @@ export async function resizeSingleImage(
               signal
             );
             usedEngine = 'lanczos3';
+            runtimeBackend = 'cpu';
           }
 
           if (signal?.aborted) throw createAbortError();
+          const sharpnessGainPercent = measureSharpnessGainPercent(img, outCanvas);
           const outMp = (outCanvas.width * outCanvas.height) / 1_000_000;
           if (onProgress) {
             onProgress(
@@ -425,6 +443,8 @@ export async function resizeSingleImage(
             size: blob.size,
             wasCappedForMemory: wasCapped,
             usedEngine,
+            runtimeBackend,
+            sharpnessGainPercent,
           });
           return;
         }

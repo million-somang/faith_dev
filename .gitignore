@@ -44,3 +44,6 @@ Thumbs.db
 
 # Drive uploads
 .tmp.driveupload/
+
+# Large AI ONNX weights (hosted statically via build/deploy, excluded from Git)
+*.onnx
