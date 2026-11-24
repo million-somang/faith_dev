@@ -3,6 +3,14 @@ import type { RecurrenceType, TodoCategory, TodoPriority, TodoRecurrenceRule } f
 export const TODO_STORAGE_KEY = 'veranex_todo_planner_v1';
 export const TODO_MIGRATED_MARKER_KEY = 'veranex_todo_db_migrated_v1';
 export const TODO_POMODORO_STATS_KEY = 'veranex_todo_pomodoro_v1';
+export const TODO_POMODORO_SETTINGS_KEY = 'veranex_todo_pomodoro_settings_v1';
+export const TODO_POMODORO_THEME_KEY = 'veranex_todo_pomodoro_theme_v1';
+export const POMODORO_MIN_MINUTES = 1;
+export const POMODORO_MAX_MINUTES = 180;
+export const POMODORO_DEFAULT_FOCUS_MINUTES = 25;
+export const POMODORO_DEFAULT_BREAK_MINUTES = 5;
+export const POMODORO_FOCUS_PRESETS = [15, 25, 50] as const;
+export const POMODORO_BREAK_PRESETS = [5, 10, 15] as const;
 export const TODO_MAX_ITEMS = 500;
 export const TODO_MAX_SUBTASKS = 30;
 

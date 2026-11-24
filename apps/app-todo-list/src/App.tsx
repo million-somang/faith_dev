@@ -4,6 +4,7 @@ import { Button } from '@astryxdesign/core/Button';
 import { type QuickRoutineStarter } from './constants/todoMeta';
 import { useAudioFeedback } from './hooks/useAudioFeedback';
 import { useAuthSession } from './hooks/useAuthSession';
+import { useFullscreen } from './hooks/useFullscreen';
 import { usePomodoroTimer } from './hooks/usePomodoroTimer';
 import { usePortalMessenger } from './hooks/usePortalMessenger';
 import { useTodos } from './hooks/useTodos';
@@ -48,6 +49,7 @@ export function App() {
   const { sendToPortal } = usePortalMessenger();
   const { user, isAuthenticated, isCheckingAuth } = useAuthSession();
   const audio = useAudioFeedback();
+  const fullscreen = useFullscreen();
 
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<MainTab>('todo');
@@ -129,28 +131,30 @@ export function App() {
   });
 
   const pomodoro = usePomodoroTimer({
-    onSessionComplete: (completedMode) => {
+    onSessionComplete: (completedMode, settings) => {
       audio.playTimerDone();
       if (completedMode === 'focus') {
-        showToast('25분 집중 세션 완료! 5분간 가볍게 휴식하세요.');
+        showToast(
+          `${settings.focusMinutes}분 집중 세션 완료! ${settings.breakMinutes}분간 가볍게 휴식하세요.`
+        );
         sendToPortal('POINTS_UPDATED');
       } else {
-        showToast('5분 휴식 종료! 다음 집중을 시작해 보세요.');
+        showToast(`${settings.breakMinutes}분 휴식 종료! 다음 집중을 시작해 보세요.`);
       }
     },
   });
 
-  const pinnedTodo = useMemo(
-    () => activeItems.find((item) => item.id === pomodoro.pinnedTodoId) || null,
-    [activeItems, pomodoro.pinnedTodoId]
+  const handleChangeWorkspaceView = useCallback(
+    (view: WorkspaceView) => {
+      if (view === 'timer') {
+        void fullscreen.enterFullscreen();
+      } else {
+        void fullscreen.exitFullscreen();
+      }
+      setWorkspaceView(view);
+    },
+    [fullscreen]
   );
-
-  const timerCandidateTodos = useMemo(() => {
-    const todayStr = getLocalDateString();
-    const todayPending = activeItems.filter((it) => !it.completed && isTodoForToday(it, todayStr));
-    if (todayPending.length > 0) return todayPending.slice(0, 5);
-    return activeItems.filter((it) => !it.completed).slice(0, 5);
-  }, [activeItems]);
 
   const handleTogglePinTodo = useCallback(
     (id: string) => {
@@ -529,7 +533,7 @@ export function App() {
               <div className="flex-1 flex flex-col gap-2.5 w-full md:max-w-2xl md:mx-auto">
                 <TodoWorkspaceNav
                   activeView={workspaceView}
-                  onChangeView={setWorkspaceView}
+                  onChangeView={handleChangeWorkspaceView}
                   todayActiveCount={stats.todayActiveCount}
                   todayCompletionRate={stats.todayCompletionRate}
                   isTodayAllDone={isTodayAllDone}
@@ -755,15 +759,19 @@ export function App() {
                     elapsedPercent={pomodoro.elapsedPercent}
                     isRunning={pomodoro.isRunning}
                     completedSessions={pomodoro.completedSessions}
-                    pinnedTodo={pinnedTodo}
-                    candidateTodos={timerCandidateTodos}
+                    focusMinutes={pomodoro.focusMinutes}
+                    breakMinutes={pomodoro.breakMinutes}
+                    isFullscreen={fullscreen.isFullscreen}
+                    isFullscreenSupported={fullscreen.isSupported}
                     onToggleRun={pomodoro.toggleRun}
                     onReset={pomodoro.resetTimer}
                     onSwitchMode={pomodoro.switchMode}
-                    onPinTodo={pomodoro.togglePinTodo}
-                    onClearPin={pomodoro.clearPin}
-                    onCompletePinned={handleToggleTodo}
-                    onGoToTodo={() => setWorkspaceView('todo')}
+                    onUpdateFocusMinutes={pomodoro.updateFocusMinutes}
+                    onUpdateBreakMinutes={pomodoro.updateBreakMinutes}
+                    onToggleFullscreen={() => {
+                      void fullscreen.toggleFullscreen();
+                    }}
+                    onExitTimer={() => handleChangeWorkspaceView('todo')}
                   />
                 )}
               </div>
@@ -848,7 +856,7 @@ export function App() {
               <button
                 type="button"
                 onClick={() => {
-                  setWorkspaceView('timer');
+                  handleChangeWorkspaceView('timer');
                   setToastState(null);
                 }}
                 className="px-2 py-0.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-[11px] font-black shrink-0 cursor-pointer"

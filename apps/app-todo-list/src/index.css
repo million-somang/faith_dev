@@ -164,3 +164,21 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #B8AD9B;
 }
+
+@keyframes veraLogoSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-vera-spin {
+  animation: veraLogoSpin 8s linear infinite;
+}
+
+.animate-vera-spin-paused {
+  animation: veraLogoSpin 8s linear infinite;
+  animation-play-state: paused;
+}
