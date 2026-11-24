@@ -10,7 +10,6 @@ import type {
 } from '../types/seo.types.js';
 
 const SITE_URL = 'https://veranex.app';
-const TRAVEL_MIN_CONTENT_LEN = 800;
 const TRAVEL_SITEMAP_CHUNK_SIZE = 5000;
 const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/indexnow';
 const INDEXNOW_DEBOUNCE_MS = 10 * 1000;
@@ -109,14 +108,13 @@ export class SeoService {
             pool.query(
                 `SELECT COUNT(*) AS cnt, MAX(published_at) AS max_pub
                  FROM travel_articles
-                 WHERE (hidden = 0 OR hidden IS NULL)
-                   AND LENGTH(COALESCE(content, '')) >= $1`,
-                [TRAVEL_MIN_CONTENT_LEN]
+                 WHERE hidden = 0
+                   AND LENGTH(content) >= 800`
             ),
             pool.query(
                 `SELECT COUNT(*) AS cnt, MAX(created_at) AS max_created
                  FROM news
-                 WHERE (hidden = 0 OR hidden IS NULL)
+                 WHERE hidden = 0
                    AND created_at >= datetime('now', '-48 hours')`
             ),
         ]);
@@ -153,11 +151,11 @@ export class SeoService {
         const res = await pool.query(
             `SELECT id, published_at, updated_at
              FROM travel_articles
-             WHERE (hidden = 0 OR hidden IS NULL)
-               AND LENGTH(COALESCE(content, '')) >= $1
+             WHERE hidden = 0
+               AND LENGTH(content) >= 800
              ORDER BY id DESC
-             LIMIT $2 OFFSET $3`,
-            [TRAVEL_MIN_CONTENT_LEN, safeLimit, offset]
+             LIMIT $1 OFFSET $2`,
+            [safeLimit, offset]
         );
 
         const items: TravelSitemapRow[] = (
@@ -180,7 +178,7 @@ export class SeoService {
         const res = await pool.query(
             `SELECT id, title, published_at, created_at
              FROM news
-             WHERE (hidden = 0 OR hidden IS NULL)
+             WHERE hidden = 0
                AND created_at >= datetime('now', '-48 hours')
              ORDER BY id DESC
              LIMIT $1`,
@@ -213,11 +211,11 @@ export class SeoService {
         const res = await pool.query(
             `SELECT id, title, destination, region, province, city, category, summary, ai_summary, author, published_at, created_at
              FROM travel_articles
-             WHERE (hidden = 0 OR hidden IS NULL)
-               AND LENGTH(COALESCE(content, '')) >= $1
+             WHERE hidden = 0
+               AND LENGTH(content) >= 800
              ORDER BY id DESC
-             LIMIT $2`,
-            [TRAVEL_MIN_CONTENT_LEN, safeLimit]
+             LIMIT $1`,
+            [safeLimit]
         );
 
         const items: TravelRssItem[] = (res.rows as Array<Record<string, unknown>>).map((row) => {
