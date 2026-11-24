@@ -64,6 +64,11 @@ interface IsometricRoomCanvasProps {
     onHarvestPlot?: (plotIndex: number) => void;
     onClearPlot?: (plotIndex: number) => void;
     azitGame?: UseAzitGameController;
+    requestedZone?: AzitZoneType | null;
+    zoneSyncNonce?: number;
+    onOpenNotificationCenter?: () => void;
+    isPushSubscribed?: boolean;
+    unreadNotificationCount?: number;
 }
 
 const ORIGIN_X = 400;
@@ -137,6 +142,11 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     onHarvestPlot,
     onClearPlot,
     azitGame,
+    requestedZone = null,
+    zoneSyncNonce = 0,
+    onOpenNotificationCenter,
+    isPushSubscribed = false,
+    unreadNotificationCount = 0,
 }) => {
     const [activeZone, setActiveZone] = useState<AzitZoneType>('indoor');
     const [openBubblePlotIndex, setOpenBubblePlotIndex] = useState<number | null>(null);
@@ -176,6 +186,19 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
             setIsFollowingAvatar(true);
         }
     };
+
+    useEffect(() => {
+        if (!requestedZone) return;
+        if (
+            requestedZone === 'indoor' ||
+            requestedZone === 'garden' ||
+            requestedZone === 'kitchen' ||
+            requestedZone === 'camp'
+        ) {
+            setActiveZone(requestedZone);
+            setActiveAzitModal(null);
+        }
+    }, [requestedZone, zoneSyncNonce]);
 
     useEffect(() => {
         if (isEditMode && activeZone !== 'indoor') {
@@ -895,6 +918,25 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             </div>
 
                             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                {isOwner && onOpenNotificationCenter && (
+                                    <button
+                                        type="button"
+                                        onClick={onOpenNotificationCenter}
+                                        className={`px-2.5 sm:px-3 py-1 rounded-full border text-[11px] font-black transition-colors cursor-pointer flex items-center gap-1 ${
+                                            isPushSubscribed
+                                                ? 'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200'
+                                                : 'bg-slate-100 hover:bg-indigo-50 text-slate-700 border-slate-200'
+                                        }`}
+                                        title="푸시 알림 구독·카테고리 설정 및 최근 알림함 열기"
+                                    >
+                                        <span>{isPushSubscribed ? '🔔 알림 ON' : '🔕 알림 설정'}</span>
+                                        {unreadNotificationCount > 0 && (
+                                            <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-black">
+                                                {unreadNotificationCount}
+                                            </span>
+                                        )}
+                                    </button>
+                                )}
                                 {onOpenGuestbookModal && (
                                     <button
                                         type="button"
@@ -1805,6 +1847,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         onOpenSeedShop={onOpenSeedShopModal || onOpenShopModal}
                         onOpenWarehouse={onOpenWarehouseModal || onOpenShopModal}
                         onOpenMarket={isOwner && azitGame?.state ? () => setActiveAzitModal('market') : undefined}
+                        onOpenNotificationCenter={onOpenNotificationCenter}
+                        externalPushSubscribed={onOpenNotificationCenter ? isPushSubscribed : undefined}
                     />
                 )}
 

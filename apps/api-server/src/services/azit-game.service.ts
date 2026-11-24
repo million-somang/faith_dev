@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { pool } from '@faithportal/database';
+import { NotificationService } from './notification.service.js';
 import {
     AZIT_CHEFS,
     AZIT_CROPS,
@@ -1023,6 +1024,17 @@ export class AzitGameService {
         }
 
         await this.syncGardenSnapshotToMinihome(userId);
+        await this.scheduleAzitNotification({
+            userId,
+            category: 'azit.garden',
+            dedupeKey: `azit:garden:plot:${plotIndex}`,
+            title: '💧 [아지트 농장] 작물에 물을 줄 시간이에요!',
+            body: `${plotIndex + 1}번 텃밭의 [${crop.emoji} ${crop.name}]에 2차 물을 줄 시간(8시간 경과)이에요!`,
+            url: '/mypage?section=dashboard&zone=garden',
+            tag: 'azit-garden',
+            scheduledAtMs: Date.now() + GARDEN_WATER_COOLDOWN_MS,
+            data: { zone: 'garden', plotIndex, cropId: crop.cropId },
+        });
         const state = await this.getState(userId);
         return {
             message: `🌱 [${crop.emoji} ${crop.name}] 씨앗을 심고 첫 물을 주었습니다! (8시간 후 2차 물주기 가능)`,
@@ -1083,6 +1095,21 @@ export class AzitGameService {
 
         const crop = getCropDef(String(plot.crop_id));
         await this.syncGardenSnapshotToMinihome(userId);
+        if (nextStage < 3) {
+            await this.scheduleAzitNotification({
+                userId,
+                category: 'azit.garden',
+                dedupeKey: `azit:garden:plot:${plotIndex}`,
+                title: '💧 [아지트 농장] 작물에 물을 줄 시간이에요!',
+                body: `${plotIndex + 1}번 텃밭의 [${crop?.emoji || '🌱'} ${crop?.name || '작물'}]에 마지막 물을 줄 시간이에요! 물을 주면 바로 수확할 수 있어요.`,
+                url: '/mypage?section=dashboard&zone=garden',
+                tag: 'azit-garden',
+                scheduledAtMs: Date.now() + GARDEN_WATER_COOLDOWN_MS,
+                data: { zone: 'garden', plotIndex, cropId: String(plot.crop_id), stage: nextStage },
+            });
+        } else {
+            await this.cancelAzitNotification(userId, `azit:garden:plot:${plotIndex}`);
+        }
         const state = await this.getState(userId);
         return {
             message:
@@ -1138,6 +1165,7 @@ export class AzitGameService {
         );
         await this.addAzitXp(userId, GARDEN_HARVEST_AZIT_XP);
         await this.syncGardenSnapshotToMinihome(userId);
+        await this.cancelAzitNotification(userId, `azit:garden:plot:${plotIndex}`);
         const state = await this.getState(userId);
         return {
             message: `🧺 [${crop.emoji} ${crop.name}] ${crop.harvestYield}개를 수확했습니다! (+${GARDEN_HARVEST_AZIT_XP} 아지트 EXP)`,
@@ -1164,6 +1192,7 @@ export class AzitGameService {
             [userId, plotIndex]
         );
         await this.syncGardenSnapshotToMinihome(userId);
+        await this.cancelAzitNotification(userId, `azit:garden:plot:${plotIndex}`);
         const state = await this.getState(userId);
         return {
             message: `🌿 ${plotIndex + 1}번 텃밭 이랑을 깨끗하게 비웠습니다.`,
@@ -1392,6 +1421,7 @@ export class AzitGameService {
 
         // 재료 원자적 차감 (실패 시 이전 차감분 보상 복구)
         const deducted: Array<{ kind: 'crop' | 'material'; id: string; qty: number }> = [];
+        let endsAtMs = 0;
         try {
             for (const ing of recipe.ingredients) {
                 if (ing.kind === 'crop') {
@@ -1431,7 +1461,7 @@ export class AzitGameService {
 
             const nowMs = Date.now();
             const effectiveSec = Math.max(15, Math.round(recipe.cookDurationSec * (1 - speedBonusPct / 100)));
-            const endsAtMs = nowMs + effectiveSec * 1000;
+            endsAtMs = nowMs + effectiveSec * 1000;
 
             const updSlot = await pool.query(
                 `UPDATE azit_kitchen_slots
@@ -1465,6 +1495,19 @@ export class AzitGameService {
         }
 
         await this.syncGardenSnapshotToMinihome(userId);
+        if (endsAtMs > 0) {
+            await this.scheduleAzitNotification({
+                userId,
+                category: 'azit.kitchen',
+                dedupeKey: `azit:kitchen:slot:${slotIndex}`,
+                title: '🍳 [아지트 주방] 요리가 완성되었어요!',
+                body: `${slotIndex + 1}번 화구의 [${recipe.emoji} ${recipe.name}] 조리가 끝났습니다. 지금 수령해 보세요!`,
+                url: '/mypage?section=dashboard&zone=kitchen',
+                tag: 'azit-kitchen',
+                scheduledAtMs: endsAtMs,
+                data: { zone: 'kitchen', slotIndex, recipeId: recipe.recipeId },
+            });
+        }
         const state = await this.getState(userId);
         return {
             message: `🍳 [${recipe.emoji} ${recipe.name}] 조리를 시작했습니다!${validatedChefCode ? '' : ' (요리사 없이 수습 조리 진행 중)'}`,
@@ -1550,6 +1593,7 @@ export class AzitGameService {
             [producedQty, userId]
         );
         await this.addAzitXp(userId, recipe.azitXpReward);
+        await this.cancelAzitNotification(userId, `azit:kitchen:slot:${slotIndex}`);
 
         const state = await this.getState(userId);
         return {
@@ -1834,6 +1878,7 @@ export class AzitGameService {
         const lockedMercs: string[] = [];
         const nowMs = Date.now();
         const endsAtMs = nowMs + zone.durationSec * 1000;
+        let createdExpeditionId = 0;
         try {
             for (const code of uniqueParty) {
                 const lockRes = await pool.query(
@@ -1849,7 +1894,7 @@ export class AzitGameService {
                 lockedMercs.push(code);
             }
 
-            await pool.query(
+            const expInsertRes = await pool.query(
                 `INSERT INTO azit_expeditions (
                     user_id, zone_id, party_merc_codes_json, dish_recipe_id,
                     entry_cost, predicted_win_rate, status, started_at_ms, ends_at_ms
@@ -1866,6 +1911,7 @@ export class AzitGameService {
                     endsAtMs,
                 ]
             );
+            createdExpeditionId = Number(expInsertRes.lastInsertRowid ?? 0);
         } catch (err) {
             for (const code of lockedMercs) {
                 await pool.query(
@@ -1886,6 +1932,20 @@ export class AzitGameService {
                 countAsActivity: false,
             });
             throw err;
+        }
+
+        if (createdExpeditionId > 0) {
+            await this.scheduleAzitNotification({
+                userId,
+                category: 'azit.camp',
+                dedupeKey: `azit:expedition:${createdExpeditionId}`,
+                title: '⚔️ [아지트 용병 캠프] 용병 원정이 끝났어요!',
+                body: `[${zone.emoji} ${zone.name}] 전투가 완료되었습니다. 원정 보상을 확인해 보세요!`,
+                url: '/mypage?section=dashboard&zone=camp',
+                tag: 'azit-camp',
+                scheduledAtMs: endsAtMs,
+                data: { zone: 'camp', expeditionId: createdExpeditionId, zoneId: zone.zoneId },
+            });
         }
 
         const state = await this.getState(userId);
@@ -2079,6 +2139,8 @@ export class AzitGameService {
                 ]
             );
 
+            await this.cancelAzitNotification(userId, `azit:expedition:${expeditionId}`);
+
             const state = await this.getState(userId);
             return {
                 message: won
@@ -2107,6 +2169,43 @@ export class AzitGameService {
                 [expeditionId, userId]
             );
             throw err;
+        }
+    }
+
+    private static async scheduleAzitNotification(params: {
+        userId: number;
+        category: 'azit.kitchen' | 'azit.garden' | 'azit.camp';
+        dedupeKey: string;
+        title: string;
+        body: string;
+        url: string;
+        tag: string;
+        scheduledAtMs: number;
+        data?: Record<string, unknown>;
+    }): Promise<void> {
+        try {
+            await NotificationService.scheduleNotification({
+                userId: params.userId,
+                category: params.category,
+                sourceApp: 'azit-game',
+                dedupeKey: params.dedupeKey,
+                title: params.title,
+                body: params.body,
+                url: params.url,
+                tag: params.tag,
+                scheduledAtMs: params.scheduledAtMs,
+                data: params.data,
+            });
+        } catch (err) {
+            console.warn('[AzitNotificationHook] Failed to schedule notification:', err);
+        }
+    }
+
+    private static async cancelAzitNotification(userId: number, dedupeKey: string): Promise<void> {
+        try {
+            await NotificationService.cancelScheduled({ userId, dedupeKey });
+        } catch (err) {
+            console.warn('[AzitNotificationHook] Failed to cancel notification:', err);
         }
     }
 }

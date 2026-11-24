@@ -16,11 +16,14 @@ import { useUserPreferenceContext } from '@/context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '@/types/homepage.types';
 import { useMinihome } from '@/hooks/useMinihome';
 import { useAzitGame } from '@/hooks/useAzitGame';
+import { useWebPush } from '@/hooks/useWebPush';
+import type { AzitZoneType } from '@/types/azit-game.types';
 import type { MinihomeGardenState } from '@/types/minihome.types';
 import { IsometricRoomCanvas } from '@/components/minihome/IsometricRoomCanvas';
 import { MinihomeShopDrawer } from '@/components/minihome/MinihomeShopDrawer';
 import { MinihomeGuestbook } from '@/components/minihome/MinihomeGuestbook';
 import { MinihomePersonalHubSection } from '@/components/minihome/MinihomePersonalHubSection';
+import { NotificationCenterPanel } from '@/components/notifications/NotificationCenterPanel';
 import { MINIHOME_MOODS, VERA_POINT_SHOP_ENABLED, getCatalogItemById } from '@/data/minihomeCatalogData';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -132,17 +135,6 @@ const DAILY_QUOTES = [
     { quote: "물은 어떤 그릇에 담기느냐에 따라 모양이 바뀐다. 유연함이 최고의 지혜다.", author: "노자", category: "처세" },
 ];
 
-function urlBase64ToUint8Array(base64String: string) {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
-
 export default function MyPage() {
     const { user, logout, isLoading, updateUser } = useAuth();
     const router = useRouter();
@@ -231,95 +223,88 @@ export default function MyPage() {
         }
     };
 
-    const [isPushSubscribed, setIsPushSubscribed] = useState(false);
-    const [pushLoading, setPushLoading] = useState(false);
+    const webPush = useWebPush({ enabled: Boolean(user) });
+    const isPushSubscribed = webPush.isSubscribed;
+    const pushLoading = webPush.isBusy;
+    const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+    const [requestedAzitZone, setRequestedAzitZone] = useState<AzitZoneType | null>(null);
+    const [azitZoneSyncNonce, setAzitZoneSyncNonce] = useState<number>(0);
 
-    useEffect(() => {
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-            navigator.serviceWorker.ready.then(registration => {
-                registration.pushManager.getSubscription().then(sub => {
-                    setIsPushSubscribed(!!sub);
-                });
-            });
+    const handleTogglePush = useCallback(async () => {
+        const ok = await webPush.toggleSubscription();
+        if (!ok && webPush.needsIosHomeScreenInstall) {
+            setIsNotificationModalOpen(true);
         }
-    }, []);
-
-    const handleTogglePush = async () => {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            alert('이 브라우저는 웹 푸시 알림을 지원하지 않습니다.');
-            return;
-        }
-
-        try {
-            setPushLoading(true);
-            const perm = await Notification.requestPermission();
-            if (perm !== 'granted') {
-                alert('알림 권한이 거부되었습니다. 브라우저 설정에서 알림 권한을 허용해 주세요.');
-                setPushLoading(false);
-                return;
-            }
-
-            const registration = await navigator.serviceWorker.ready;
-            let sub = await registration.pushManager.getSubscription();
-
-            if (sub) {
-                // Unsubscribe
-                await sub.unsubscribe();
-                const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
-                await instance.delete('/api/user/push-subscription', { data: { endpoint: sub.endpoint } });
-                setIsPushSubscribed(false);
-                alert('일정 1시간 전 푸시 알림이 해제되었습니다.');
-            } else {
-                // Subscribe
-                const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
-                const keyRes = await instance.get('/api/user/push-key');
-                if (!keyRes.data || !keyRes.data.publicKey) {
-                    throw new Error('VAPID public key load failed');
-                }
-                const convertedKey = urlBase64ToUint8Array(keyRes.data.publicKey);
-                sub = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: convertedKey
-                });
-
-                await instance.post('/api/user/push-subscription', {
-                    subscription: sub.toJSON()
-                });
-
-                setIsPushSubscribed(true);
-                alert('🔔 일정 1시간 전 모바일 푸시 알림이 성공적으로 설정되었습니다!');
-            }
-        } catch (err) {
-            console.error('Push toggle error:', err);
-            alert('푸시 알림 설정 중 오류가 발생했습니다.');
-        } finally {
-            setPushLoading(false);
-        }
-    };
+    }, [webPush]);
 
     // ─── activeSection 디폴트를 dashboard(나의 홈)로 개편 ───
     const [activeSection, setActiveSection] = useState<'dashboard' | 'schedule' | 'video' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize'>('dashboard');
 
+    const applyNotificationUrl = useCallback((rawUrl: string) => {
+        if (typeof window === 'undefined') return;
+        try {
+            const parsed = new URL(rawUrl, window.location.origin);
+            if (parsed.pathname !== window.location.pathname) {
+                router.push(`${parsed.pathname}${parsed.search}${parsed.hash}`);
+                return;
+            }
+            const sec = parsed.searchParams.get('section');
+            const zone = parsed.searchParams.get('zone');
+            const isValidZone = zone === 'indoor' || zone === 'garden' || zone === 'kitchen' || zone === 'camp';
+
+            if (sec === 'video' || sec === 'schedule' || sec === 'dashboard' || sec === 'home-customize') {
+                setActiveSection(sec);
+            } else if (isValidZone) {
+                setActiveSection('dashboard');
+            }
+
+            if (isValidZone) {
+                setRequestedAzitZone(zone);
+                setAzitZoneSyncNonce((prev) => prev + 1);
+                azitRefreshRef.current?.();
+            }
+
+            const nextPath = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+            if (window.location.pathname + window.location.search + window.location.hash !== nextPath) {
+                window.history.replaceState(null, '', nextPath);
+            }
+        } catch {
+            // ignore malformed URL
+        }
+    }, [router]);
+
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const syncSectionFromUrl = () => {
-            const params = new URLSearchParams(window.location.search);
-            const sec = params.get('section');
-            if (sec === 'video' || sec === 'schedule' || sec === 'dashboard' || sec === 'home-customize') {
-                setActiveSection(sec);
-            }
+            applyNotificationUrl(window.location.href);
         };
         const handleOpenVideoPlayer = () => {
             setActiveSection('video');
         };
+        const handleSwMessage = (event: MessageEvent) => {
+            const msgData = event.data as { type?: unknown; url?: unknown; notificationId?: unknown } | null;
+            if (!msgData || typeof msgData !== 'object') return;
+            if (msgData.type === 'VERA_NOTIFICATION_NAVIGATE' && typeof msgData.url === 'string') {
+                if (typeof msgData.notificationId === 'number' && msgData.notificationId > 0) {
+                    webPush.markRead(msgData.notificationId).catch(() => {});
+                }
+                applyNotificationUrl(msgData.url);
+            }
+        };
         syncSectionFromUrl();
         window.addEventListener('popstate', syncSectionFromUrl);
         window.addEventListener('vera:open-video-player', handleOpenVideoPlayer);
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', handleSwMessage);
+        }
         return () => {
             window.removeEventListener('popstate', syncSectionFromUrl);
             window.removeEventListener('vera:open-video-player', handleOpenVideoPlayer);
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+            }
         };
-    }, []);
+    }, [applyNotificationUrl, webPush.markRead]);
     const [showWizard, setShowWizard] = useState(false);
     const { config: homeConfig, isSaving: isHomeSaving, updateConfig: updateHomeConfig, saveConfig: saveHomeConfig } = useUserPreferenceContext();
     const [mobileTabsSaved, setMobileTabsSaved] = useState(false);
@@ -1169,6 +1154,32 @@ export default function MyPage() {
                                                             <i className="fab fa-google-drive"></i>
                                                             <span>🎬 구글 드라이브 비디오 플레이어</span>
                                                         </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsNotificationModalOpen(true)}
+                                                            className="w-full py-2.5 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200/80 font-extrabold text-xs transition-colors flex items-center justify-between gap-2 cursor-pointer"
+                                                        >
+                                                            <span className="flex items-center gap-1.5">
+                                                                <span>🔔</span>
+                                                                <span>푸시 알림 센터 &amp; 설정</span>
+                                                            </span>
+                                                            <span className="flex items-center gap-1 shrink-0">
+                                                                <span
+                                                                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                                                                        isPushSubscribed
+                                                                            ? 'bg-emerald-500 text-white'
+                                                                            : 'bg-slate-200 text-slate-600'
+                                                                    }`}
+                                                                >
+                                                                    {isPushSubscribed ? 'ON' : 'OFF'}
+                                                                </span>
+                                                                {webPush.unreadCount > 0 && (
+                                                                    <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black">
+                                                                        {webPush.unreadCount}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </button>
                                                     </div>
 
                                                     {/* 나의 홈 3대 퀵 스탯 보드 (베라포인트·보유가구·오늘일정·사주행운지수 통합) */}
@@ -1326,6 +1337,11 @@ export default function MyPage() {
                                                     onHarvestPlot={handleMinihomeHarvestPlot}
                                                     onClearPlot={handleMinihomeClearPlot}
                                                     azitGame={azitGame}
+                                                    requestedZone={requestedAzitZone}
+                                                    zoneSyncNonce={azitZoneSyncNonce}
+                                                    onOpenNotificationCenter={() => setIsNotificationModalOpen(true)}
+                                                    isPushSubscribed={isPushSubscribed}
+                                                    unreadNotificationCount={webPush.unreadCount}
                                                 />
                                             </div>
                                         </div>
@@ -2078,6 +2094,14 @@ export default function MyPage() {
                     onClose={() => setShowWizard(false)}
                 />
             )}
+
+            {/* 범용 웹 푸시 알림 센터 & 설정 모달 */}
+            <NotificationCenterPanel
+                isOpen={isNotificationModalOpen}
+                onClose={() => setIsNotificationModalOpen(false)}
+                webPush={webPush}
+                onNavigateUrl={applyNotificationUrl}
+            />
         </div>
     );
 }

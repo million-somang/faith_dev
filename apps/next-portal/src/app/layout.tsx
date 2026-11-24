@@ -18,6 +18,12 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://veranex.app"),
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "VERA",
+  },
   title: {
     default: "VERA (베라) - 실시간 지식가이드 · 미니게임 · 생활도구 통합 라이프 포털",
     template: "%s | VERA",

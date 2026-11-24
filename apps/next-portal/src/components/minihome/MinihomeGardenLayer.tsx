@@ -1094,6 +1094,8 @@ interface GardenControlPanelProps {
     onOpenSeedShop?: () => void;
     onOpenWarehouse?: () => void;
     onOpenMarket?: () => void;
+    onOpenNotificationCenter?: () => void;
+    externalPushSubscribed?: boolean;
 }
 
 /**
@@ -1106,6 +1108,8 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
     onOpenSeedShop,
     onOpenWarehouse,
     onOpenMarket,
+    onOpenNotificationCenter,
+    externalPushSubscribed,
 }) => {
     const [nowMs, setNowMs] = useState<number>(() => Date.now());
     const [isPushSubscribed, setIsPushSubscribed] = useState<boolean>(false);
@@ -1163,7 +1167,7 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                                 body,
                                 icon: '/logo-192.png',
                                 badge: '/logo-192.png',
-                                data: { url: '/minihome/me' },
+                                data: { url: '/mypage?section=dashboard&zone=garden' },
                             })
                         )
                         .catch(() => {});
@@ -1241,6 +1245,9 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
         }
     };
 
+    const effectivePushSubscribed =
+        externalPushSubscribed !== undefined ? externalPushSubscribed : isPushSubscribed;
+
     const totalSeeds = Object.values(gardenState.seedCounts || {}).reduce((acc, v) => acc + v, 0);
 
     const waterReadyPlots = gardenState.plots.filter((p) => {
@@ -1275,16 +1282,22 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                     {isOwner && (
                         <button
                             type="button"
-                            onClick={handleToggleFarmPush}
-                            disabled={pushLoading}
+                            onClick={() => {
+                                if (onOpenNotificationCenter) {
+                                    onOpenNotificationCenter();
+                                } else {
+                                    handleToggleFarmPush();
+                                }
+                            }}
+                            disabled={!onOpenNotificationCenter && pushLoading}
                             className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
-                                isPushSubscribed
+                                effectivePushSubscribed
                                     ? 'bg-sky-500 hover:bg-sky-400 text-slate-950'
                                     : 'bg-slate-800 hover:bg-slate-700 text-sky-200 border border-sky-400/50'
                             }`}
                             title="모바일(앱 설치 시) 8시간마다 물주기 푸시 알림 받기"
                         >
-                            <span>{isPushSubscribed ? '🔔 물주기 푸시 ON' : '🔕 모바일 물주기 알림 켜기'}</span>
+                            <span>{effectivePushSubscribed ? '🔔 물주기 푸시 ON' : '🔕 모바일 물주기 알림 켜기'}</span>
                         </button>
                     )}
                     {isOwner && onOpenSeedShop && (

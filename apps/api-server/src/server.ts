@@ -40,7 +40,7 @@ function isAllowedCorsOrigin(origin: string): boolean {
 app.use('*', cors({
     origin: (origin) => (isAllowedCorsOrigin(origin) ? origin : null),
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'X-API-KEY', 'x-api-key', 'X-Requested-With'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-API-KEY', 'x-api-key', 'X-Notification-Api-Key', 'x-notification-api-key', 'X-Requested-With'],
     exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
     maxAge: 600,
     credentials: true,
@@ -79,7 +79,13 @@ app.use('*', async (c, next) => {
     if (path === '/health' || path === '/api/health') return next();
 
     // x-api-key 헤더가 포함된 공인 API 호출은 봇 스크래핑 차단 예외 처리
-    const apiKey = c.req.header('x-api-key') || c.req.header('X-API-KEY') || c.req.header('x-api-token') || c.req.header('authorization');
+    const apiKey =
+        c.req.header('x-api-key') ||
+        c.req.header('X-API-KEY') ||
+        c.req.header('x-notification-api-key') ||
+        c.req.header('X-Notification-Api-Key') ||
+        c.req.header('x-api-token') ||
+        c.req.header('authorization');
     if (apiKey) return next();
 
     const ua = (c.req.header('User-Agent') || '').toLowerCase();
@@ -160,6 +166,9 @@ import { minihomeRoutes } from './routes/minihome.routes.js';
 app.route('/', minihomeRoutes);
 import { azitGameRoutes } from './routes/azit-game.routes.js';
 app.route('/', azitGameRoutes);
+
+import { notificationRoutes } from './routes/notification.routes.js';
+app.route('/api/notifications', notificationRoutes);
 
 // 배너 업로드 이미지 정적 서빙
 app.use('/uploads/*', serveStatic({ root: './public' }));
@@ -371,6 +380,10 @@ if (process.env.ENABLE_RSS_SCHEDULER === 'true') {
 // 일정 1시간 전 푸시 알림 스케줄러 시작
 import { startSchedulePushScheduler } from './services/schedulePushScheduler.js';
 startSchedulePushScheduler();
+
+// 범용 푸시 알림 예약 큐 스케줄러 시작
+import { startNotificationScheduler } from './services/notificationScheduler.js';
+startNotificationScheduler();
 
 // SNS 자동/반자동 마케팅 스케줄러 시작
 import { startMarketingScheduler } from './services/marketing/marketingScheduler.service.js';

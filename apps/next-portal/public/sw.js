@@ -1,4 +1,4 @@
-const CACHE_NAME = 'faithportal-v10';
+const CACHE_NAME = 'faithportal-v11';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -49,10 +49,19 @@ self.addEventListener('fetch', (event) => {
 
 // ===== Web Push Notifications =====
 self.addEventListener('push', (event) => {
-  let data = { title: '📢 [VERA 알림]', body: '일정 알림이 도착했습니다.', url: '/mypage', icon: '/logo-192.png' };
+  let data = {
+    title: '📢 [VERA 알림]',
+    body: '새로운 알림이 도착했습니다.',
+    url: '/mypage',
+    icon: '/logo-192.png',
+    badge: '/logo-192.png',
+  };
   if (event.data) {
     try {
-      data = Object.assign(data, event.data.json());
+      const parsed = event.data.json();
+      if (parsed && typeof parsed === 'object') {
+        data = Object.assign(data, parsed);
+      }
     } catch (e) {
       data.body = event.data.text();
     }
@@ -61,9 +70,17 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body,
     icon: data.icon || '/logo-192.png',
-    badge: '/logo-192.png',
+    badge: data.badge || '/logo-192.png',
+    tag: data.tag || undefined,
+    renotify: Boolean(data.renotify),
+    requireInteraction: Boolean(data.requireInteraction),
     vibrate: [200, 100, 200],
-    data: { url: data.url || '/mypage' }
+    data: {
+      url: data.url || '/mypage',
+      notificationId: data.notificationId || null,
+      category: data.category || 'system',
+      extra: data.data || null,
+    },
   };
 
   event.waitUntil(
@@ -73,18 +90,58 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const urlToOpen = event.notification.data?.url || '/mypage';
+  const rawUrl = event.notification.data?.url || '/mypage';
+  const notificationId = event.notification.data?.notificationId || null;
+  let targetUrl;
+  try {
+    targetUrl = new URL(rawUrl, self.location.origin);
+  } catch (e) {
+    targetUrl = new URL('/mypage', self.location.origin);
+  }
+
+  const targetRelativeUrl = targetUrl.pathname + targetUrl.search + targetUrl.hash;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      for (let client of windowClients) {
-        if (client.url.includes(urlToOpen) && 'focus' in client) {
-          return client.focus();
+      let sameOriginClient = null;
+      for (const client of windowClients) {
+        try {
+          const clientUrl = new URL(client.url);
+          if (clientUrl.origin !== self.location.origin) continue;
+          if (!sameOriginClient) sameOriginClient = client;
+
+          if (clientUrl.pathname === targetUrl.pathname && 'focus' in client) {
+            client.postMessage({
+              type: 'VERA_NOTIFICATION_NAVIGATE',
+              url: targetRelativeUrl,
+              notificationId,
+            });
+            return client.focus();
+          }
+        } catch (e) {
+          // ignore invalid client URL
         }
       }
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
+
+      if (sameOriginClient) {
+        if ('navigate' in sameOriginClient) {
+          return sameOriginClient
+            .navigate(targetUrl.href)
+            .then((navigatedClient) => {
+              const target = navigatedClient || sameOriginClient;
+              return 'focus' in target ? target.focus() : undefined;
+            })
+            .catch(() => ('focus' in sameOriginClient ? sameOriginClient.focus() : undefined));
+        }
+        if ('focus' in sameOriginClient) {
+          return sameOriginClient.focus();
+        }
       }
+
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl.href);
+      }
+      return undefined;
     })
   );
 });
