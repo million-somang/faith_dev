@@ -8,7 +8,7 @@ import { usePomodoroTimer } from './hooks/usePomodoroTimer';
 import { usePortalMessenger } from './hooks/usePortalMessenger';
 import { useTodos } from './hooks/useTodos';
 import { useViewMode } from './hooks/useViewMode';
-import type { MainTab, MobileViewMode, TodoDraftInput } from './types/todo';
+import type { MainTab, TodoDraftInput, WorkspaceView } from './types/todo';
 import {
   formatTodayKoreanLabel,
   getLocalDateString,
@@ -30,9 +30,11 @@ import LegalFooterModal, { type LegalDocType } from './components/LegalFooterMod
 import SplashScreen from './components/SplashScreen';
 import TodoEmptyState from './components/TodoEmptyState';
 import TodoFilterBar from './components/TodoFilterBar';
+import TodoFocusTimerPanel from './components/TodoFocusTimerPanel';
 import TodoItemCard from './components/TodoItemCard';
 import TodoQuickAdd from './components/TodoQuickAdd';
 import TodoReportPanel from './components/TodoReportPanel';
+import TodoWorkspaceNav from './components/TodoWorkspaceNav';
 import TrashDrawerModal from './components/TrashDrawerModal';
 
 declare global {
@@ -49,12 +51,13 @@ export function App() {
 
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<MainTab>('todo');
-  const [mobileViewMode, setMobileViewMode] = useState<MobileViewMode>('board');
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('todo');
   const [showTrashModal, setShowTrashModal] = useState<boolean>(false);
   const [legalDoc, setLegalDoc] = useState<LegalDocType>(null);
   const [toastState, setToastState] = useState<{
     readonly message: string;
     readonly showAllAction?: boolean;
+    readonly showTimerAction?: boolean;
   } | null>(null);
   const [showConfetti, setShowConfetti] = useState<boolean>(false);
   const [localBannerDismissed, setLocalBannerDismissed] = useState<boolean>(false);
@@ -63,13 +66,21 @@ export function App() {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback(
-    (message: string, options?: { readonly showAllAction?: boolean }) => {
-      setToastState({ message, showAllAction: options?.showAllAction });
+    (
+      message: string,
+      options?: { readonly showAllAction?: boolean; readonly showTimerAction?: boolean }
+    ) => {
+      setToastState({
+        message,
+        showAllAction: options?.showAllAction,
+        showTimerAction: options?.showTimerAction,
+      });
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      const hasAction = Boolean(options?.showAllAction || options?.showTimerAction);
       toastTimerRef.current = setTimeout(() => {
         setToastState(null);
         toastTimerRef.current = null;
-      }, options?.showAllAction ? 4200 : 2600);
+      }, hasAction ? 4200 : 2600);
     },
     []
   );
@@ -134,6 +145,24 @@ export function App() {
     [activeItems, pomodoro.pinnedTodoId]
   );
 
+  const timerCandidateTodos = useMemo(() => {
+    const todayStr = getLocalDateString();
+    const todayPending = activeItems.filter((it) => !it.completed && isTodoForToday(it, todayStr));
+    if (todayPending.length > 0) return todayPending.slice(0, 5);
+    return activeItems.filter((it) => !it.completed).slice(0, 5);
+  }, [activeItems]);
+
+  const handleTogglePinTodo = useCallback(
+    (id: string) => {
+      const willPin = pomodoro.pinnedTodoId !== id;
+      pomodoro.togglePinTodo(id);
+      if (willPin) {
+        showToast('집중타이머에 할 일을 고정했습니다.', { showTimerAction: true });
+      }
+    },
+    [pomodoro, showToast]
+  );
+
   // 포털 키보드·단축키 브릿지 수신
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -166,7 +195,7 @@ export function App() {
       if (fromInput) return;
 
       if (key === '/' && activeTab === 'todo') {
-        setMobileViewMode('board');
+        setWorkspaceView('todo');
         setTimeout(() => quickAddInputRef.current?.focus(), 20);
         return;
       }
@@ -494,255 +523,249 @@ export function App() {
             </div>
           )}
 
-          {/* 메인 워크스페이스 (내부 중첩 스크롤 없이 브라우저 단일 스크롤 흐름) */}
+          {/* 메인 워크스페이스 (3단 메뉴: TODO · 보고서 · 집중타이머) */}
           <main className="flex-1 p-2.5 sm:p-4 flex flex-col">
             {activeTab === 'todo' && (
-              <div className="flex-1 flex flex-col md:grid md:grid-cols-12 md:gap-5 md:items-start">
-                {/* 좌측 컬럼 (모바일 1열 전체 / PC 7컬럼) */}
-                <section
-                  aria-label="할 일 정리 워크스페이스"
-                  className={`flex-1 flex flex-col gap-2 md:col-span-7 ${
-                    mobileViewMode === 'report' ? 'hidden md:flex' : 'flex'
-                  }`}
-                >
-                  {/* 1. 슬림 1행 빠른 입력 + 펼침 반복 스케줄러 카드 */}
-                  <TodoQuickAdd inputRef={quickAddInputRef} onAdd={handleAddTodo} />
+              <div className="flex-1 flex flex-col gap-2.5 w-full md:max-w-2xl md:mx-auto">
+                <TodoWorkspaceNav
+                  activeView={workspaceView}
+                  onChangeView={setWorkspaceView}
+                  todayActiveCount={stats.todayActiveCount}
+                  todayCompletionRate={stats.todayCompletionRate}
+                  isTodayAllDone={isTodayAllDone}
+                  pomodoroRunning={pomodoro.isRunning}
+                  pomodoroTime={pomodoro.formattedTime}
+                  pomodoroMode={pomodoro.mode}
+                />
 
-                  {/* 2. 시그니처 화이트 통합 체크리스트 보드 */}
-                  <div className="flex-1 flex flex-col bg-white rounded-2xl border border-[#E7E0D5] shadow-[0_2px_10px_rgba(36,33,29,0.04)] overflow-clip">
-                    {/* 보드 상단 심플 헤더 + 얇은 가로 진행률 바 */}
-                    <div className="px-3.5 pt-3 pb-2.5 border-b border-[#F1ECE3] bg-white space-y-2 shrink-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
-                          <h2 className="text-[15px] sm:text-base font-black text-[#1C1917] tracking-tight">
-                            오늘의 할 일
-                          </h2>
-                          <span className="text-[11px] font-semibold text-[#8E8579]">
-                            {formatTodayKoreanLabel()}
-                          </span>
+                {workspaceView === 'todo' && (
+                  <section
+                    aria-label="할 일 정리 워크스페이스"
+                    className="flex-1 flex flex-col gap-2"
+                  >
+                    {/* 1. 슬림 1행 빠른 입력 + 펼침 반복 스케줄러 카드 */}
+                    <TodoQuickAdd inputRef={quickAddInputRef} onAdd={handleAddTodo} />
+
+                    {/* 2. 시그니처 화이트 통합 체크리스트 보드 */}
+                    <div className="flex-1 flex flex-col bg-white rounded-2xl border border-[#E7E0D5] shadow-[0_2px_10px_rgba(36,33,29,0.04)] overflow-clip">
+                      {/* 보드 상단 심플 헤더 + 얇은 가로 진행률 바 */}
+                      <div className="px-3.5 pt-3 pb-2.5 border-b border-[#F1ECE3] bg-white space-y-2 shrink-0">
+                        <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                          <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
+                            <h2 className="text-[15px] sm:text-base font-black text-[#1C1917] tracking-tight">
+                              오늘의 할 일
+                            </h2>
+                            <span className="text-[11px] font-semibold text-[#8E8579]">
+                              {formatTodayKoreanLabel()}
+                            </span>
+                          </div>
                           {isLoadingRemote && (
                             <span className="text-[10px] font-bold text-indigo-600">동기화 중...</span>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {pomodoro.isRunning && (
-                            <span className="px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-[10px] font-mono font-black text-indigo-700 animate-pulse-ring">
-                              <i className="fas fa-stopwatch mr-1"></i>
-                              {pomodoro.formattedTime}
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => setMobileViewMode('report')}
-                            data-screenshot-click="result"
-                            className="md:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#F2EDE4] border border-[#E5DDD0] text-[11px] font-bold text-[#4D473F] transition-colors cursor-pointer"
+                        <div className="flex items-center gap-2.5">
+                          <svg
+                            viewBox="0 0 100 4"
+                            preserveAspectRatio="none"
+                            className="flex-1 h-1.5 rounded-full overflow-hidden block"
+                            aria-hidden="true"
                           >
-                            <i className="fas fa-chart-pie text-indigo-600 text-[10px]"></i>
-                            <span>리포트</span>
-                          </button>
+                            <rect x="0" y="0" width="100" height="4" rx="2" fill="#EFEAE1" />
+                            <rect
+                              x="0"
+                              y="0"
+                              width={stats.todayCompletionRate}
+                              height="4"
+                              rx="2"
+                              fill={isTodayAllDone ? '#059669' : '#4338CA'}
+                            />
+                          </svg>
+                          <span
+                            className={`text-[11px] font-bold tabular-nums shrink-0 ${
+                              isTodayAllDone ? 'text-emerald-700' : 'text-[#6C655B]'
+                            }`}
+                          >
+                            {isTodayAllDone
+                              ? `오늘 100% 완료 (${stats.todayTotalCount}/${stats.todayTotalCount})`
+                              : `${stats.todayCompletedCount}/${stats.todayTotalCount} 완료 (${stats.todayCompletionRate}%)`}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2.5">
-                        <svg
-                          viewBox="0 0 100 4"
-                          preserveAspectRatio="none"
-                          className="flex-1 h-1.5 rounded-full overflow-hidden block"
-                          aria-hidden="true"
-                        >
-                          <rect x="0" y="0" width="100" height="4" rx="2" fill="#EFEAE1" />
-                          <rect
-                            x="0"
-                            y="0"
-                            width={stats.todayCompletionRate}
-                            height="4"
-                            rx="2"
-                            fill={isTodayAllDone ? '#059669' : '#4338CA'}
-                          />
-                        </svg>
-                        <span
-                          className={`text-[11px] font-bold tabular-nums shrink-0 ${
-                            isTodayAllDone ? 'text-emerald-700' : 'text-[#6C655B]'
-                          }`}
-                        >
-                          {isTodayAllDone
-                            ? `오늘 100% 완료 (${stats.todayTotalCount}/${stats.todayTotalCount})`
-                            : `${stats.todayCompletedCount}/${stats.todayTotalCount} 완료 (${stats.todayCompletionRate}%)`}
-                        </span>
-                      </div>
-                    </div>
+                      {/* 보드 통합 필터 · 정렬 · 검색 바 */}
+                      <TodoFilterBar
+                        filter={filter}
+                        onChangeFilter={setFilter}
+                        activeCount={stats.activeCount}
+                        completedCount={stats.completedCount}
+                        recurringCount={stats.recurringCount}
+                        todayCount={stats.todayTotalCount}
+                        totalCount={stats.totalCount}
+                      />
 
-                    {/* 보드 통합 필터 · 정렬 · 검색 바 */}
-                    <TodoFilterBar
-                      filter={filter}
-                      onChangeFilter={setFilter}
-                      activeCount={stats.activeCount}
-                      completedCount={stats.completedCount}
-                      recurringCount={stats.recurringCount}
-                      todayCount={stats.todayTotalCount}
-                      totalCount={stats.totalCount}
-                    />
-
-                    {/* 메인 할 일 리스트 (단일 시트 + 얇은 구분선) */}
-                    <div className="flex-1 min-h-[260px] md:min-h-[420px] bg-white">
-                      {filter.status === 'today' && (nonTodayTotalCount > 0 || hiddenWorkdayCount > 0) && (
-                        <div className="px-3 pt-2.5 pb-1">
-                          <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
-                            <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
-                              <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
-                              <span className="truncate">
-                                {hiddenWorkdayCount > 0 && stats.upcomingCount === 0
-                                  ? `${nonWorkdayReason ? `${nonWorkdayReason} 휴무 — ` : ''}영업일 반복 ${hiddenWorkdayCount}건은 다음 영업일에 자동 실행됩니다`
-                                  : stats.upcomingCount > 0
-                                    ? `내일 이후 예정 ${stats.upcomingCount}건${nonTodayTotalCount > stats.upcomingCount ? ` 포함 오늘 외 ${nonTodayTotalCount}건` : ''}이 등록되어 있습니다`
-                                    : `오늘 외 할 일 ${nonTodayTotalCount}건이 전체 목록에 있습니다`}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setFilter({ ...filter, status: 'all' })}
-                              className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
-                            >
-                              전체 탭에서 보기 →
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      {filter.status !== 'today' &&
-                        filter.status !== 'recurring' &&
-                        hiddenWorkdayCount > 0 && (
+                      {/* 메인 할 일 리스트 (단일 시트 + 얇은 구분선) */}
+                      <div className="flex-1 min-h-[260px] md:min-h-[420px] bg-white">
+                        {filter.status === 'today' && (nonTodayTotalCount > 0 || hiddenWorkdayCount > 0) && (
                           <div className="px-3 pt-2.5 pb-1">
                             <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
                               <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
                                 <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
                                 <span className="truncate">
-                                  오늘은 {nonWorkdayReason ? `${nonWorkdayReason}(휴무)` : '비영업일'}입니다 · 영업일 반복 {hiddenWorkdayCount}건 다음 영업일 실행 대기 중
+                                  {hiddenWorkdayCount > 0 && stats.upcomingCount === 0
+                                    ? `${nonWorkdayReason ? `${nonWorkdayReason} 휴무 — ` : ''}영업일 반복 ${hiddenWorkdayCount}건은 다음 영업일에 자동 실행됩니다`
+                                    : stats.upcomingCount > 0
+                                      ? `내일 이후 예정 ${stats.upcomingCount}건${nonTodayTotalCount > stats.upcomingCount ? ` 포함 오늘 외 ${nonTodayTotalCount}건` : ''}이 등록되어 있습니다`
+                                      : `오늘 외 할 일 ${nonTodayTotalCount}건이 전체 목록에 있습니다`}
                                 </span>
                               </div>
                               <button
                                 type="button"
-                                onClick={() => setFilter({ ...filter, status: 'today' })}
+                                onClick={() => setFilter({ ...filter, status: 'all' })}
                                 className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
                               >
-                                오늘 할 일만 보기 →
+                                전체 탭에서 보기 →
                               </button>
                             </div>
                           </div>
                         )}
-                      {filteredTodos.length > 0 ? (
-                        <div className="divide-y divide-[#F1ECE3]">
-                          {filteredTodos.map((item, idx) => {
-                            const prevItem = idx > 0 ? filteredTodos[idx - 1] : null;
-                            const nextItem =
-                              idx < filteredTodos.length - 1 ? filteredTodos[idx + 1] : null;
-                            const isFirstInGroup =
-                              !prevItem ||
-                              prevItem.completed !== item.completed ||
-                              prevItem.priority !== item.priority;
-                            const isLastInGroup =
-                              !nextItem ||
-                              nextItem.completed !== item.completed ||
-                              nextItem.priority !== item.priority;
-                            return (
-                              <TodoItemCard
-                                key={item.id}
-                                item={item}
-                                isPinned={pomodoro.pinnedTodoId === item.id}
-                                isTodayView={filter.status === 'today'}
-                                canReorder={canReorder}
-                                isFirst={isFirstInGroup}
-                                isLast={isLastInGroup}
-                                onToggle={handleToggleTodo}
-                                onUpdate={updateTodo}
-                                onSoftDelete={softDeleteTodo}
-                                onMoveOrder={moveTodoOrder}
-                                onTogglePin={pomodoro.togglePinTodo}
-                                onAddSubtask={addSubtask}
-                                onToggleSubtask={toggleSubtask}
-                                onRemoveSubtask={removeSubtask}
-                              />
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="p-3">
-                          <TodoEmptyState
-                            isFiltered={isFiltered}
-                            isTodayView={filter.status === 'today'}
-                            hasSecondaryFilter={hasSecondaryFilter}
-                            totalActiveCount={stats.totalCount}
-                            upcomingCount={stats.upcomingCount}
-                            onResetFilters={resetFilters}
-                            onShowAll={() => setFilter((prev) => ({ ...prev, status: 'all' }))}
-                            onAddRoutine={handleAddRoutine}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 슬림 보드 푸터 (1줄 휴지통 · 정리 · 복사 유틸 바) */}
-                    <div className="px-3 py-2 border-t border-[#F1ECE3] bg-[#FCFBF9] flex items-center justify-between gap-1.5 shrink-0">
-                      <Button
-                        label={`휴지통 (${stats.trashCount})`}
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setShowTrashModal(true)}
-                        icon={<i className="fas fa-box-archive text-amber-600 text-[9px]"></i>}
-                      />
-
-                      <div className="flex items-center gap-1.5">
-                        {stats.completedCount > 0 && (
-                          <Button
-                            label="완료 정리"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                              softDeleteCompleted();
-                              showToast('완료된 1회성 할 일을 휴지통으로 정리했습니다.');
-                            }}
-                          />
+                        {filter.status !== 'today' &&
+                          filter.status !== 'recurring' &&
+                          hiddenWorkdayCount > 0 && (
+                            <div className="px-3 pt-2.5 pb-1">
+                              <div className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200/80 flex items-center justify-between gap-2 text-[11px]">
+                                <div className="flex items-center gap-1.5 min-w-0 text-amber-900 font-bold">
+                                  <i className="fas fa-calendar-clock text-amber-600 text-[11px] shrink-0"></i>
+                                  <span className="truncate">
+                                    오늘은 {nonWorkdayReason ? `${nonWorkdayReason}(휴무)` : '비영업일'}입니다 · 영업일 반복 {hiddenWorkdayCount}건 다음 영업일 실행 대기 중
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setFilter({ ...filter, status: 'today' })}
+                                  className="text-[10px] font-black text-indigo-700 hover:underline shrink-0 cursor-pointer"
+                                >
+                                  오늘 할 일만 보기 →
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        {filteredTodos.length > 0 ? (
+                          <div className="divide-y divide-[#F1ECE3]">
+                            {filteredTodos.map((item, idx) => {
+                              const prevItem = idx > 0 ? filteredTodos[idx - 1] : null;
+                              const nextItem =
+                                idx < filteredTodos.length - 1 ? filteredTodos[idx + 1] : null;
+                              const isFirstInGroup =
+                                !prevItem ||
+                                prevItem.completed !== item.completed ||
+                                prevItem.priority !== item.priority;
+                              const isLastInGroup =
+                                !nextItem ||
+                                nextItem.completed !== item.completed ||
+                                nextItem.priority !== item.priority;
+                              return (
+                                <TodoItemCard
+                                  key={item.id}
+                                  item={item}
+                                  isPinned={pomodoro.pinnedTodoId === item.id}
+                                  isTodayView={filter.status === 'today'}
+                                  canReorder={canReorder}
+                                  isFirst={isFirstInGroup}
+                                  isLast={isLastInGroup}
+                                  onToggle={handleToggleTodo}
+                                  onUpdate={updateTodo}
+                                  onSoftDelete={softDeleteTodo}
+                                  onMoveOrder={moveTodoOrder}
+                                  onTogglePin={handleTogglePinTodo}
+                                  onAddSubtask={addSubtask}
+                                  onToggleSubtask={toggleSubtask}
+                                  onRemoveSubtask={removeSubtask}
+                                />
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="p-3">
+                            <TodoEmptyState
+                              isFiltered={isFiltered}
+                              isTodayView={filter.status === 'today'}
+                              hasSecondaryFilter={hasSecondaryFilter}
+                              totalActiveCount={stats.totalCount}
+                              upcomingCount={stats.upcomingCount}
+                              onResetFilters={resetFilters}
+                              onShowAll={() => setFilter((prev) => ({ ...prev, status: 'all' }))}
+                              onAddRoutine={handleAddRoutine}
+                            />
+                          </div>
                         )}
+                      </div>
+
+                      {/* 슬림 보드 푸터 (1줄 휴지통 · 정리 · 복사 유틸 바) */}
+                      <div className="px-3 py-2 border-t border-[#F1ECE3] bg-[#FCFBF9] flex items-center justify-between gap-1.5 shrink-0">
                         <Button
-                          label="복사"
+                          label={`휴지통 (${stats.trashCount})`}
                           variant="secondary"
                           size="sm"
-                          onClick={handleCopyReport}
-                          icon={<i className="fas fa-copy text-[9px] text-indigo-600"></i>}
+                          onClick={() => setShowTrashModal(true)}
+                          icon={<i className="fas fa-box-archive text-amber-600 text-[9px]"></i>}
                         />
+
+                        <div className="flex items-center gap-1.5">
+                          {stats.completedCount > 0 && (
+                            <Button
+                              label="완료 정리"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                softDeleteCompleted();
+                                showToast('완료된 1회성 할 일을 휴지통으로 정리했습니다.');
+                              }}
+                            />
+                          )}
+                          <Button
+                            label="복사"
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleCopyReport}
+                            icon={<i className="fas fa-copy text-[9px] text-indigo-600"></i>}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </section>
+                  </section>
+                )}
 
-                {/* 우측 컬럼 (모바일 리포트 모드 / PC 5컬럼 톤다운 보조 영역) */}
-                <div
-                  className={`md:col-span-5 md:bg-[#F3EDE3]/80 md:p-2 md:rounded-2xl md:border md:border-[#E5DDD0]/80 ${
-                    mobileViewMode === 'report' ? 'block' : 'hidden md:block'
-                  }`}
-                >
+                {workspaceView === 'report' && (
                   <TodoReportPanel
                     stats={stats}
-                    pinnedTodo={pinnedTodo}
-                    pomodoroMode={pomodoro.mode}
-                    pomodoroTime={pomodoro.formattedTime}
-                    pomodoroPercent={pomodoro.elapsedPercent}
-                    pomodoroRunning={pomodoro.isRunning}
-                    pomodoroSessions={pomodoro.completedSessions}
                     isAuthenticated={isAuthenticated}
-                    onTogglePomodoroRun={pomodoro.toggleRun}
-                    onResetPomodoro={pomodoro.resetTimer}
-                    onSwitchPomodoroMode={pomodoro.switchMode}
-                    onClearPin={pomodoro.clearPin}
-                    onCompletePinned={handleToggleTodo}
                     onCopyReport={handleCopyReport}
                     onDownloadMarkdown={handleDownloadMarkdown}
                     onDownloadText={handleDownloadText}
                     onDownloadBackupJson={handleDownloadBackupJson}
                     onImportBackupJson={handleImportBackupJson}
-                    onBackToBoard={() => setMobileViewMode('board')}
                   />
-                </div>
+                )}
+
+                {workspaceView === 'timer' && (
+                  <TodoFocusTimerPanel
+                    mode={pomodoro.mode}
+                    formattedTime={pomodoro.formattedTime}
+                    elapsedPercent={pomodoro.elapsedPercent}
+                    isRunning={pomodoro.isRunning}
+                    completedSessions={pomodoro.completedSessions}
+                    pinnedTodo={pinnedTodo}
+                    candidateTodos={timerCandidateTodos}
+                    onToggleRun={pomodoro.toggleRun}
+                    onReset={pomodoro.resetTimer}
+                    onSwitchMode={pomodoro.switchMode}
+                    onPinTodo={pomodoro.togglePinTodo}
+                    onClearPin={pomodoro.clearPin}
+                    onCompletePinned={handleToggleTodo}
+                    onGoToTodo={() => setWorkspaceView('todo')}
+                  />
+                )}
               </div>
             )}
 
@@ -819,6 +842,18 @@ export function App() {
                 className="px-2 py-0.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-[11px] font-black shrink-0 cursor-pointer"
               >
                 전체 보기
+              </button>
+            )}
+            {toastState.showTimerAction && (
+              <button
+                type="button"
+                onClick={() => {
+                  setWorkspaceView('timer');
+                  setToastState(null);
+                }}
+                className="px-2 py-0.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-[11px] font-black shrink-0 cursor-pointer"
+              >
+                타이머 보기
               </button>
             )}
           </div>

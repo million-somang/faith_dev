@@ -12,7 +12,7 @@ export type TodoSortKey = 'manual' | 'priority' | 'dueDate' | 'createdAt';
 
 export type MainTab = 'todo' | 'howto' | 'faq';
 
-export type MobileViewMode = 'board' | 'report';
+export type WorkspaceView = 'todo' | 'report' | 'timer';
 
 export interface TodoSubtask {
   readonly id: string;
