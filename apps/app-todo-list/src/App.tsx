@@ -97,6 +97,7 @@ export function App() {
     activeItems,
     filteredTodos,
     trashItems,
+    completionLogs,
     stats,
     hiddenWorkdayCount,
     nonWorkdayReason,
@@ -743,6 +744,9 @@ export function App() {
                 {workspaceView === 'report' && (
                   <TodoReportPanel
                     stats={stats}
+                    activeItems={activeItems}
+                    completionLogs={completionLogs}
+                    pomodoroSessions={pomodoro.completedSessions}
                     isAuthenticated={isAuthenticated}
                     onCopyReport={handleCopyReport}
                     onDownloadMarkdown={handleDownloadMarkdown}

@@ -1,4 +1,4 @@
-import type { TodoDraftInput, TodoItem, TodoPatchInput } from '../types/todo';
+import type { TodoCompletionLog, TodoDraftInput, TodoItem, TodoPatchInput } from '../types/todo';
 import { getLocalTodayDateStr } from '../utils/recurrence';
 
 const TODO_SYNC_CHANNEL_NAME = 'veranex_todo_sync';
@@ -173,5 +173,23 @@ export const todoApi = {
       method: 'POST',
       body: JSON.stringify({ items, date }),
     });
+  },
+
+  async listCompletionLogs(days = 365): Promise<TodoCompletionLog[]> {
+    const safeDays = Math.min(1095, Math.max(1, Math.round(days)));
+    const data = await requestApi<{
+      logs: Array<{
+        id: number | string;
+        todoId: string;
+        periodKey: string;
+        completedAt: string;
+      }>;
+    }>(`/api/todos/completion-logs?days=${safeDays}`, { method: 'GET' });
+    return (data.logs || []).map((row) => ({
+      id: String(row.id),
+      todoId: row.todoId,
+      periodKey: row.periodKey,
+      completedAt: row.completedAt,
+    }));
   },
 };

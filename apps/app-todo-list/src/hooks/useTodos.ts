@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   PRIORITY_MAP,
+  TODO_COMPLETION_LOGS_KEY,
   TODO_MAX_ITEMS,
   TODO_MAX_SUBTASKS,
   TODO_MIGRATED_MARKER_KEY,
@@ -13,6 +14,7 @@ import {
 } from '../services/todoApi';
 import type {
   StoredTodoEnvelope,
+  TodoCompletionLog,
   TodoDraftInput,
   TodoFilterState,
   TodoItem,
@@ -86,6 +88,37 @@ function persistLocalTodos(items: readonly TodoItem[]): boolean {
   return ok;
 }
 
+function readStoredCompletionLogs(): TodoCompletionLog[] {
+  const raw = safeStorage.get<unknown>(TODO_COMPLETION_LOGS_KEY, []);
+  if (!Array.isArray(raw)) return [];
+  const result: TodoCompletionLog[] = [];
+  for (let i = 0; i < raw.length && result.length < 2000; i += 1) {
+    const entry = raw[i];
+    if (!entry || typeof entry !== 'object') continue;
+    const obj = entry as Record<string, unknown>;
+    if (
+      typeof obj.id === 'string' &&
+      typeof obj.todoId === 'string' &&
+      typeof obj.periodKey === 'string' &&
+      typeof obj.completedAt === 'string' &&
+      obj.todoId.trim() &&
+      obj.completedAt.trim()
+    ) {
+      result.push({
+        id: obj.id,
+        todoId: obj.todoId,
+        periodKey: obj.periodKey,
+        completedAt: obj.completedAt,
+      });
+    }
+  }
+  return result;
+}
+
+function persistLocalCompletionLogs(logs: readonly TodoCompletionLog[]): void {
+  safeStorage.set(TODO_COMPLETION_LOGS_KEY, logs.slice(0, 2000));
+}
+
 interface UseTodosOptions {
   readonly isAuthenticated: boolean;
   readonly isCheckingAuth: boolean;
@@ -96,6 +129,9 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
   const [items, setItems] = useState<TodoItem[]>(() => readStoredTodos());
   const itemsRef = useRef<TodoItem[]>(items);
   itemsRef.current = items;
+  const [completionLogs, setCompletionLogs] = useState<TodoCompletionLog[]>(() =>
+    readStoredCompletionLogs()
+  );
 
   const [filter, setFilter] = useState<TodoFilterState>(DEFAULT_FILTER);
   const [lastDeletedItem, setLastDeletedItem] = useState<TodoItem | null>(null);
@@ -121,10 +157,20 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
     setIsLoadingRemote(true);
     try {
       const todayStr = getLocalTodayDateStr();
-      const res = await todoApi.list(true, todayStr);
+      const [listResult, logsResult] = await Promise.allSettled([
+        todoApi.list(true, todayStr),
+        todoApi.listCompletionLogs(365),
+      ]);
+      if (listResult.status === 'rejected') {
+        throw listResult.reason;
+      }
+      const res = listResult.value;
       const merged = [...res.items, ...res.trash];
       itemsRef.current = merged;
       setItems(merged);
+      if (logsResult.status === 'fulfilled') {
+        setCompletionLogs(logsResult.value);
+      }
       setSyncError(null);
     } catch (err) {
       setSyncError(err instanceof Error ? err.message : 'DB 동기화 중 오류가 발생했습니다.');
@@ -138,6 +184,7 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
     const next = readStoredTodos().map((item) => hydrateTodoOccurrence(item, todayStr));
     itemsRef.current = next;
     setItems(next);
+    setCompletionLogs(readStoredCompletionLogs());
   }, []);
 
   // 인증 상태 전환 시 DB 또는 로컬에서 초기 로드
@@ -358,6 +405,33 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
       itemsRef.current = updatedNext;
       setItems(updatedNext);
 
+      const logPeriodKey =
+        target.recurrence.type === 'none'
+          ? todayStr
+          : target.occurrence.currentPeriodKey || todayStr;
+
+      setCompletionLogs((prevLogs) => {
+        const nextLogs = nextDone
+          ? [
+              {
+                id: createUniqueId('log'),
+                todoId: id,
+                periodKey: logPeriodKey,
+                completedAt: nowIso,
+              },
+              ...prevLogs.filter(
+                (entry) => !(entry.todoId === id && entry.periodKey === logPeriodKey)
+              ),
+            ]
+          : prevLogs.filter(
+              (entry) => !(entry.todoId === id && entry.periodKey === logPeriodKey)
+            );
+        if (!isAuthenticated) {
+          persistLocalCompletionLogs(nextLogs);
+        }
+        return nextLogs;
+      });
+
       if (!isAuthenticated) {
         const saved = persistLocalTodos(updatedNext);
         setStorageWarning(!saved);
@@ -370,6 +444,7 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
             setItems(reconciled);
             setSyncError(null);
             broadcastTodoSync();
+            void todoApi.listCompletionLogs(365).then(setCompletionLogs).catch(() => {});
           } catch (err) {
             setSyncError(err instanceof Error ? err.message : '완료 상태 저장에 실패했습니다.');
             void refreshFromDb();
@@ -952,6 +1027,7 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
     activeItems,
     filteredTodos,
     trashItems,
+    completionLogs,
     stats,
     visibleTotalCount,
     visibleActiveCount,

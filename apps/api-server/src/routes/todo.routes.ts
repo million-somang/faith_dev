@@ -12,6 +12,7 @@ todoRoutes.use('/api/todos', requireAuth);
 todoRoutes.use('/api/todos/*', requireAuth);
 
 todoRoutes.get('/api/todos', TodoController.list);
+todoRoutes.get('/api/todos/completion-logs', TodoController.listCompletionLogs);
 todoRoutes.post('/api/todos', TodoController.create);
 todoRoutes.post('/api/todos/restore-all', TodoController.restoreAll);
 todoRoutes.post('/api/todos/soft-delete-completed', TodoController.softDeleteCompleted);

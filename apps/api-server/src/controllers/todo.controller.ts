@@ -387,4 +387,26 @@ export class TodoController {
       return handleControllerError(c, err, '할 일 백업/로컬 이관에 실패했습니다.');
     }
   }
+
+  static async listCompletionLogs(c: Context) {
+    try {
+      const userId = getAuthUserId(c);
+      if (!userId) {
+        return c.json({ success: false, error: { code: 401, message: '로그인이 필요합니다.' } }, 401);
+      }
+      const rawDays = c.req.query('days');
+      const parsedDays = rawDays !== undefined ? Number(rawDays) : 365;
+      if (rawDays !== undefined && (!Number.isFinite(parsedDays) || parsedDays <= 0)) {
+        return c.json(
+          { success: false, error: { code: 400, message: 'days 파라미터는 양의 정수여야 합니다.' } },
+          400
+        );
+      }
+      const days = Math.min(1095, Math.max(1, Math.round(parsedDays)));
+      const logs = await TodoService.listCompletionLogs(userId, days);
+      return c.json({ success: true, data: { logs } });
+    } catch (err) {
+      return handleControllerError(c, err, '완료 이력 조회에 실패했습니다.');
+    }
+  }
 }

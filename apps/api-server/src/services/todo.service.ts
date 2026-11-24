@@ -42,6 +42,13 @@ export interface TodoItemDto {
   readonly updatedAt: string;
 }
 
+export interface TodoCompletionLogDto {
+  readonly id: number;
+  readonly todoId: string;
+  readonly periodKey: string;
+  readonly completedAt: string;
+}
+
 export interface CreateTodoInput {
   readonly title: string;
   readonly memo?: string;
@@ -858,5 +865,34 @@ export class TodoService {
       items: listed.items,
       trash: listed.trash,
     };
+  }
+
+  static async listCompletionLogs(userId: number, days = 365): Promise<TodoCompletionLogDto[]> {
+    await this.ensureTables();
+    const safeDays = Math.min(1095, Math.max(1, Math.round(days)));
+    const cutoffIso = new Date(Date.now() - safeDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const res = await pool.query(
+      `SELECT id, todo_id, period_key, completed_at
+       FROM todo_completion_logs
+       WHERE user_id = $1 AND is_deleted = 0 AND completed_at >= $2
+       ORDER BY completed_at DESC
+       LIMIT 2000`,
+      [userId, cutoffIso]
+    );
+
+    return (
+      res.rows as Array<{
+        id: number;
+        todo_id: string;
+        period_key: string;
+        completed_at: string;
+      }>
+    ).map((row) => ({
+      id: Number(row.id) || 0,
+      todoId: String(row.todo_id),
+      periodKey: String(row.period_key),
+      completedAt: String(row.completed_at),
+    }));
   }
 }

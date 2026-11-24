@@ -14,6 +14,110 @@ export type MainTab = 'todo' | 'howto' | 'faq';
 
 export type WorkspaceView = 'todo' | 'report' | 'timer';
 
+export type ReportPeriod = 'today' | 'week' | 'month' | 'all';
+
+export interface TodoCompletionLog {
+  readonly id: string;
+  readonly todoId: string;
+  readonly periodKey: string;
+  readonly completedAt: string;
+}
+
+export type ReportGradeCode = 'START' | 'S+' | 'S' | 'A' | 'B' | 'C';
+
+export interface ReportGradeInfo {
+  readonly grade: ReportGradeCode;
+  readonly title: string;
+  readonly comment: string;
+  readonly badgeClass: string;
+}
+
+export interface ReportAchievement {
+  readonly id: string;
+  readonly title: string;
+  readonly desc: string;
+  readonly iconClass: string;
+  readonly unlocked: boolean;
+  readonly progressLabel: string;
+}
+
+export interface PeriodDailyBar {
+  readonly dateStr: string;
+  readonly label: string;
+  readonly count: number;
+  readonly isToday: boolean;
+}
+
+export interface MonthCalendarCell {
+  readonly day: number | null;
+  readonly dateStr: string | null;
+  readonly count: number;
+  readonly level: 0 | 1 | 2 | 3;
+  readonly isToday: boolean;
+}
+
+export interface WeekChunkBar {
+  readonly weekIndex: number;
+  readonly label: string;
+  readonly count: number;
+}
+
+export interface TimeSlotBucket {
+  readonly key: 'morning' | 'afternoon' | 'evening';
+  readonly label: string;
+  readonly rangeLabel: string;
+  readonly count: number;
+  readonly percent: number;
+}
+
+export interface RoutineSincerityItem {
+  readonly id: string;
+  readonly title: string;
+  readonly category: TodoCategory;
+  readonly summaryLabel: string;
+  readonly streakCount: number;
+  readonly completedToday: boolean;
+}
+
+export interface CategoryInsightSummary {
+  readonly bestCategory: {
+    readonly category: TodoCategory;
+    readonly rate: number;
+    readonly completed: number;
+    readonly total: number;
+  } | null;
+  readonly focusCategory: {
+    readonly category: TodoCategory;
+    readonly remaining: number;
+    readonly total: number;
+  } | null;
+}
+
+export interface TodoReportInsights {
+  readonly todayTimeSlots: readonly TimeSlotBucket[];
+  readonly todayLoggedCount: number;
+  readonly weekBars: readonly PeriodDailyBar[];
+  readonly weekTotalCompleted: number;
+  readonly weekActiveDays: number;
+  readonly weekDailyAvg: string;
+  readonly weekBestDay: { readonly label: string; readonly count: number } | null;
+  readonly monthLabel: string;
+  readonly monthCells: readonly MonthCalendarCell[];
+  readonly monthWeekBars: readonly WeekChunkBar[];
+  readonly monthTotalCompleted: number;
+  readonly monthActiveDays: number;
+  readonly monthMaxDaily: number;
+  readonly allTotalCompletions: number;
+  readonly allActiveDays: number;
+  readonly allMaxStreak: number;
+  readonly allPomodoroSessions: number;
+  readonly topRoutines: readonly RoutineSincerityItem[];
+  readonly categoryInsights: CategoryInsightSummary;
+  readonly gradeByPeriod: Record<ReportPeriod, ReportGradeInfo>;
+  readonly achievements: readonly ReportAchievement[];
+  readonly unlockedAchievementCount: number;
+}
+
 export interface TodoSubtask {
   readonly id: string;
   readonly title: string;

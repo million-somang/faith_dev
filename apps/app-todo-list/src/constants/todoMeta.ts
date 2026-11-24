@@ -1,6 +1,7 @@
 import type { RecurrenceType, TodoCategory, TodoPriority, TodoRecurrenceRule } from '../types/todo';
 
 export const TODO_STORAGE_KEY = 'veranex_todo_planner_v1';
+export const TODO_COMPLETION_LOGS_KEY = 'veranex_todo_completion_logs_v1';
 export const TODO_MIGRATED_MARKER_KEY = 'veranex_todo_db_migrated_v1';
 export const TODO_POMODORO_STATS_KEY = 'veranex_todo_pomodoro_v1';
 export const TODO_POMODORO_SETTINGS_KEY = 'veranex_todo_pomodoro_settings_v1';
