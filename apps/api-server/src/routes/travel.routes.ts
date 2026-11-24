@@ -846,6 +846,7 @@ const handleCreateTravel = async (c: any) => {
             invalidateTravelCache();
             SeoService.invalidateSitemapCache();
             if (newId && content.trim().length >= 800) {
+                await SeoService.upsertTravelSitemapEntry(Number(newId), finalPublishedAt);
                 SeoService.queueIndexNowUrl(`https://veranex.app/entertainment/travel/${newId}`);
             }
         } catch (counterErr) {

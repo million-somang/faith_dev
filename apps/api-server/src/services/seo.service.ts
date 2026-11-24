@@ -71,9 +71,31 @@ export class SeoService {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
         `);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS seo_travel_hq_index (
+                travel_id INTEGER PRIMARY KEY,
+                published_at TEXT,
+                updated_at TEXT
+            );
+        `);
         await pool
             .query(`CREATE INDEX IF NOT EXISTS idx_seo_indexnow_created ON seo_indexnow_logs(created_at DESC);`)
             .catch(() => {});
+    }
+
+    static async upsertTravelSitemapEntry(travelId: number, publishedAt?: string | null): Promise<void> {
+        if (!Number.isInteger(travelId) || travelId <= 0) return;
+        await this.ensureTables();
+        const isoPub = toIsoOrNull(publishedAt) || new Date().toISOString();
+        const isoNow = new Date().toISOString();
+        await pool.query(
+            `INSERT INTO seo_travel_hq_index (travel_id, published_at, updated_at)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (travel_id) DO UPDATE SET
+                published_at = excluded.published_at,
+                updated_at = excluded.updated_at`,
+            [travelId, isoPub, isoNow]
+        );
     }
 
     static getIndexNowKey(): string {
@@ -100,6 +122,7 @@ export class SeoService {
     }
 
     static async getSitemapIndexMeta(): Promise<SitemapIndexMeta> {
+        await this.ensureTables();
         const cacheKey = 'sitemap-index-meta';
         const cached = this.getCached<SitemapIndexMeta>(cacheKey);
         if (cached) return cached;
@@ -107,9 +130,7 @@ export class SeoService {
         const [travelRes, newsRes] = await Promise.all([
             pool.query(
                 `SELECT COUNT(*) AS cnt, MAX(published_at) AS max_pub
-                 FROM travel_articles
-                 WHERE hidden = 0
-                   AND LENGTH(content) >= 800`
+                 FROM seo_travel_hq_index`
             ),
             pool.query(
                 `SELECT COUNT(*) AS cnt, MAX(created_at) AS max_created
@@ -141,6 +162,7 @@ export class SeoService {
         limit: number;
         items: TravelSitemapRow[];
     }> {
+        await this.ensureTables();
         const safePage = Number.isInteger(page) && page >= 1 ? page : 1;
         const safeLimit = Math.max(1, Math.min(TRAVEL_SITEMAP_CHUNK_SIZE, Math.floor(limit)));
         const cacheKey = `travel-chunk:${safePage}:${safeLimit}`;
@@ -149,11 +171,9 @@ export class SeoService {
 
         const offset = (safePage - 1) * safeLimit;
         const res = await pool.query(
-            `SELECT id, published_at, updated_at
-             FROM travel_articles
-             WHERE hidden = 0
-               AND LENGTH(content) >= 800
-             ORDER BY id DESC
+            `SELECT travel_id AS id, published_at, updated_at
+             FROM seo_travel_hq_index
+             ORDER BY travel_id DESC
              LIMIT $1 OFFSET $2`,
             [safeLimit, offset]
         );
@@ -203,17 +223,19 @@ export class SeoService {
     }
 
     static async getTravelRssItems(limit = 100): Promise<TravelRssItem[]> {
+        await this.ensureTables();
         const safeLimit = Math.max(1, Math.min(200, Math.floor(limit)));
         const cacheKey = `travel-rss:${safeLimit}`;
         const cached = this.getCached<TravelRssItem[]>(cacheKey);
         if (cached) return cached;
 
         const res = await pool.query(
-            `SELECT id, title, destination, region, province, city, category, summary, ai_summary, author, published_at, created_at
-             FROM travel_articles
-             WHERE hidden = 0
-               AND LENGTH(content) >= 800
-             ORDER BY id DESC
+            `SELECT t.id, t.title, t.destination, t.region, t.province, t.city, t.category,
+                    t.summary, t.ai_summary, t.author, t.published_at, t.created_at
+             FROM seo_travel_hq_index s
+             JOIN travel_articles t ON t.id = s.travel_id
+             WHERE t.hidden = 0
+             ORDER BY s.travel_id DESC
              LIMIT $1`,
             [safeLimit]
         );
