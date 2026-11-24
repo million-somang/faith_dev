@@ -18,7 +18,7 @@ export const revalidate = 0;
 export const metadata: Metadata = {
   title: 'VERA (베라) - 실시간 뉴스 브리핑 · 지식 가이드 · 스마트 생활도구 · 무료 미니게임 포털',
   description:
-    'VERA(베라)에서 실시간 AI 팩트 브리핑 뉴스, 25편의 고품질 지식 가이드 & 전문 칼럼(금융·재테크, 명리학·사주, 웹소설 작법, IT·알고리즘), 퇴직금·배당세·DSR·이미지 리사이즈 등 스마트 생활도구와 무료 미니게임(베라장기, 오목, 베라 플라이트, 스도쿠)을 한곳에서 만나보세요.',
+    'VERA(베라)에서 실시간 AI 팩트 브리핑 뉴스, 25편의 전문 지식 가이드, 퇴직금·DSR·스마트 투두 등 생활도구와 무료 미니게임·정통 사주 만세력을 한곳에서 만나보세요.',
   keywords: [
     'VERA',
     '베라',
@@ -43,9 +43,26 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'VERA (베라) - 실시간 뉴스 · 지식 가이드 · 스마트 생활도구 · 미니게임 통합 포털',
     description:
-      '실시간 팩트 브리핑 뉴스, 25편의 전문 지식 칼럼, 14종 스마트 계산기·도구, 무료 미니게임과 정통 만세력을 한곳에서.',
+      '실시간 팩트 브리핑 뉴스, 25편의 전문 지식 칼럼, 16종 스마트 계산기·도구, 무료 미니게임과 정통 만세력을 한곳에서.',
     url: 'https://veranex.app',
     type: 'website',
+    locale: 'ko_KR',
+    siteName: 'VERA (베라)',
+    images: [
+      {
+        url: '/og-default.png',
+        width: 1200,
+        height: 630,
+        alt: 'VERA (베라) 통합 라이프 포털',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'VERA (베라) - 실시간 뉴스 · 지식 가이드 · 스마트 생활도구 · 미니게임 통합 포털',
+    description:
+      '실시간 팩트 브리핑 뉴스, 25편의 전문 지식 칼럼, 16종 스마트 계산기·도구, 무료 미니게임과 정통 만세력을 한곳에서.',
+    images: ['/og-default.png'],
   },
 };
 

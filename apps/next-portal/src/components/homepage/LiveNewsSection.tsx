@@ -157,7 +157,7 @@ export const LiveNewsSection: React.FC<LiveNewsSectionProps> = ({ initialNews })
                     {safeThumbnail && (
                       <img
                         src={safeThumbnail}
-                        alt=""
+                        alt={displayTitle || '뉴스 썸네일'}
                         loading="lazy"
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {

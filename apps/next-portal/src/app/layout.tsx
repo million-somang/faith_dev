@@ -64,10 +64,10 @@ export const metadata: Metadata = {
     locale: "ko_KR",
     images: [
       {
-        url: "/logo-512.png",
-        width: 512,
-        height: 512,
-        alt: "VERA 로고",
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "VERA (베라) 통합 라이프 포털",
       },
     ],
   },
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "VERA - 지식 가이드, 미니게임, 생활도구 포털",
     description: "검증된 지식 가이드, 미니게임, 생활도구를 한곳에서.",
-    images: ["/logo-512.png"],
+    images: ["/og-default.png"],
   },
 };
 

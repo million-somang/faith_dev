@@ -43,5 +43,39 @@ export default async function NewsPage() {
     fetchInitialHotNewsServer(),
   ]);
 
-  return <NewsHubClient initialNews={initialNews} initialHotNews={initialHotNews} />;
+  const newsJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: '실시간 뉴스 & AI 팩트 브리핑 | VERA',
+    description:
+      '정치, 경제, IT/과학, 증시 주요 뉴스와 핵심 팩트를 한눈에 확인하는 VERA 실시간 뉴스 허브입니다.',
+    url: 'https://veranex.app/news',
+    inLanguage: 'ko-KR',
+    isPartOf: {
+      '@type': 'WebSite',
+      '@id': 'https://veranex.app/#website',
+      url: 'https://veranex.app',
+      name: 'VERA (베라)',
+    },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: initialNews.length,
+      itemListElement: initialNews.slice(0, 10).map((item, idx) => ({
+        '@type': 'ListItem',
+        position: idx + 1,
+        name: String(item.title || `뉴스 ${idx + 1}`),
+        url: `https://veranex.app/news/${item.news_id || item.id}`,
+      })),
+    },
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(newsJsonLd) }}
+      />
+      <NewsHubClient initialNews={initialNews} initialHotNews={initialHotNews} />
+    </>
+  );
 }
