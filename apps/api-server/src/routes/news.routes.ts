@@ -15,6 +15,7 @@ import { requireAuth, optionalAuth, checkSession, SessionUser } from '../middlew
 import { requireAdmin } from './admin.routes.js';
 import { getActorLabel, logActivity, logApiError } from '../middleware/activityLogger.js';
 import { bodyLimit } from 'hono/body-limit';
+import { SeoService } from '../services/seo.service.js';
 
 const news = new Hono<{ Variables: { user: SessionUser | null; errorLogged?: boolean } }>();
 
@@ -796,6 +797,15 @@ const handleCreateNewsApi = async (c: any) => {
         const insertedId = newNews?.id || (result as any).lastInsertRowid || (result as any).insertId || Date.now();
         const insertedTitle = newNews?.title || title.trim();
         const insertedCategory = newNews?.category || normalizedCategory;
+
+        try {
+            SeoService.invalidateSitemapCache();
+            if (insertedId) {
+                SeoService.queueIndexNowUrl(`https://veranex.app/news/${insertedId}`);
+            }
+        } catch (seoErr) {
+            console.warn('[News IndexNow Hook] warning:', seoErr);
+        }
 
         logActivity(
             '📝',

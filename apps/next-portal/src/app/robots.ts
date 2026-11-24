@@ -19,6 +19,32 @@ export default function robots(): MetadataRoute.Robots {
         disallow: '/',
       },
       {
+        userAgent: [
+          'Googlebot',
+          'Yeti',
+          'Bingbot',
+          'Applebot',
+          'GPTBot',
+          'OAI-SearchBot',
+          'ChatGPT-User',
+          'PerplexityBot',
+          'ClaudeBot',
+          'Google-Extended',
+        ],
+        allow: '/',
+        disallow: [
+          '/api/',
+          '/admin',
+          '/admin/',
+          '/mypage',
+          '/mypage/',
+          '/b2b',
+          '/b2b/',
+          '/game/comboy',
+          '/game/sfc',
+        ],
+      },
+      {
         userAgent: '*',
         allow: '/',
         disallow: [

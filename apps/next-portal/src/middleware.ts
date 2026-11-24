@@ -32,6 +32,6 @@ export const config = {
         /*
          * 정적 에셋(_next/static, _next/image, favicon.ico, uploads 등) 및 백엔드 프록시(/api, /app 등) 제외
          */
-        '/((?!api|app|onlinegame|finance|uploads|admin|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|rss.xml).*)'
+        '/((?!api|app|onlinegame|finance|uploads|admin|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|sitemaps|rss.xml|rss-travel.xml|llms.txt|llms-full.txt|indexnow-key.txt).*)'
     ]
 };

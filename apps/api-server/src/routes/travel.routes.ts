@@ -19,6 +19,7 @@ import {
     syncTravelMapCounts,
     adjustTravelCount
 } from '../services/travel-counter.service.js';
+import { SeoService } from '../services/seo.service.js';
 
 export const travelRoutes = new Hono<{ Variables: { user: SessionUser | null; errorLogged?: boolean } }>();
 
@@ -843,6 +844,10 @@ const handleCreateTravel = async (c: any) => {
         try {
             await adjustTravelCount(finalProvince, finalCity, 1);
             invalidateTravelCache();
+            SeoService.invalidateSitemapCache();
+            if (newId && content.trim().length >= 800) {
+                SeoService.queueIndexNowUrl(`https://veranex.app/entertainment/travel/${newId}`);
+            }
         } catch (counterErr) {
             console.error('[Adjust Travel Count Error]', counterErr);
         }

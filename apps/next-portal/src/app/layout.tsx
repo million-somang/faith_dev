@@ -10,6 +10,8 @@ import { DrivePlayerProvider } from "@/context/DrivePlayerContext";
 import { GlobalMiniPlayerBar } from "@/components/mypage/GlobalMiniPlayerBar";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 
+const naverSiteVerification = (process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION || "").trim();
+
 export const viewport: Viewport = {
   themeColor: "#2563eb",
   width: "device-width",
@@ -37,6 +39,21 @@ export const metadata: Metadata = {
   },
   verification: {
     google: "nRmVAkJwTuYV7_y9MRTl4pAJQSPPe1Mws852he0q_Ec",
+    ...(naverSiteVerification
+      ? {
+          other: {
+            "naver-site-verification": naverSiteVerification,
+          },
+        }
+      : {}),
+  },
+  alternates: {
+    types: {
+      "application/rss+xml": [
+        { url: "https://veranex.app/rss.xml", title: "VERA 통합 RSS 피드" },
+        { url: "https://veranex.app/rss-travel.xml", title: "VERA 여행 · 지식 가이드 RSS 피드" },
+      ],
+    },
   },
   openGraph: {
     type: "website",

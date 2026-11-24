@@ -170,6 +170,9 @@ app.route('/', azitGameRoutes);
 import { notificationRoutes } from './routes/notification.routes.js';
 app.route('/api/notifications', notificationRoutes);
 
+import { seoRoutes } from './routes/seo.routes.js';
+app.route('/api/seo', seoRoutes);
+
 // 배너 업로드 이미지 정적 서빙
 app.use('/uploads/*', serveStatic({ root: './public' }));
 
