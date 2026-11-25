@@ -12,17 +12,6 @@ import {
     getGardenPlotWaterStatus,
 } from '@/data/minihomeCatalogData';
 
-function urlBase64ToUint8Array(base64String: string) {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
-
 interface GardenBackdropProps {
     floorTop: { x: number; y: number };
     floorLeft: { x: number; y: number };
@@ -1281,17 +1270,10 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
     isOwner,
     isRainWeather,
     onOpenSeedShop,
-    onOpenWarehouse,
-    onOpenMarket,
-    onOpenNotificationCenter,
-    externalPushSubscribed,
     onWaterPlot,
     onHarvestPlot,
 }) => {
     const [nowMs, setNowMs] = useState<number>(() => Date.now());
-    const [isPushSubscribed, setIsPushSubscribed] = useState<boolean>(false);
-    const [pushLoading, setPushLoading] = useState<boolean>(false);
-    const [pushFeedback, setPushFeedback] = useState<string | null>(null);
     const localNotifiedKeysRef = useRef<Set<string>>(new Set());
 
     // 1초 간격 실시간 타이머 (8시간 물주기 카운트다운 및 알림 즉시 갱신)
@@ -1301,22 +1283,6 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
         }, 1000);
         return () => window.clearInterval(timer);
     }, []);
-
-    // 모바일/웹 푸시 구독 상태 확인 및 서비스 워커 등록
-    useEffect(() => {
-        if (typeof window === 'undefined' || !isOwner) return;
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-            navigator.serviceWorker
-                .register('/sw.js')
-                .catch(() => null)
-                .then(() => navigator.serviceWorker.ready)
-                .then((registration) => registration.pushManager.getSubscription())
-                .then((sub) => {
-                    setIsPushSubscribed(Boolean(sub));
-                })
-                .catch(() => {});
-        }
-    }, [isOwner]);
 
     // 8시간 도래 작물 로컬 브라우저/서비스워커 즉시 알림 (열려있는 동안 쿨타임 만료 시)
     useEffect(() => {
@@ -1353,78 +1319,6 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
         });
     }, [gardenState.plots, nowMs, isOwner]);
 
-    const handleToggleFarmPush = async () => {
-        if (typeof window === 'undefined') return;
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            setPushFeedback('📱 모바일 홈 화면에 앱(PWA)을 추가하거나 푸시 지원 브라우저에서 이용해 주세요.');
-            setTimeout(() => setPushFeedback(null), 4000);
-            return;
-        }
-
-        try {
-            setPushLoading(true);
-            const perm = await Notification.requestPermission();
-            if (perm !== 'granted') {
-                setPushFeedback('⚠️ 브라우저 알림 권한을 허용해야 8시간 물주기 푸시 알림을 받을 수 있습니다.');
-                setTimeout(() => setPushFeedback(null), 4000);
-                return;
-            }
-
-            await navigator.serviceWorker.register('/sw.js').catch(() => null);
-            const registration = await navigator.serviceWorker.ready;
-            let sub = await registration.pushManager.getSubscription();
-
-            if (sub) {
-                await sub.unsubscribe();
-                await fetch('/api/user/push-subscription', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ endpoint: sub.endpoint }),
-                });
-                setIsPushSubscribed(false);
-                setPushFeedback('🔕 아지트 농장 모바일 물주기 푸시 알림이 해제되었습니다.');
-            } else {
-                const keyRes = await fetch('/api/user/push-key', { credentials: 'include' });
-                if (keyRes.status === 401) {
-                    setPushFeedback('🔒 로그인 후 모바일 물주기 푸시 알림을 설정할 수 있습니다.');
-                    setTimeout(() => setPushFeedback(null), 4000);
-                    return;
-                }
-                const keyData = await keyRes.json();
-                if (!keyData?.publicKey) {
-                    throw new Error('VAPID public key load failed');
-                }
-                const convertedKey = urlBase64ToUint8Array(keyData.publicKey);
-                sub = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: convertedKey,
-                });
-
-                const saveRes = await fetch('/api/user/push-subscription', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ subscription: sub.toJSON() }),
-                });
-                if (!saveRes.ok) {
-                    throw new Error('Failed to save push subscription');
-                }
-                setIsPushSubscribed(true);
-                setPushFeedback('🔔 모바일 물주기 푸시 알림 ON! 8시간마다 물 줄 시간이 되면 알려드려요.');
-            }
-        } catch (err) {
-            console.error('Farm push toggle error:', err);
-            setPushFeedback('⚠️ 푸시 알림 설정 중 오류가 발생했습니다. 로그인 상태를 확인해 주세요.');
-        } finally {
-            setPushLoading(false);
-            setTimeout(() => setPushFeedback(null), 4500);
-        }
-    };
-
-    const effectivePushSubscribed =
-        externalPushSubscribed !== undefined ? externalPushSubscribed : isPushSubscribed;
-
     const totalSeeds = Object.values(gardenState.seedCounts || {}).reduce((acc, v) => acc + v, 0);
 
     const waterReadyPlots = gardenState.plots.filter((p) => {
@@ -1435,91 +1329,46 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
     const harvestReadyPlots = gardenState.plots.filter((p) => Boolean(p.cropId) && p.stage >= 3);
 
     return (
-        <div className="w-full mt-2 bg-gradient-to-r from-emerald-950/95 via-slate-900/95 to-emerald-950/95 text-white px-3.5 sm:px-5 py-3.5 rounded-2xl shadow-lg border border-emerald-700/60 space-y-3 shrink-0">
-            {/* 1행: 마당 텃밭 안내 + 모바일 푸시 알림 / 씨앗 상점 / 농장 창고 바로가기 */}
+        <div className="w-full mt-2 rounded-2xl bg-[#f0f4f8] border border-white/85 shadow-[4px_4px_10px_rgba(163,177,198,0.35),-4px_-4px_10px_rgba(255,255,255,0.85)] p-3.5 sm:p-4 space-y-3 shrink-0">
+            {/* 상단 요약 1줄 (중복 버튼 제거, 구역 전용 씨앗 상점 액션만 유지) */}
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[11px]">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[11px] shadow-sm">
                         🌿 마당 텃밭
                     </span>
-                    <span className="px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-200 text-[10px] font-extrabold">
-                        💧 하루 3번 (8시간 간격)
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#e8edf2] border border-white/80 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.35),inset_-1px_-1px_3px_rgba(255,255,255,0.8)] text-sky-700 text-[10px] font-extrabold">
+                        💧 하루 3번 · 8시간 간격
                     </span>
-                    <span className="text-[11px] font-bold text-slate-300">
-                        {isOwner
-                            ? '👆 위 밭을 클릭해 심기·물주기·수확'
-                            : '👀 이웃의 마당 텃밭을 구경 중입니다'}
+                    {isRainWeather && (
+                        <span className="px-2 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-[10px] font-bold">
+                            🌧️ 단비 성장 중
+                        </span>
+                    )}
+                    <span className="text-[11px] font-bold text-[#64748b]">
+                        {isOwner ? '밭·배지 클릭으로 심기·물주기·수확' : '이웃의 마당 텃밭 구경 중'}
                     </span>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
-                    {isRainWeather && (
-                        <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-200 text-[11px] font-bold">
-                            🌧️ 단비가 내려 작물이 싱그럽게 자라요!
-                        </span>
-                    )}
-                    {isOwner && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (onOpenNotificationCenter) {
-                                    onOpenNotificationCenter();
-                                } else {
-                                    handleToggleFarmPush();
-                                }
-                            }}
-                            disabled={!onOpenNotificationCenter && pushLoading}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
-                                effectivePushSubscribed
-                                    ? 'bg-sky-500 hover:bg-sky-400 text-slate-950'
-                                    : 'bg-slate-800 hover:bg-slate-700 text-sky-200 border border-sky-400/50'
-                            }`}
-                            title="모바일(앱 설치 시) 8시간마다 물주기 푸시 알림 받기"
-                        >
-                            <span>{effectivePushSubscribed ? '🔔 물주기 푸시 ON' : '🔕 모바일 물주기 알림 켜기'}</span>
-                        </button>
-                    )}
+                <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+                    <span className="px-2 py-0.5 rounded-full bg-white/90 border border-white text-[#1e293b] text-[10px] font-black font-mono shadow-sm">
+                        🌱 씨앗 {totalSeeds} · 🧺 수확 {gardenState.totalHarvested}
+                    </span>
                     {isOwner && onOpenSeedShop && (
                         <button
                             type="button"
                             onClick={onOpenSeedShop}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                            className="px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black transition-all cursor-pointer inline-flex items-center gap-1 shadow-sm active:scale-95"
                         >
                             <span>🌱 씨앗 상점</span>
-                        </button>
-                    )}
-                    {isOwner && onOpenMarket && (
-                        <button
-                            type="button"
-                            onClick={onOpenMarket}
-                            className="px-2.5 py-1 rounded-lg bg-orange-400 hover:bg-orange-300 text-slate-950 text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
-                        >
-                            <span>💰 작물 판매</span>
-                        </button>
-                    )}
-                    {isOwner && onOpenWarehouse && (
-                        <button
-                            type="button"
-                            onClick={onOpenWarehouse}
-                            className="px-2.5 py-1 rounded-lg bg-amber-400/90 hover:bg-amber-300 text-slate-950 text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
-                        >
-                            <span>🏚️ 농장 창고 ({totalSeeds + gardenState.totalHarvested})</span>
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* 푸시 알림 설정 피드백 메시지 */}
-            {pushFeedback && (
-                <div className="px-3 py-2 rounded-xl bg-sky-950/90 border border-sky-400/50 text-sky-100 text-xs font-bold flex items-center justify-between gap-2">
-                    <span>{pushFeedback}</span>
-                </div>
-            )}
-
-            {/* 완숙 작물 빠른 수확 배너 (개별 밭 원클릭 수확 지원) */}
+            {/* 완숙 작물 빠른 수확 배너 */}
             {isOwner && harvestReadyPlots.length > 0 && (
-                <div className="px-3 py-2 rounded-xl bg-amber-500/20 border border-amber-400/60 flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-black text-amber-200">
+                <div className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-300/80 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                    <span className="text-xs font-black text-amber-900">
                         🧺 수확 가능한 작물이 {harvestReadyPlots.length}곳 있습니다!
                     </span>
                     {onHarvestPlot && (
@@ -1531,7 +1380,7 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                                         key={`quick-harvest-${plot.plotIndex}`}
                                         type="button"
                                         onClick={() => onHarvestPlot(plot.plotIndex)}
-                                        className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black cursor-pointer transition-colors"
+                                        className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black cursor-pointer transition-colors shadow-sm"
                                     >
                                         #{plot.plotIndex + 1} {cropMeta?.emoji || '🌱'} {cropMeta?.shortName || '작물'} 수확
                                     </button>
@@ -1542,14 +1391,12 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                 </div>
             )}
 
-            {/* 8시간 경과 물주기 알림 배너 (개별 밭 원클릭 물주기 지원) */}
+            {/* 8시간 경과 물주기 알림 배너 */}
             {isOwner && waterReadyPlots.length > 0 && (
-                <div className="px-3 py-2 rounded-xl bg-sky-500/20 border border-sky-400/60 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 text-xs font-black text-sky-200">
+                <div className="px-3 py-2 rounded-xl bg-sky-50 border border-sky-300/80 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-sky-900">
                         <span className="animate-bounce">💧</span>
-                        <span>
-                            물주기 알림! 지금 물을 줄 수 있는 밭이 {waterReadyPlots.length}곳 있어요
-                        </span>
+                        <span>물주기 알림! 물을 줄 수 있는 밭이 {waterReadyPlots.length}곳 있어요</span>
                     </div>
                     {onWaterPlot && (
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -1560,7 +1407,7 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                                         key={`quick-water-${plot.plotIndex}`}
                                         type="button"
                                         onClick={() => onWaterPlot(plot.plotIndex)}
-                                        className="px-2.5 py-1 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 text-[11px] font-black cursor-pointer transition-colors"
+                                        className="px-2.5 py-1 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-black cursor-pointer transition-colors shadow-sm"
                                     >
                                         #{plot.plotIndex + 1} {cropMeta?.emoji || '💧'} 물주기
                                     </button>
@@ -1571,42 +1418,44 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                 </div>
             )}
 
-            {/* 3행: 내 아지트 농장 창고 현황 (보유 씨앗 & 수확 작물) */}
-            <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-black text-amber-300 flex items-center gap-1.5">
-                        <span>🏚️ 내 농장 창고 보관 현황</span>
+            {/* 내 농장 창고 현황 (6작물 컴팩트 미니 카드 그리드) */}
+            <div className="rounded-xl bg-[#e8edf2]/80 border border-white/75 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.85)] p-2.5 sm:p-3 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[11px] font-black text-[#1e293b]">
+                        🏚️ 내 농장 창고 현황
                     </span>
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-900/80 border border-emerald-600/50 text-emerald-200 font-extrabold">
-                        🌱 씨앗 {totalSeeds}봉지
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md bg-amber-900/60 border border-amber-500/50 text-amber-200 font-extrabold">
-                        🧺 수확 작물 {gardenState.totalHarvested}개
+                    <span className="text-[10px] font-mono font-bold text-[#64748b]">
+                        씨앗 {totalSeeds}봉지 · 수확 작물 {gardenState.totalHarvested}개
                     </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5">
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
                     {GARDEN_CROP_CATALOG.map((crop) => {
                         const seedCount = gardenState.seedCounts?.[crop.cropId] || 0;
                         const harvestCount = gardenState.harvestCounts?.[crop.cropId] || 0;
+                        const hasAny = seedCount > 0 || harvestCount > 0;
                         return (
-                            <span
+                            <div
                                 key={`warehouse-stat-${crop.cropId}`}
-                                className={`px-2 py-0.5 rounded-lg border font-bold flex items-center gap-1 ${
-                                    seedCount > 0 || harvestCount > 0
-                                        ? 'bg-emerald-900/70 border-emerald-500/50 text-emerald-100'
-                                        : 'bg-slate-800/70 border-slate-700 text-slate-400'
+                                className={`px-2.5 py-1.5 rounded-xl border flex flex-col gap-0.5 transition-all ${
+                                    hasAny
+                                        ? 'bg-white/95 border-white text-[#1e293b] shadow-[2px_2px_5px_rgba(163,177,198,0.3),-2px_-2px_5px_rgba(255,255,255,0.9)]'
+                                        : 'bg-[#e8edf2]/60 border-slate-200/70 text-[#94a3b8]'
                                 }`}
                             >
-                                <span>{crop.emoji}</span>
-                                <span>{crop.shortName}</span>
-                                <span className="text-[10px] text-emerald-300 font-extrabold">
-                                    씨앗 {seedCount}
-                                </span>
-                                <span className="text-slate-500">·</span>
-                                <span className="text-[10px] font-black text-amber-300">
-                                    작물 {harvestCount}
-                                </span>
-                            </span>
+                                <div className="text-[11px] font-black flex items-center gap-1 truncate">
+                                    <span>{crop.emoji}</span>
+                                    <span className="truncate">{crop.shortName}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] font-mono">
+                                    <span className={seedCount > 0 ? 'text-emerald-700 font-black' : 'text-[#94a3b8]'}>
+                                        씨앗 {seedCount}
+                                    </span>
+                                    <span className={harvestCount > 0 ? 'text-amber-600 font-black' : 'text-[#94a3b8]'}>
+                                        작물 {harvestCount}
+                                    </span>
+                                </div>
+                            </div>
                         );
                     })}
                 </div>

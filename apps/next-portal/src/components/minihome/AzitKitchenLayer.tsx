@@ -1275,58 +1275,70 @@ export const AzitKitchenControlPanel: React.FC<AzitKitchenControlPanelProps> = (
     nowMs,
     isActing,
     onClaimCooking,
-    onOpenChefModal,
-    onOpenMarketModal,
-    onGoToCamp,
 }) => {
+    const [hideEmptyItems, setHideEmptyItems] = useState<boolean>(false);
     const readySlots = gameState.kitchenSlots.filter(
         (s) => s.status === 'cooking' && s.endsAtMs !== null && s.endsAtMs <= nowMs
     );
     const totalDishes = Object.values(gameState.dishes).reduce((acc, v) => acc + v, 0);
+    const totalMaterials = Object.values(gameState.materials).reduce((acc, v) => acc + v, 0);
+
+    const sortedMaterials = [...gameState.catalog.materials].sort((a, b) => {
+        const qa = gameState.materials[a.materialId] || 0;
+        const qb = gameState.materials[b.materialId] || 0;
+        return (qb > 0 ? 1 : 0) - (qa > 0 ? 1 : 0) || qb - qa;
+    });
+    const visibleMaterials = hideEmptyItems
+        ? sortedMaterials.filter((m) => (gameState.materials[m.materialId] || 0) > 0)
+        : sortedMaterials;
+
+    const sortedRecipes = [...gameState.catalog.recipes].sort((a, b) => {
+        const qa = gameState.dishes[a.recipeId] || 0;
+        const qb = gameState.dishes[b.recipeId] || 0;
+        return (qb > 0 ? 1 : 0) - (qa > 0 ? 1 : 0) || qb - qa;
+    });
+    const visibleRecipes = hideEmptyItems
+        ? sortedRecipes.filter((r) => (gameState.dishes[r.recipeId] || 0) > 0)
+        : sortedRecipes;
 
     return (
-        <div className="w-full mt-2 bg-gradient-to-r from-orange-950/95 via-slate-900/95 to-amber-950/95 text-white px-3.5 sm:px-5 py-3.5 rounded-2xl shadow-lg border border-orange-700/60 space-y-3 shrink-0">
+        <div className="w-full mt-2 rounded-2xl bg-[#f0f4f8] border border-white/85 shadow-[4px_4px_10px_rgba(163,177,198,0.35),-4px_-4px_10px_rgba(255,255,255,0.85)] p-3.5 sm:p-4 space-y-3 shrink-0">
+            {/* 상단 요약 1줄 (중복 버튼 제거, 구역 상태 + 요약 + 필터 토글) */}
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="px-2.5 py-0.5 rounded-full bg-orange-500 text-slate-950 font-black text-[11px]">
+                    <span className="px-2.5 py-0.5 rounded-full bg-orange-500 text-white font-black text-[11px] shadow-sm">
                         👨‍🍳 아지트 주방
                     </span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[10px] font-extrabold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#e8edf2] border border-white/80 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.35),inset_-1px_-1px_3px_rgba(255,255,255,0.8)] text-[#1e293b] text-[10px] font-extrabold">
                         화구 {gameState.profile.limits.kitchenSlots}/3개 해금
                     </span>
-                    <span className="text-[11px] font-bold text-slate-300">
-                        👆 위 화구를 클릭해 요리를 시작하거나 완성 요리를 수령하세요
+                    <span className="text-[11px] font-bold text-[#64748b]">
+                        위 화구 클릭 시 조리·즉시 수령
                     </span>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+                    <span className="px-2 py-0.5 rounded-full bg-white/90 border border-white text-[#1e293b] text-[10px] font-black font-mono shadow-sm">
+                        🍱 요리 {totalDishes} · 🧪 재료 {totalMaterials}
+                    </span>
                     <button
                         type="button"
-                        onClick={onOpenChefModal}
-                        className="px-2.5 py-1 rounded-lg bg-orange-500 hover:bg-orange-400 text-slate-950 text-[11px] font-black cursor-pointer transition-colors"
+                        onClick={() => setHideEmptyItems((prev) => !prev)}
+                        className={`px-2.5 py-1 rounded-xl border text-[10px] font-extrabold transition-all cursor-pointer ${
+                            hideEmptyItems
+                                ? 'bg-orange-500 text-white border-orange-400 shadow-sm'
+                                : 'bg-[#f0f4f8] hover:bg-white text-[#64748b] hover:text-[#1e293b] border-white/80 shadow-[2px_2px_4px_rgba(163,177,198,0.35),-2px_-2px_4px_rgba(255,255,255,0.9)]'
+                        }`}
                     >
-                        👨‍🍳 요리사 관리 ({gameState.chefs.length}/{gameState.profile.limits.maxChefs})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onOpenMarketModal}
-                        className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black cursor-pointer transition-colors"
-                    >
-                        💰 작물·요리 장터
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onGoToCamp}
-                        className="px-2.5 py-1 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-[11px] font-black cursor-pointer transition-colors"
-                    >
-                        ⚔️ 용병 캠프 →
+                        {hideEmptyItems ? '전체 보기' : '0개 숨기기'}
                     </button>
                 </div>
             </div>
 
+            {/* 완성 요리 즉시 수령 배너 */}
             {readySlots.length > 0 && (
-                <div className="px-3 py-2 rounded-xl bg-amber-500/20 border border-amber-400/60 flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-black text-amber-200">
+                <div className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-300/80 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                    <span className="text-xs font-black text-amber-900">
                         🔔 완성된 요리가 {readySlots.length}개 있습니다!
                     </span>
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -1336,7 +1348,7 @@ export const AzitKitchenControlPanel: React.FC<AzitKitchenControlPanelProps> = (
                                 type="button"
                                 disabled={isActing}
                                 onClick={() => onClaimCooking(slot.slotIndex)}
-                                className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black cursor-pointer disabled:opacity-50"
+                                className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black shadow-sm cursor-pointer disabled:opacity-50 transition-colors"
                             >
                                 #{slot.slotIndex + 1} 화구 즉시 수령
                             </button>
@@ -1345,48 +1357,100 @@ export const AzitKitchenControlPanel: React.FC<AzitKitchenControlPanelProps> = (
                 </div>
             )}
 
-            {/* 보유 완성 요리 & 몬스터 드롭 재료 현황 */}
-            <div className="pt-1 space-y-1.5 text-[11px]">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-black text-amber-300">🍱 보유 요리 · 도시락 ({totalDishes}개)</span>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                        {gameState.catalog.materials.map((mat) => {
+            {/* 섹션 1: 몬스터 드롭 재료 */}
+            <div className="rounded-xl bg-[#e8edf2]/80 border border-white/75 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.85)] p-2.5 sm:p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-black text-[#1e293b] flex items-center gap-1">
+                        <span>🧪 몬스터 드롭 재료</span>
+                        <span className="text-[10px] font-bold text-[#64748b]">(원정 획득)</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-black text-violet-700">
+                        총 {totalMaterials}개
+                    </span>
+                </div>
+
+                {visibleMaterials.length === 0 ? (
+                    <div className="py-2 text-center text-[11px] font-bold text-[#94a3b8]">
+                        보유 중인 드롭 재료가 없습니다. 용병 원정을 통해 획득해 보세요.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5">
+                        {visibleMaterials.map((mat) => {
                             const qty = gameState.materials[mat.materialId] || 0;
+                            const hasStock = qty > 0;
                             return (
-                                <span
+                                <div
                                     key={`mat-chip-${mat.materialId}`}
-                                    className={`px-2 py-0.5 rounded-md border font-bold ${
-                                        qty > 0
-                                            ? 'bg-violet-900/70 border-violet-500/50 text-violet-100'
-                                            : 'bg-slate-800/70 border-slate-700 text-slate-400'
+                                    className={`px-2.5 py-1.5 rounded-xl border flex items-center justify-between gap-1.5 text-[11px] transition-all ${
+                                        hasStock
+                                            ? 'bg-white/95 border-white text-[#1e293b] shadow-[2px_2px_5px_rgba(163,177,198,0.3),-2px_-2px_5px_rgba(255,255,255,0.9)] font-extrabold'
+                                            : 'bg-[#e8edf2]/60 border-slate-200/70 text-[#94a3b8] font-semibold'
                                     }`}
                                 >
-                                    {mat.emoji} {mat.name} {qty}
-                                </span>
+                                    <span className="truncate flex items-center gap-1 min-w-0">
+                                        <span>{mat.emoji}</span>
+                                        <span className="truncate">{mat.name}</span>
+                                    </span>
+                                    <span
+                                        className={`font-mono shrink-0 ${
+                                            hasStock ? 'text-violet-700 font-black' : 'text-[#94a3b8]'
+                                        }`}
+                                    >
+                                        {qty}
+                                    </span>
+                                </div>
                             );
                         })}
                     </div>
+                )}
+            </div>
+
+            {/* 섹션 2: 완성 요리 · 도시락 */}
+            <div className="rounded-xl bg-[#e8edf2]/80 border border-white/75 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.85)] p-2.5 sm:p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-black text-[#1e293b] flex items-center gap-1">
+                        <span>🍱 보유 요리 · 도시락</span>
+                        <span className="text-[10px] font-bold text-[#64748b]">(판매·원정용)</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-black text-orange-700">
+                        총 {totalDishes}개
+                    </span>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
-                    {gameState.catalog.recipes.map((recipe) => {
-                        const qty = gameState.dishes[recipe.recipeId] || 0;
-                        return (
-                            <span
-                                key={`dish-chip-${recipe.recipeId}`}
-                                className={`px-2 py-0.5 rounded-lg border font-bold flex items-center gap-1 ${
-                                    qty > 0
-                                        ? 'bg-orange-900/70 border-orange-500/60 text-orange-100'
-                                        : 'bg-slate-800/60 border-slate-700 text-slate-400'
-                                }`}
-                            >
-                                <span>{recipe.emoji}</span>
-                                <span>{recipe.name}</span>
-                                <span className="text-amber-300 font-mono">×{qty}</span>
-                            </span>
-                        );
-                    })}
-                </div>
+                {visibleRecipes.length === 0 ? (
+                    <div className="py-2 text-center text-[11px] font-bold text-[#94a3b8]">
+                        보유 중인 완성 요리가 없습니다. 위 화구를 클릭해 요리를 만들어 보세요.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        {visibleRecipes.map((recipe) => {
+                            const qty = gameState.dishes[recipe.recipeId] || 0;
+                            const hasStock = qty > 0;
+                            return (
+                                <div
+                                    key={`dish-chip-${recipe.recipeId}`}
+                                    className={`px-2.5 py-1.5 rounded-xl border flex items-center justify-between gap-1.5 text-[11px] transition-all ${
+                                        hasStock
+                                            ? 'bg-white/95 border-white text-[#1e293b] shadow-[2px_2px_5px_rgba(163,177,198,0.3),-2px_-2px_5px_rgba(255,255,255,0.9)] font-extrabold'
+                                            : 'bg-[#e8edf2]/60 border-slate-200/70 text-[#94a3b8] font-semibold'
+                                    }`}
+                                >
+                                    <span className="truncate flex items-center gap-1 min-w-0">
+                                        <span>{recipe.emoji}</span>
+                                        <span className="truncate">{recipe.name}</span>
+                                    </span>
+                                    <span
+                                        className={`font-mono shrink-0 ${
+                                            hasStock ? 'text-orange-600 font-black' : 'text-[#94a3b8]'
+                                        }`}
+                                    >
+                                        ×{qty}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );

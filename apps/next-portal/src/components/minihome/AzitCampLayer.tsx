@@ -954,9 +954,7 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
     nowMs,
     isActing,
     onClaimExpedition,
-    onOpenMercModal,
     onOpenExpeditionModal,
-    onGoToKitchen,
 }) => {
     const totalPower = gameState.mercenaries.reduce((sum, m) => sum + m.power, 0);
     const totalDishes = Object.values(gameState.dishes).reduce((sum, v) => sum + v, 0);
@@ -968,57 +966,44 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
     };
 
     return (
-        <div className="w-full mt-2 bg-gradient-to-r from-indigo-950/95 via-slate-900/95 to-violet-950/95 text-white px-3.5 sm:px-5 py-3.5 rounded-2xl shadow-lg border border-indigo-700/60 space-y-3 shrink-0">
+        <div className="w-full mt-2 rounded-2xl bg-[#f0f4f8] border border-white/85 shadow-[4px_4px_10px_rgba(163,177,198,0.35),-4px_-4px_10px_rgba(255,255,255,0.85)] p-3.5 sm:p-4 space-y-3 shrink-0">
+            {/* 상단 요약 1줄 (중복 버튼 제거, 구역 고유 원정 출정 액션만 유지) */}
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="px-2.5 py-0.5 rounded-full bg-indigo-500 text-white font-black text-[11px]">
-                        ⚔️ 용병 길드 &amp; 토벌 캠프
+                    <span className="px-2.5 py-0.5 rounded-full bg-rose-600 text-white font-black text-[11px] shadow-sm">
+                        ⚔️ 용병 토벌 캠프
                     </span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[10px] font-extrabold">
-                        총 전투력 {totalPower.toLocaleString()} · 승 {gameState.profile.totalExpeditionsWon} / 패{' '}
-                        {gameState.profile.totalExpeditionsLost}
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#e8edf2] border border-white/80 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.35),inset_-1px_-1px_3px_rgba(255,255,255,0.8)] text-[#1e293b] text-[10px] font-extrabold font-mono">
+                        전투력 {totalPower.toLocaleString()} · {gameState.profile.totalExpeditionsWon}승{' '}
+                        {gameState.profile.totalExpeditionsLost}패
                     </span>
-                    <span className="px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-400/40 text-orange-200 text-[10px] font-extrabold">
-                        🍱 보유 도시락 {totalDishes}개
+                    <span className="px-2 py-0.5 rounded-full bg-white/90 border border-white text-orange-700 text-[10px] font-black shadow-sm">
+                        🍱 도시락 {totalDishes}개
                     </span>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
-                    <button
-                        type="button"
-                        onClick={onOpenMercModal}
-                        className="px-2.5 py-1 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-[11px] font-black cursor-pointer transition-colors"
-                    >
-                        🛡️ 용병 영입·강화 ({gameState.mercenaries.length}/{gameState.profile.limits.maxMercs})
-                    </button>
+                <div className="flex flex-wrap items-center gap-1.5 ml-auto">
                     <button
                         type="button"
                         onClick={onOpenExpeditionModal}
-                        className="px-2.5 py-1 rounded-lg bg-rose-500 hover:bg-rose-400 text-white text-[11px] font-black cursor-pointer transition-colors"
+                        className="px-2.5 py-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-black cursor-pointer transition-all shadow-sm active:scale-95"
                     >
                         ⚔️ 몬스터 원정 출정 ({gameState.activeExpeditions.length}/
                         {gameState.profile.limits.maxActiveExpeditions})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onGoToKitchen}
-                        className="px-2.5 py-1 rounded-lg bg-orange-500 hover:bg-orange-400 text-slate-950 text-[11px] font-black cursor-pointer transition-colors"
-                    >
-                        👨‍🍳 주방 가기
                     </button>
                 </div>
             </div>
 
             {/* 진행 중 / 완료 대기 원정대 카드 */}
             {gameState.activeExpeditions.length === 0 ? (
-                <div className="px-3.5 py-2.5 rounded-xl bg-slate-800/70 border border-slate-700/80 text-xs text-slate-300 flex flex-wrap items-center justify-between gap-2">
+                <div className="px-3.5 py-2.5 rounded-xl bg-[#e8edf2]/80 border border-white/75 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.85)] text-xs text-[#64748b] font-bold flex flex-wrap items-center justify-between gap-2">
                     <span>
-                        현재 출정 중인 원정대가 없습니다. 용병을 영입하고 주방 도시락을 챙겨 몬스터 토벌을 떠나보세요!
+                        출정 중인 원정대가 없습니다. 도시락을 챙겨 몬스터 토벌을 떠나보세요.
                     </span>
                     <button
                         type="button"
                         onClick={onOpenExpeditionModal}
-                        className="px-2.5 py-1 rounded-lg bg-rose-500/90 hover:bg-rose-400 text-white text-[11px] font-black cursor-pointer shrink-0"
+                        className="px-2.5 py-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-black cursor-pointer shrink-0 shadow-sm"
                     >
                         출정 편성 →
                     </button>
@@ -1036,18 +1021,18 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
                                 key={`active-exp-card-${exp.id}`}
                                 className={`p-2.5 rounded-xl border flex flex-col gap-2 ${
                                     isFinished
-                                        ? 'bg-amber-950/60 border-amber-400/80'
-                                        : 'bg-slate-800/85 border-indigo-500/50'
+                                        ? 'bg-amber-50 border-amber-300/80 shadow-sm'
+                                        : 'bg-white/90 border-white shadow-[2px_2px_6px_rgba(163,177,198,0.35),-2px_-2px_6px_rgba(255,255,255,0.9)]'
                                 }`}
                             >
                                 <div className="flex items-center justify-between gap-2">
                                     <div className="min-w-0">
-                                        <div className="text-xs font-black text-white truncate">
+                                        <div className="text-xs font-black text-[#1e293b] truncate">
                                             {zone?.emoji} {zone?.name || exp.zoneId}
                                         </div>
-                                        <div className="text-[10px] text-slate-300 truncate">
+                                        <div className="text-[10px] text-[#64748b] font-bold truncate">
                                             도시락: {recipe?.emoji} {recipe?.name} · 예상 승률{' '}
-                                            <span className="text-emerald-300 font-black">
+                                            <span className="text-emerald-700 font-black">
                                                 {exp.predictedWinRate}%
                                             </span>
                                         </div>
@@ -1057,26 +1042,26 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
                                             type="button"
                                             disabled={isActing}
                                             onClick={() => onClaimExpedition(exp.id)}
-                                            className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black shrink-0 cursor-pointer disabled:opacity-50"
+                                            className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black shrink-0 cursor-pointer disabled:opacity-50 shadow-sm"
                                         >
                                             🏆 전리품 정산!
                                         </button>
                                     ) : (
-                                        <span className="px-2 py-0.5 rounded-md bg-slate-900 text-amber-300 font-mono text-[11px] font-black shrink-0">
+                                        <span className="px-2 py-0.5 rounded-lg bg-[#e8edf2] text-indigo-700 font-mono text-[11px] font-black shrink-0">
                                             {formatCountdownLabel(exp.endsAtMs, nowMs)}
                                         </span>
                                     )}
                                 </div>
 
                                 <svg viewBox="0 0 100 6" className="w-full h-1.5" aria-hidden="true">
-                                    <rect x="0" y="0" width="100" height="6" rx="3" fill="#1e293b" />
+                                    <rect x="0" y="0" width="100" height="6" rx="3" fill="#cbd5e1" />
                                     <rect
                                         x="0"
                                         y="0"
                                         width={pct}
                                         height="6"
                                         rx="3"
-                                        fill={isFinished ? '#f59e0b' : '#818cf8'}
+                                        fill={isFinished ? '#f59e0b' : '#6366f1'}
                                     />
                                 </svg>
                             </div>
@@ -1087,17 +1072,17 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
 
             {/* 최근 원정 전적 요약 */}
             {gameState.recentExpeditions.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                    <span className="font-black text-slate-400 mr-1">최근 원정:</span>
+                <div className="pt-2 border-t border-slate-200/80 flex flex-wrap items-center gap-1.5 text-[10px]">
+                    <span className="font-black text-[#64748b] mr-1">최근 원정</span>
                     {gameState.recentExpeditions.slice(0, 4).map((rec) => {
                         const zone = gameState.catalog.zones.find((z) => z.zoneId === rec.zoneId);
                         return (
                             <span
                                 key={`recent-exp-${rec.id}`}
-                                className={`px-2 py-0.5 rounded-full border font-bold ${
+                                className={`px-2 py-0.5 rounded-full border font-extrabold ${
                                     rec.status === 'won'
-                                        ? 'bg-emerald-900/60 border-emerald-500/50 text-emerald-200'
-                                        : 'bg-rose-900/50 border-rose-500/40 text-rose-200'
+                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                        : 'bg-rose-50 border-rose-200 text-rose-700'
                                 }`}
                             >
                                 {zone?.emoji} {zone?.name}{' '}
