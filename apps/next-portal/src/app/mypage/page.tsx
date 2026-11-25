@@ -22,7 +22,6 @@ import type { MinihomeGardenState } from '@/types/minihome.types';
 import { IsometricRoomCanvas } from '@/components/minihome/IsometricRoomCanvas';
 import { MinihomeShopDrawer } from '@/components/minihome/MinihomeShopDrawer';
 import { MinihomeGuestbook } from '@/components/minihome/MinihomeGuestbook';
-import { MinihomePersonalHubSection } from '@/components/minihome/MinihomePersonalHubSection';
 import { NotificationCenterPanel } from '@/components/notifications/NotificationCenterPanel';
 import { MINIHOME_MOODS, VERA_POINT_SHOP_ENABLED, getCatalogItemById } from '@/data/minihomeCatalogData';
 
@@ -119,21 +118,6 @@ function calculateSaju(name: string, dateStr: string): { wood: number; fire: num
 
     return { ...elements, nature };
 }
-
-const DAILY_QUOTES = [
-    { quote: "성공의 비결은 시작하는 것이다. 시작하는 비결은 복잡한 일들을 잘게 나누어 첫 번째 조각부터 해치우는 것이다.", author: "마크 트웨인", category: "성장" },
-    { quote: "오늘 할 수 있는 일에 온 힘을 쏟아라. 그러면 내일은 한 걸음 더 나아가 있을 것이다.", author: "아이작 뉴턴", category: "실행" },
-    { quote: "인생에서 가장 큰 위험은 아무런 위험도 감수하지 않는 것이다.", author: "마크 저커버그", category: "도전" },
-    { quote: "마음속에 품은 생각이 곧 당신의 미래가 된다. 긍정적인 생각으로 오늘을 채워라.", author: "마르쿠스 아우렐리우스", category: "마인드" },
-    { quote: "지혜로운 사람은 당황하지 않고, 어진 사람은 근심하지 않으며, 용기 있는 사람은 두려워하지 않는다.", author: "공자", category: "지혜" },
-    { quote: "작은 일에도 정성을 다하라. 작은 일에 정성을 다하면 세상을 변화시킬 수 있다.", author: "중용(中庸)", category: "정성" },
-    { quote: "당신이 할 수 있다고 믿든, 할 수 없다고 믿든, 믿는 대로 될 것이다.", author: "헨리 포드", category: "신념" },
-    { quote: "가장 어두운 밤도 언젠가는 끝나고 해는 떠오를 것이다.", author: "빅토르 위고", category: "희망" },
-    { quote: "단순함이 궁극의 정교함이다. 오늘 하루를 군더더기 없이 심플하게 집중하라.", author: "레오나르도 다빈치", category: "집중" },
-    { quote: "행복은 이미 만들어진 것이 아니다. 당신의 행동에서 비롯되는 것이다.", author: "달라이 라마", category: "행복" },
-    { quote: "위대한 일을 해내는 유일한 방법은 당신이 하는 일을 사랑하는 것이다.", author: "스티브 잡스", category: "열정" },
-    { quote: "물은 어떤 그릇에 담기느냐에 따라 모양이 바뀐다. 유연함이 최고의 지혜다.", author: "노자", category: "처세" },
-];
 
 export default function MyPage() {
     const { user, logout, isLoading, updateUser } = useAuth();
@@ -637,19 +621,6 @@ export default function MyPage() {
         });
     }, [bizAgenda, selectedDate, calYear, calMonth, todayStr]);
 
-    const todaySchedules = useMemo(() => {
-        return schedulesByDate[todayStr] || [];
-    }, [schedulesByDate, todayStr]);
-
-    const todayFormatted = useMemo(() => {
-        const days = ['일', '월', '화', '수', '목', '금', '토'];
-        const now = new Date();
-        const m = now.getMonth() + 1;
-        const d = now.getDate();
-        const dayName = days[now.getDay()];
-        return `${m}월 ${d}일 (${dayName})`;
-    }, []);
-
     // 생년월일 관리: DB(user.birth_date) 우선, 로컬스토리지 백업
     const [birthDate, setBirthDate] = useState(() => {
         const localBirth = typeof window !== 'undefined' ? (localStorage.getItem('user_birth_date') || localStorage.getItem('faith_saju_birth_date')) : null;
@@ -695,41 +666,6 @@ export default function MyPage() {
         return (birthDate && user?.name) ? calculateSaju(user.name, birthDate) : null;
     }, [birthDate, user?.name]);
 
-    const todaySajuGuide = useMemo(() => {
-        if (!saju) return {
-            score: 91,
-            luckyColor: '에메랄드 그린',
-            luckyDirection: '동남쪽',
-            caution: '중요한 결정 전 3초간 심호흡하고 서두르지 마세요.',
-            goodAction: '가까운 동료나 소중한 사람에게 따뜻한 안부 전하기'
-        };
-        
-        const elemEntries = [
-            { k: 'wood', v: saju.wood },
-            { k: 'fire', v: saju.fire },
-            { k: 'earth', v: saju.earth },
-            { k: 'metal', v: saju.metal },
-            { k: 'water', v: saju.water }
-        ].sort((a, b) => b.v - a.v);
-        const maxElem = elemEntries[0]?.k || 'wood';
-        
-        const guides: Record<string, { score: number; luckyColor: string; luckyDirection: string; caution: string; goodAction: string }> = {
-            wood: { score: 94, luckyColor: '포레스트 그린', luckyDirection: '동쪽', caution: '지나친 고집을 피우고 주변의 조언에 귀를 기울이세요.', goodAction: '새로운 프로젝트 기획이나 산책' },
-            fire: { score: 96, luckyColor: '선셋 오렌지', luckyDirection: '남쪽', caution: '감정적인 언행이나 즉흥적인 소비를 조심하세요.', goodAction: '열정적인 회의나 적극적인 의견 개진' },
-            earth: { score: 92, luckyColor: '웜 옐로우', luckyDirection: '중앙/남서쪽', caution: '우유부단해져 타이밍을 놓치지 않도록 주의하세요.', goodAction: '신뢰 기반의 약속 정리 및 재무 점검' },
-            metal: { score: 90, luckyColor: '클린 화이트/실버', luckyDirection: '서쪽', caution: '날카로운 비판보다 부드러운 화법을 사용하세요.', goodAction: '밀린 문서 정리나 확실한 계약 검토' },
-            water: { score: 95, luckyColor: '딥 오션 블루', luckyDirection: '북쪽', caution: '생각이 너무 많아져 실행이 늦어지는 것을 경계하세요.', goodAction: '유연한 네트워킹 및 트렌드 정보 탐색' },
-        };
-        
-        return guides[maxElem] || guides.wood;
-    }, [saju]);
-
-    const todayQuote = useMemo(() => {
-        const today = new Date();
-        const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
-        return DAILY_QUOTES[Math.abs(dayOfYear) % DAILY_QUOTES.length];
-    }, []);
-
     useEffect(() => {
         if (!isLoading && !user) {
             router.replace('/');
@@ -744,16 +680,26 @@ export default function MyPage() {
             try {
                 const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
 
-                // ─── 대시보드(나의 홈)일 때는 모든 데이터를 일괄 취합해서 가져옴 ───
+                // ─── 내 아지트(dashboard)는 아지트 관련 포인트 상태만 경량 조회 ───
                 if (activeSection === 'dashboard') {
-                    const [kwRes, kwNewsRes, bmRes, statsStocksRes, wlRes, statsGamesRes, historyGamesRes, schedulesRes, veraPointsRes] = await Promise.all([
+                    const veraPointsRes = await instance.get(`/api/user/vera-points`).catch(() => ({ data: {} }));
+                    if (veraPointsRes.data && veraPointsRes.data.success) {
+                        setVeraPointsData({
+                            points: veraPointsRes.data.points ?? 0,
+                            pendingAmount: veraPointsRes.data.pendingAmount ?? 0,
+                            attendanceRatio: veraPointsRes.data.attendanceRatio ?? 0,
+                            activityRatio: veraPointsRes.data.activityRatio ?? 0
+                        });
+                    }
+                }
+
+                // ─── My Life(schedule)는 라이프·퍼스널 통합 위젯 실데이터를 일괄 조회 ───
+                else if (activeSection === 'schedule') {
+                    const [kwRes, kwNewsRes, statsStocksRes, wlRes, schedulesRes, veraPointsRes] = await Promise.all([
                         instance.get(`/api/user/keywords`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/news/keywords?limit=6`).catch(() => ({ data: {} })),
-                        instance.get(`/api/user/bookmarks?page=1&limit=3`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/watchlist/stats`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/watchlist`).catch(() => ({ data: {} })),
-                        instance.get(`/api/user/games/stats`).catch(() => ({ data: {} })),
-                        instance.get(`/api/user/games/history?limit=3`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/schedules`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/vera-points`).catch(() => ({ data: {} }))
                     ]);
@@ -766,18 +712,14 @@ export default function MyPage() {
                         ? kwRes.data.keywords
                         : (kwNewsRes.data && kwNewsRes.data.keywords ? kwNewsRes.data.keywords : []);
 
-                    setNewsData({
+                    setNewsData(prev => ({
+                        ...prev,
                         keywords: activeKeywords,
                         keywordNews: kwNewsRes.data.news || [],
-                        bookmarks: bmRes.data.items || []
-                    });
+                    }));
                     setStocksData({
                         stats: statsStocksRes.data.stats || {},
                         watchlist: fetchedWatchlist
-                    });
-                    setGamesData({
-                        stats: statsGamesRes.data.stats || {},
-                        history: historyGamesRes.data.history?.history || []
                     });
                     const localSavedSchedules = JSON.parse(localStorage.getItem('faith_user_schedules') || '[]');
                     const fetchedSchedules = (schedulesRes.data && Array.isArray(schedulesRes.data.schedules) && schedulesRes.data.schedules.length > 0)
@@ -993,13 +935,13 @@ export default function MyPage() {
 
                 {/* 메인 컨텐츠 영역 (100% 전체 너비로 확장) */}
                 <div className="w-full">
-                    {loading && activeSection !== 'dashboard' && activeSection !== 'video' ? (
+                    {loading && activeSection !== 'dashboard' && activeSection !== 'video' && activeSection !== 'schedule' ? (
                         <div className="bg-white rounded-3xl shadow-sm p-16 border border-slate-200/80 min-h-[400px] flex items-center justify-center">
                             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-slate-400"></div>
                         </div>
                     ) : (
                         <>
-                            {/* ─── [통합 메인 뷰] 🏠 내 아지트 + 나의 홈 다이어리 & 퍼스널 보드 ─── */}
+                            {/* ─── [내 아지트 전용 뷰] 🏠 아지트 프로필·2.5D 룸·상점·방명록·이웃 아지트 ─── */}
                             {activeSection === 'dashboard' && (
                                 <div className="animate-fade-in space-y-6">
                                     {/* 내 아지트 토스트 알림 */}
@@ -1009,24 +951,24 @@ export default function MyPage() {
                                         </div>
                                     )}
 
-                                    {/* 1. 내 아지트 메인 12컬럼 스테이지 (좌측 프로필·브리핑 4 : 우측 통합 헤더 + 2.5D 아지트 8) */}
+                                    {/* 1. 내 아지트 메인 12컬럼 스테이지 (좌측 아지트 프로필 4 : 우측 통합 헤더 + 2.5D 아지트 8) */}
                                     {minihomeLoading && !minihomeProfile ? (
-                                        <div className="bg-white rounded-3xl border border-slate-200 p-14 text-center space-y-3">
+                                        <div className="bg-[#f0f4f8] rounded-3xl border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] p-14 text-center space-y-3">
                                             <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                            <p className="text-sm font-bold text-slate-500">
+                                            <p className="text-sm font-bold text-[#64748b]">
                                                 내 아지트 공간과 소품을 불러오는 중입니다...
                                             </p>
                                         </div>
                                     ) : minihomeProfile ? (
-                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                                            {/* 좌측 사이드바: Today is 기분 & 아바타 프로필 & 나의 홈 3대 퀵스탯 & 이웃 아지트 (lg:col-span-4) */}
+                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                                            {/* 좌측 사이드바: Today is 기분 & 아바타 프로필 & 아지트 전용 퀵스탯 & 이웃 아지트 (lg:col-span-4) */}
                                             <aside className="order-2 lg:order-1 lg:col-span-4 flex flex-col gap-5">
-                                                <div className="flex-1 flex flex-col justify-between bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-5">
+                                                <div className="bg-[#f0f4f8] rounded-3xl border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] p-5 sm:p-6 flex flex-col space-y-4">
                                                     {/* Today is... 상태창 */}
                                                     <div
-                                                        className={`p-3.5 rounded-2xl border ${currentMoodMeta.badgeBg} ${currentMoodMeta.border} flex items-center justify-between`}
+                                                        className={`p-3.5 rounded-2xl border ${currentMoodMeta.badgeBg} ${currentMoodMeta.border} shadow-[inset_2px_2px_5px_rgba(163,177,198,0.25),inset_-2px_-2px_5px_rgba(255,255,255,0.7)] flex items-center justify-between`}
                                                     >
-                                                        <span className="text-xs font-black tracking-wider text-slate-500 uppercase">
+                                                        <span className="text-xs font-black tracking-wider text-[#64748b] uppercase">
                                                             TODAY IS...
                                                         </span>
                                                         <span className={`text-sm font-black ${currentMoodMeta.badgeText} flex items-center gap-1.5`}>
@@ -1045,8 +987,8 @@ export default function MyPage() {
                                                                     onClick={() => setMinihomeDraftMood(m.id)}
                                                                     className={`py-1.5 px-2 rounded-xl text-[11px] font-extrabold border transition-all cursor-pointer ${
                                                                         minihomeDraftMood === m.id
-                                                                            ? 'bg-indigo-600 text-white border-indigo-600'
-                                                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                                                            ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white border-indigo-600 shadow-sm'
+                                                                            : 'bg-[#e8edf2] text-[#64748b] border-white/80 hover:bg-white'
                                                                     }`}
                                                                 >
                                                                     {m.emoji} {m.label}
@@ -1056,7 +998,7 @@ export default function MyPage() {
                                                     )}
 
                                                     {/* 대표 아바타 카드 & 주인장 소개 */}
-                                                    <div className="text-center p-4 rounded-2xl bg-gradient-to-b from-indigo-50/60 to-slate-50 border border-slate-200/70 space-y-2">
+                                                    <div className="text-center p-4 rounded-2xl bg-[#e8edf2]/80 shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)] border border-white/70 space-y-2">
                                                         <div className="w-20 h-20 rounded-2xl bg-white border-2 border-indigo-200 shadow-xs mx-auto flex items-center justify-center p-1.5 overflow-hidden">
                                                             <img
                                                                 src={
@@ -1069,7 +1011,7 @@ export default function MyPage() {
                                                                 className="w-full h-full object-contain"
                                                             />
                                                         </div>
-                                                        <div className="font-black text-base text-slate-900">
+                                                        <div className="font-black text-base text-[#1e293b]">
                                                             {minihomeProfile.ownerName || user.name}
                                                         </div>
                                                         <div className="text-[11px] font-bold text-indigo-600">
@@ -1084,17 +1026,17 @@ export default function MyPage() {
                                                                 value={minihomeDraftStatusMessage}
                                                                 onChange={(e) => setMinihomeDraftStatusMessage(e.target.value)}
                                                                 placeholder="프로필 자기소개 한마디를 입력하세요"
-                                                                className="w-full mt-2 p-2.5 rounded-xl bg-white border border-indigo-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                                className="w-full mt-2 p-2.5 rounded-xl bg-white border border-indigo-200 text-xs font-semibold text-[#1e293b] shadow-[inset_2px_2px_4px_rgba(163,177,198,0.25),inset_-2px_-2px_4px_rgba(255,255,255,0.75)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                             />
                                                         ) : (
-                                                            <p className="text-xs text-slate-600 font-medium leading-relaxed pt-1">
+                                                            <p className="text-xs text-[#64748b] font-medium leading-relaxed pt-1">
                                                                 “{minihomeProfile.statusMessage}”
                                                             </p>
                                                         )}
                                                     </div>
 
-                                                    {/* 내 아지트 꾸미기 / 상점 팝업 / 소셜 라운지 CTA */}
-                                                    <div className="space-y-2">
+                                                    {/* 아지트 꾸미기 / 상점 팝업 / 알림 설정 (상단 밀착 그룹) */}
+                                                    <div className="space-y-2.5">
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -1104,7 +1046,7 @@ export default function MyPage() {
                                                                     setMinihomeShopModalOpen(true);
                                                                 }
                                                             }}
-                                                            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                                            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                                                         >
                                                             <i className="fas fa-store"></i>
                                                             <span>아지트 꾸미기 &amp; 아이템 상점 (전 품목 무료)</span>
@@ -1124,40 +1066,17 @@ export default function MyPage() {
                                                                 <button
                                                                     type="button"
                                                                     onClick={handleMinihomeCancelEditMode}
-                                                                    className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                                    className="py-2.5 px-3 rounded-xl bg-[#e8edf2] hover:bg-white text-[#64748b] font-extrabold text-xs shadow-[3px_3px_6px_rgba(163,177,198,0.35),-3px_-3px_6px_rgba(255,255,255,0.85)] transition-all flex items-center justify-center gap-1 cursor-pointer"
                                                                 >
                                                                     <span>꾸미기 종료</span>
                                                                 </button>
                                                             </div>
                                                         )}
 
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setActiveSection('schedule')}
-                                                                className="py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/70 font-extrabold text-xs text-center transition-colors cursor-pointer"
-                                                            >
-                                                                📅 일정 달력 (My Life)
-                                                            </button>
-                                                            <Link
-                                                                href="/lounge"
-                                                                className="py-2.5 px-3 rounded-xl bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200/70 font-extrabold text-xs text-center transition-colors"
-                                                            >
-                                                                💬 소셜 라운지
-                                                            </Link>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setActiveSection('video')}
-                                                            className="w-full py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/70 font-extrabold text-xs text-center transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                                                        >
-                                                            <i className="fab fa-google-drive"></i>
-                                                            <span>🎬 구글 드라이브 비디오 플레이어</span>
-                                                        </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => setIsNotificationModalOpen(true)}
-                                                            className="w-full py-2.5 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200/80 font-extrabold text-xs transition-colors flex items-center justify-between gap-2 cursor-pointer"
+                                                            className="w-full py-2.5 px-3.5 rounded-xl bg-[#e8edf2] hover:bg-white text-[#1e293b] border border-white/80 shadow-[4px_4px_8px_rgba(163,177,198,0.4),-4px_-4px_8px_rgba(255,255,255,0.85)] font-extrabold text-xs transition-all flex items-center justify-between gap-2 cursor-pointer"
                                                         >
                                                             <span className="flex items-center gap-1.5">
                                                                 <span>🔔</span>
@@ -1182,17 +1101,17 @@ export default function MyPage() {
                                                         </button>
                                                     </div>
 
-                                                    {/* 나의 홈 3대 퀵 스탯 보드 (베라포인트·보유가구·오늘일정·사주행운지수 통합) */}
-                                                    <div className="pt-3 border-t border-slate-100 space-y-2.5">
-                                                        <div className="grid grid-cols-2 gap-2 text-left">
+                                                    {/* 아지트 전용 퀵 스탯 (베라포인트 · 보유 가구·소품) */}
+                                                    <div className="pt-3 border-t border-slate-200/70">
+                                                        <div className="grid grid-cols-2 gap-2.5 text-left">
                                                             <div
                                                                 onClick={() => user?.email === 'sukman@naver.com' && router.push('/reward/exchange')}
-                                                                className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/70 cursor-pointer hover:bg-amber-100/70 text-left transition-colors"
+                                                                className="p-3 rounded-2xl bg-[#e8edf2]/80 shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)] border border-white/70 cursor-pointer hover:bg-white/80 text-left transition-colors"
                                                             >
                                                                 <div className="text-[10px] font-bold text-amber-700 flex items-center justify-between">
                                                                     <span>💎 베라포인트(P)</span>
                                                                 </div>
-                                                                <div className="text-xs font-black text-amber-900 mt-0.5 font-mono truncate">
+                                                                <div className="text-xs font-black text-[#1e293b] mt-0.5 font-mono truncate">
                                                                     {(azitGame.state?.veraPoints ?? minihomeProfile.veraPoints ?? veraPointsData.points).toLocaleString()} P
                                                                 </div>
                                                             </div>
@@ -1204,62 +1123,32 @@ export default function MyPage() {
                                                                         setMinihomeShopModalOpen(true);
                                                                     }
                                                                 }}
-                                                                className="p-3 rounded-2xl bg-indigo-50/80 border border-indigo-200/70 cursor-pointer hover:bg-indigo-100/70 text-left transition-colors"
+                                                                className="p-3 rounded-2xl bg-[#e8edf2]/80 shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)] border border-white/70 cursor-pointer hover:bg-white/80 text-left transition-colors"
                                                             >
                                                                 <div className="text-[10px] font-bold text-indigo-700 flex items-center justify-between">
                                                                     <span>🎁 보유 가구·소품</span>
                                                                     <i className="fas fa-chevron-right text-[8px]"></i>
                                                                 </div>
-                                                                <div className="text-xs font-black text-indigo-900 mt-0.5 truncate">
+                                                                <div className="text-xs font-black text-[#1e293b] mt-0.5 truncate">
                                                                     {minihomeProfile.ownedItemIds.length}종 보유
                                                                 </div>
                                                             </div>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setActiveSection('schedule')}
-                                                                className="p-3 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-200/70 text-left transition-colors cursor-pointer"
-                                                            >
-                                                                <div className="text-[10px] font-bold text-emerald-700 flex items-center justify-between">
-                                                                    <span>📅 오늘 일정</span>
-                                                                    <i className="fas fa-chevron-right text-[8px]"></i>
-                                                                </div>
-                                                                <div className="text-xs font-black text-emerald-950 mt-0.5 truncate">
-                                                                    {todaySchedules.length > 0 ? `${todaySchedules.length}건 진행중` : '여유로운 날'}
-                                                                </div>
-                                                            </button>
-
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setActiveSection('schedule')}
-                                                                className="p-3 rounded-2xl bg-violet-50/70 hover:bg-violet-100/70 border border-violet-200/70 text-left transition-colors cursor-pointer"
-                                                            >
-                                                                <div className="text-[10px] font-bold text-violet-700 flex items-center justify-between">
-                                                                    <span>🔮 행운 지수</span>
-                                                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-200/70 text-violet-800 font-black">대길</span>
-                                                                </div>
-                                                                <div className="text-xs font-black text-violet-950 mt-0.5 truncate">
-                                                                    {todaySajuGuide.score}점 · {todaySajuGuide.luckyColor}
-                                                                </div>
-                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
 
                                                 {/* 실제 이웃 회원 아지트가 있을 때만 표시 */}
                                                 {minihomeSurfData.popularRooms.length > 0 && (
-                                                    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 space-y-3">
+                                                    <div className="bg-[#f0f4f8] rounded-3xl border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] p-5 space-y-3">
                                                         <div className="flex items-center justify-between">
-                                                            <h3 className="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-1.5">
+                                                            <h3 className="text-xs sm:text-sm font-black text-[#1e293b] flex items-center gap-1.5">
                                                                 <span>🌊</span>
                                                                 <span>이웃 아지트 놀러가기</span>
                                                             </h3>
                                                             <button
                                                                 type="button"
                                                                 onClick={handleRandomSurf}
-                                                                className="text-[11px] font-extrabold text-sky-600 hover:underline cursor-pointer"
+                                                                className="text-[11px] font-extrabold text-indigo-600 hover:underline cursor-pointer"
                                                             >
                                                                 랜덤 방문 →
                                                             </button>
@@ -1270,13 +1159,13 @@ export default function MyPage() {
                                                                 <Link
                                                                     key={room.handle}
                                                                     href={`/minihome/${encodeURIComponent(room.handle)}`}
-                                                                    className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 border border-slate-200/60 transition-colors"
+                                                                    className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-[#e8edf2]/80 hover:bg-white shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.75)] border border-white/70 transition-colors"
                                                                 >
                                                                     <div className="min-w-0">
-                                                                        <div className="text-xs font-extrabold text-slate-900 truncate">
+                                                                        <div className="text-xs font-extrabold text-[#1e293b] truncate">
                                                                             {room.ownerName}
                                                                         </div>
-                                                                        <div className="text-[11px] text-slate-500 truncate">
+                                                                        <div className="text-[11px] text-[#64748b] truncate">
                                                                             {room.roomTitle}
                                                                         </div>
                                                                     </div>
@@ -1385,37 +1274,6 @@ export default function MyPage() {
                                         </>
                                     )}
 
-                                    {/* 3.5 나의 TO-DO (할일 정리) 실시간 보드 */}
-                                    <MypageTodoCard variant="full" />
-
-                                    {/* 4. 나의 홈 다이어리 & 퍼스널 보드 (기존 '나의 홈'의 모든 위젯을 아지트 하단에 통합) */}
-                                    <MinihomePersonalHubSection
-                                        userName={user.name}
-                                        userEmail={user.email}
-                                        todayFormatted={todayFormatted}
-                                        todaySchedules={todaySchedules}
-                                        scheduleColorConfig={SCHEDULE_COLOR_CONFIG}
-                                        todaySajuGuide={todaySajuGuide}
-                                        todayQuote={todayQuote}
-                                        saju={saju}
-                                        birthDate={birthDate}
-                                        showBirthEditor={showBirthEditor}
-                                        tempBirthDate={tempBirthDate}
-                                        onToggleBirthEditor={setShowBirthEditor}
-                                        onChangeTempBirthDate={setTempBirthDate}
-                                        onSaveBirth={handleSaveBirth}
-                                        watchlist={stocksData.watchlist}
-                                        newsKeywords={newsData.keywords}
-                                        keywordNews={newsData.keywordNews}
-                                        onDeleteKeyword={handleDeleteKeyword}
-                                        veraPointsData={{
-                                            ...veraPointsData,
-                                            points: azitGame.state?.veraPoints ?? minihomeProfile?.veraPoints ?? veraPointsData.points,
-                                        }}
-                                        shoppingItems={shoppingItems}
-                                        onNavigateSection={(sec) => setActiveSection(sec)}
-                                    />
-
                                     {/* 이웃 아지트 전체보기 모달 */}
                                     {showSurfModal && (
                                         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -1483,11 +1341,9 @@ export default function MyPage() {
                                 </div>
                             )}
 
-                                    {/* ─── [신설] 🌟 My Life (사주 주의보, 실시간 날씨, 오늘의 명언, 스마트 일정 달력 통합 뷰) ─── */}
+                                    {/* ─── 🌟 My Life (사주, 날씨/증시, 명언, TO-DO, 일정 달력, 주식, 뉴스, 포인트, 쇼핑 통합 뷰) ─── */}
                                     {activeSection === 'schedule' && (
-                                        <div className="space-y-6">
-                                            <MypageTodoCard variant="compact" />
-                                            <MyLifeSection
+                                        <MyLifeSection
                                             user={user}
                                             birthDate={birthDate}
                                             showBirthEditor={showBirthEditor}
@@ -1527,8 +1383,20 @@ export default function MyPage() {
                                             handleAddAgenda={handleAddAgenda}
                                             handleRemoveAgenda={handleRemoveAgenda}
                                             SCHEDULE_COLOR_CONFIG={SCHEDULE_COLOR_CONFIG}
+                                            watchlist={stocksData.watchlist}
+                                            newsKeywords={newsData.keywords}
+                                            keywordNews={newsData.keywordNews}
+                                            onDeleteKeyword={handleDeleteKeyword}
+                                            veraPointsData={{
+                                                ...veraPointsData,
+                                                points: azitGame.state?.veraPoints ?? minihomeProfile?.veraPoints ?? veraPointsData.points,
+                                            }}
+                                            shoppingItems={shoppingItems}
+                                            onNavigateSection={(sec) => {
+                                                setActiveSection(sec);
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
                                         />
-                                        </div>
                                     )}
 
                                     {/* ─── [신설] 🎬 구글 드라이브 연동 비디오 플레이어 섹션 ─── */}

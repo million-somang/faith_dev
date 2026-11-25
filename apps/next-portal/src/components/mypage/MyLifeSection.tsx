@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { CalendarScheduleSection } from './CalendarScheduleSection';
+import { CompactDashboardWidgets } from '@/components/homepage/CompactDashboardWidgets';
+import { MypageTodoCard } from './MypageTodoCard';
 
 const SEOUL = { lat: 37.5665, lon: 126.978, name: '서울' };
 
@@ -50,6 +53,59 @@ const DAILY_QUOTES = [
     { quote: "물은 어떤 그릇에 담기느냐에 따라 모양이 바뀐다. 유연함이 최고의 지혜다.", author: "노자", category: "처세" },
 ];
 
+export interface MyLifeWatchlistItem {
+    id: number | string;
+    stock_symbol: string;
+    stock_name: string;
+    market_type: string;
+    target_price?: number;
+    memo?: string;
+}
+
+export interface MyLifeKeywordNewsItem {
+    id?: number | string;
+    title: string;
+    description?: string;
+    summary?: string;
+    category?: string;
+    keyword?: string;
+    publisher?: string;
+    source?: string;
+    origin_url?: string;
+    url?: string;
+    published_at?: string;
+    created_at?: string;
+}
+
+export interface MyLifeShoppingItem {
+    productId: number | string;
+    productName: string;
+    productPrice: number;
+    originalPrice?: number;
+    discountRate?: number;
+    productImage: string;
+    productUrl: string;
+    curationPoint?: string;
+    tag?: string;
+}
+
+export interface MyLifeVeraPointsData {
+    points: number;
+    pendingAmount: number;
+    attendanceRatio: number;
+    activityRatio: number;
+}
+
+export type MyPageSectionType =
+    | 'dashboard'
+    | 'schedule'
+    | 'video'
+    | 'news'
+    | 'stocks'
+    | 'games'
+    | 'utils'
+    | 'home-customize';
+
 interface MyLifeSectionProps {
     user: any;
     birthDate: string;
@@ -90,6 +146,13 @@ interface MyLifeSectionProps {
     handleAddAgenda: (e: React.FormEvent) => void;
     handleRemoveAgenda: (id: string | number) => void;
     SCHEDULE_COLOR_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; badge: string; dot: string }>;
+    watchlist: MyLifeWatchlistItem[];
+    newsKeywords: Array<string | { id?: number | string; keyword?: string; name?: string }>;
+    keywordNews: MyLifeKeywordNewsItem[];
+    onDeleteKeyword: (id?: number | string, name?: string) => void;
+    veraPointsData: MyLifeVeraPointsData;
+    shoppingItems: MyLifeShoppingItem[];
+    onNavigateSection?: (section: MyPageSectionType) => void;
 }
 
 export const MyLifeSection: React.FC<MyLifeSectionProps> = ({
@@ -132,6 +195,13 @@ export const MyLifeSection: React.FC<MyLifeSectionProps> = ({
     handleAddAgenda,
     handleRemoveAgenda,
     SCHEDULE_COLOR_CONFIG,
+    watchlist,
+    newsKeywords,
+    keywordNews,
+    onDeleteKeyword,
+    veraPointsData,
+    shoppingItems,
+    onNavigateSection,
 }) => {
     // 1. 날씨 상태
     const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -278,28 +348,34 @@ export const MyLifeSection: React.FC<MyLifeSectionProps> = ({
     const wxInfo = weather ? codeInfo(weather.code, weather.isDay) : { label: '날씨 확인 중', icon: 'fa-cloud-sun text-amber-500' };
     const pm10Grade = weather ? pmGrade(weather.pm10, 30, 80) : null;
 
+    const woodOffset = 0;
+    const fireOffset = saju ? saju.wood : 0;
+    const earthOffset = saju ? saju.wood + saju.fire : 0;
+    const metalOffset = saju ? saju.wood + saju.fire + saju.earth : 0;
+    const waterOffset = saju ? saju.wood + saju.fire + saju.earth + saju.metal : 0;
+
     return (
         <div className="animate-fade-in space-y-6">
-            {/* 🌟 1. My Life 메인 헤더 & 데일리 인사 */}
-            <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+            {/* 1. My Life 메인 헤더 & 데일리 인사 */}
+            <div className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 rounded-3xl p-6 sm:p-8 text-white shadow-[8px_8px_18px_rgba(99,102,241,0.28),-6px_-6px_14px_rgba(255,255,255,0.8)] relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-                <div className="absolute left-1/3 -top-10 w-48 h-48 rounded-full bg-amber-400/10 blur-xl pointer-events-none"></div>
+                <div className="absolute left-1/3 -top-10 w-48 h-48 rounded-full bg-violet-300/15 blur-xl pointer-events-none"></div>
 
                 <div className="relative z-10 space-y-2">
                     <div className="flex items-center gap-2.5 flex-wrap">
-                        <span className="bg-white/20 backdrop-blur-md text-emerald-100 text-xs font-extrabold px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-sm">
+                        <span className="bg-white/20 backdrop-blur-md text-indigo-50 text-xs font-extrabold px-3 py-1 rounded-full border border-white/25 flex items-center gap-1.5 shadow-sm">
                             <i className="fas fa-sparkles text-amber-300"></i> My Life Hub
                         </span>
-                        <span className="text-xs font-bold text-emerald-100/90 font-mono">
+                        <span className="text-xs font-bold text-indigo-100/95 font-mono">
                             {todayFormatted}
                         </span>
                     </div>
 
                     <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2.5">
-                        <span>{user?.name || '회원'}님의 하루를 위한 라이프 처방</span>
+                        <span>{user?.name || '회원'}님의 하루를 위한 라이프 허브</span>
                     </h2>
-                    <p className="text-xs sm:text-sm text-emerald-100 max-w-xl leading-relaxed">
-                        나만의 사주 주의사항, 오늘의 실시간 날씨, 영감을 주는 명언, 스마트 일정까지 하루의 모든 라이프 흐름을 한곳에서 확인하세요.
+                    <p className="text-xs sm:text-sm text-indigo-100 max-w-2xl leading-relaxed">
+                        사주 주의보·오행, 실시간 날씨·증시, TO-DO, 스마트 일정, 구독 뉴스, 포인트·맞춤 쇼핑까지 하루의 모든 라이프 흐름을 한곳에서 관리하세요.
                     </p>
                 </div>
 
@@ -307,7 +383,7 @@ export const MyLifeSection: React.FC<MyLifeSectionProps> = ({
                     <button
                         type="button"
                         onClick={() => setShowBirthEditor(!showBirthEditor)}
-                        className="px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-white font-bold text-xs transition-all flex items-center gap-2 shadow-sm cursor-pointer"
+                        className="px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-white font-bold text-xs transition-all flex items-center gap-2 shadow-sm cursor-pointer active:scale-95"
                     >
                         <i className="fas fa-id-card text-amber-300"></i>
                         <span>{birthDate ? '생년월일 수정' : '생년월일 등록'}</span>
@@ -315,17 +391,17 @@ export const MyLifeSection: React.FC<MyLifeSectionProps> = ({
                 </div>
             </div>
 
-            {/* 생년월일 입력 에디터 모달/패널 (토글) */}
+            {/* 생년월일 입력 에디터 패널 (토글) */}
             {showBirthEditor && (
-                <div className="bg-white rounded-3xl p-5 sm:p-6 border border-emerald-200 shadow-md animate-fade-in">
+                <div className="bg-[#f0f4f8] rounded-3xl p-5 sm:p-6 border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] animate-fade-in">
                     <form onSubmit={handleSaveBirth} className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
                                 <i className="fas fa-cake-candles"></i>
                             </div>
                             <div>
-                                <h4 className="font-extrabold text-slate-800 text-sm">{birthDate ? '생년월일(사주 기준) 수정' : '생년월일(사주 기준) 등록'}</h4>
-                                <p className="text-xs text-slate-400">정확한 맞춤 사주 운세와 오늘의 주의사항 처방을 제공해 드립니다.</p>
+                                <h4 className="font-extrabold text-[#1e293b] text-sm">{birthDate ? '생년월일(사주 기준) 수정' : '생년월일(사주 기준) 등록'}</h4>
+                                <p className="text-xs text-[#64748b]">정확한 맞춤 사주 오행과 오늘의 주의사항 처방을 제공해 드립니다.</p>
                             </div>
                         </div>
 
@@ -334,19 +410,19 @@ export const MyLifeSection: React.FC<MyLifeSectionProps> = ({
                                 type="date"
                                 value={tempBirthDate}
                                 onChange={(e) => setTempBirthDate(e.target.value)}
-                                className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
+                                className="px-4 py-2 rounded-xl bg-white text-xs font-bold text-[#1e293b] shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)] border border-white/80 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                                 required
                             />
                             <button
                                 type="submit"
-                                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer active:scale-95"
                             >
                                 저장하기
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setShowBirthEditor(false)}
-                                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-all cursor-pointer"
+                                className="px-3 py-2 rounded-xl bg-[#e8edf2] hover:bg-slate-200/80 text-[#64748b] font-bold text-xs shadow-[3px_3px_6px_rgba(163,177,198,0.4),-3px_-3px_6px_rgba(255,255,255,0.85)] transition-all cursor-pointer"
                             >
                                 닫기
                             </button>
@@ -355,184 +431,188 @@ export const MyLifeSection: React.FC<MyLifeSectionProps> = ({
                 </div>
             )}
 
-            {/* 🌟 2. 상단 3개 핵심 카드 그리드 (사주 주의사항, 날씨/외출 가이드, 오늘의 명언) */}
+            {/* 2. 실시간 날씨 & 금융/증시 슬림 위젯 바 */}
+            <CompactDashboardWidgets />
+
+            {/* 3. 상단 3개 핵심 데일리 카드 그리드 (사주 주의보, 날씨/외출 가이드, 오늘의 명언) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {/* 🔮 카드 1: 오늘의 사주 & 조심해야 할 것 */}
-                <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4">
-                    <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center text-sm shadow-sm shadow-rose-200 font-bold">
-                                    <i className="fas fa-shield-cat"></i>
-                                </div>
-                                <div>
-                                    <h3 className="font-extrabold text-slate-800 text-sm">오늘의 사주 주의보</h3>
-                                    <p className="text-[10px] text-slate-400">사주 일진 기반 위험 회피 가이드</p>
-                                </div>
+                {/* 카드 1: 오늘의 사주 주의보 */}
+                <div className="bg-[#f0f4f8] rounded-3xl p-5 sm:p-6 border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] hover:shadow-[8px_8px_16px_rgba(163,177,198,0.5),-6px_-6px_14px_rgba(255,255,255,0.9)] transition-all flex flex-col space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center text-sm shadow-sm font-bold shrink-0">
+                                <i className="fas fa-shield-cat"></i>
                             </div>
-                            {sajuAdvisory && (
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
-                                    {sajuAdvisory.caution.badge}
-                                </span>
-                            )}
+                            <div>
+                                <h3 className="font-extrabold text-[#1e293b] text-sm">오늘의 사주 주의보</h3>
+                                <p className="text-[10px] text-[#64748b]">사주 일진 기반 위험 회피 가이드</p>
+                            </div>
                         </div>
-
-                        {sajuAdvisory ? (
-                            <div className="space-y-3">
-                                <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200/80 space-y-1.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <i className={`fas ${sajuAdvisory.caution.icon} text-xs`}></i>
-                                        <span className="font-black text-xs text-rose-900">
-                                            🚨 {sajuAdvisory.caution.title}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-rose-800/90 leading-relaxed">
-                                        {sajuAdvisory.caution.detail}
-                                    </p>
-                                </div>
-
-                                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-[11px] space-y-1.5">
-                                    <div className="font-bold text-slate-700 flex items-center gap-1">
-                                        <i className="fas fa-clover text-emerald-500"></i> 오늘의 행운 처방
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 text-slate-600 font-medium pt-1">
-                                        <div>🎨 색상: <span className="font-bold text-slate-800">{sajuAdvisory.luckyColor}</span></div>
-                                        <div>🔢 숫자: <span className="font-bold text-slate-800">{sajuAdvisory.luckyNumber}</span></div>
-                                        <div>🧭 방향: <span className="font-bold text-slate-800">{sajuAdvisory.luckyDirection}</span></div>
-                                        <div>⏰ 길시: <span className="font-bold text-slate-800">{sajuAdvisory.luckyTime}</span></div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="py-6 text-center space-y-3">
-                                <i className="fas fa-yin-yang text-3xl text-slate-300"></i>
-                                <p className="text-xs text-slate-500 leading-relaxed">
-                                    생년월일을 등록하시면 매일 나에게 꼭 필요한 <strong>사주 맞춤 주의사항</strong>과 <strong>행운 요소</strong>를 보실 수 있습니다.
-                                </p>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowBirthEditor(true)}
-                                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all"
-                                >
-                                    생년월일 등록하기
-                                </button>
-                            </div>
+                        {sajuAdvisory && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200 shrink-0">
+                                {sajuAdvisory.caution.badge}
+                            </span>
                         )}
                     </div>
 
-                    <div className="text-[10px] text-slate-400 text-right">
+                    {sajuAdvisory ? (
+                        <div className="space-y-3">
+                            <div className="p-3.5 rounded-2xl bg-[#e8edf2]/80 shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)] border border-rose-200/60 space-y-1.5">
+                                <div className="flex items-center gap-1.5">
+                                    <i className={`fas ${sajuAdvisory.caution.icon} text-xs`}></i>
+                                    <span className="font-black text-xs text-rose-900">
+                                        {sajuAdvisory.caution.title}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-rose-900/80 leading-relaxed">
+                                    {sajuAdvisory.caution.detail}
+                                </p>
+                            </div>
+
+                            <div className="bg-white/75 p-3 rounded-2xl shadow-[inset_2px_2px_5px_rgba(163,177,198,0.25),inset_-2px_-2px_5px_rgba(255,255,255,0.8)] text-[11px] space-y-1.5">
+                                <div className="font-bold text-[#1e293b] flex items-center gap-1">
+                                    <i className="fas fa-clover text-emerald-500"></i> 오늘의 행운 처방
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-[#64748b] font-medium pt-1">
+                                    <div>색상: <span className="font-bold text-[#1e293b]">{sajuAdvisory.luckyColor}</span></div>
+                                    <div>숫자: <span className="font-bold text-[#1e293b]">{sajuAdvisory.luckyNumber}</span></div>
+                                    <div>방향: <span className="font-bold text-[#1e293b]">{sajuAdvisory.luckyDirection}</span></div>
+                                    <div>길시: <span className="font-bold text-[#1e293b]">{sajuAdvisory.luckyTime}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="py-5 text-center space-y-3 bg-[#e8edf2]/80 rounded-2xl p-4 shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                            <i className="fas fa-yin-yang text-3xl text-indigo-400"></i>
+                            <p className="text-xs text-[#64748b] leading-relaxed">
+                                생년월일을 등록하시면 매일 나에게 꼭 필요한 <strong>사주 맞춤 주의사항</strong>과 <strong>행운 요소</strong>를 보실 수 있습니다.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => setShowBirthEditor(true)}
+                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                            >
+                                생년월일 등록하기
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="text-[10px] text-[#94a3b8] text-right">
                         * 전통 명리학 일진 기준 실시간 분석
                     </div>
                 </div>
 
-                {/* 🌤️ 카드 2: 오늘의 날씨 & 라이프 외출 가이드 */}
-                <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4">
-                    <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-xl bg-sky-500 text-white flex items-center justify-center text-sm shadow-sm shadow-sky-200 font-bold">
-                                    <i className="fas fa-cloud-sun"></i>
-                                </div>
-                                <div>
-                                    <h3 className="font-extrabold text-slate-800 text-sm">실시간 날씨 & 생활 지수</h3>
-                                    <p className="text-[10px] text-slate-400">{weather?.location || '날씨 정보'}</p>
-                                </div>
+                {/* 카드 2: 오늘의 날씨 & 라이프 외출 가이드 */}
+                <div className="bg-[#f0f4f8] rounded-3xl p-5 sm:p-6 border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] hover:shadow-[8px_8px_16px_rgba(163,177,198,0.5),-6px_-6px_14px_rgba(255,255,255,0.9)] transition-all flex flex-col space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-xl bg-sky-500 text-white flex items-center justify-center text-sm shadow-sm font-bold shrink-0">
+                                <i className="fas fa-cloud-sun"></i>
                             </div>
-                            {pm10Grade && (
-                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${pm10Grade.color}`}>
-                                    미세 {pm10Grade.label}
-                                </span>
-                            )}
+                            <div>
+                                <h3 className="font-extrabold text-[#1e293b] text-sm">실시간 날씨 &amp; 생활 지수</h3>
+                                <p className="text-[10px] text-[#64748b]">{weather?.location || '날씨 정보'}</p>
+                            </div>
                         </div>
-
-                        {weatherLoading ? (
-                            <div className="py-8 flex items-center justify-center text-slate-400 text-xs">
-                                <div className="animate-spin rounded-full h-6 w-6 border-2 border-sky-500 border-t-transparent mr-2"></div>
-                                날씨 정보 불러오는 중...
-                            </div>
-                        ) : weather ? (
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between bg-sky-50/70 p-3.5 rounded-2xl border border-sky-200/80">
-                                    <div className="flex items-center gap-3">
-                                        <i className={`fas ${wxInfo.icon} text-3xl`}></i>
-                                        <div>
-                                            <div className="text-xl font-black text-slate-900">{weather.temp}°C</div>
-                                            <div className="text-xs font-bold text-slate-500">{wxInfo.label}</div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right text-xs font-medium text-slate-500 space-y-0.5">
-                                        <div>최고 <span className="font-bold text-rose-600">{weather.max}°</span></div>
-                                        <div>최저 <span className="font-bold text-blue-600">{weather.min}°</span></div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs space-y-1.5 text-slate-700">
-                                    <div className="font-bold flex items-center gap-1 text-slate-800">
-                                        <i className="fas fa-shirt text-indigo-500"></i> 외출 및 옷차림 팁
-                                    </div>
-                                    <p className="text-[11px] text-slate-600 leading-relaxed">
-                                        {weather.temp >= 23 
-                                            ? "통풍이 잘되는 가벼운 반팔 차림이 적당하며, 수분 보충에 신경 쓰세요." 
-                                            : weather.temp >= 15 
-                                                ? "일교차가 있으니 얇은 겉옷이나 가디건을 챙기시면 좋습니다." 
-                                                : "쌀쌀하니 따뜻한 외투를 입으시고 보온에 유의하세요."}
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="text-xs text-slate-400 py-6 text-center">날씨 정보를 가져올 수 없습니다.</p>
+                        {pm10Grade && (
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border shrink-0 ${pm10Grade.color}`}>
+                                미세 {pm10Grade.label}
+                            </span>
                         )}
                     </div>
 
-                    <div className="text-[10px] text-slate-400 text-right">
+                    {weatherLoading ? (
+                        <div className="py-8 flex items-center justify-center text-[#64748b] text-xs bg-[#e8edf2]/80 rounded-2xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-indigo-500 border-t-transparent mr-2"></div>
+                            날씨 정보 불러오는 중...
+                        </div>
+                    ) : weather ? (
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between bg-[#e8edf2]/80 p-3.5 rounded-2xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                                <div className="flex items-center gap-3">
+                                    <i className={`fas ${wxInfo.icon} text-3xl`}></i>
+                                    <div>
+                                        <div className="text-xl font-black text-[#1e293b] font-mono">{weather.temp}°C</div>
+                                        <div className="text-xs font-bold text-[#64748b]">{wxInfo.label}</div>
+                                    </div>
+                                </div>
+                                <div className="text-right text-xs font-medium text-[#64748b] space-y-0.5">
+                                    <div>최고 <span className="font-bold text-rose-600">{weather.max}°</span></div>
+                                    <div>최저 <span className="font-bold text-indigo-600">{weather.min}°</span></div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white/75 p-3 rounded-2xl shadow-[inset_2px_2px_5px_rgba(163,177,198,0.25),inset_-2px_-2px_5px_rgba(255,255,255,0.8)] text-xs space-y-1.5 text-[#1e293b]">
+                                <div className="font-bold flex items-center gap-1">
+                                    <i className="fas fa-shirt text-indigo-500"></i> 외출 및 옷차림 팁
+                                </div>
+                                <p className="text-[11px] text-[#64748b] leading-relaxed">
+                                    {weather.temp >= 23
+                                        ? "통풍이 잘되는 가벼운 반팔 차림이 적당하며, 수분 보충에 신경 쓰세요."
+                                        : weather.temp >= 15
+                                            ? "일교차가 있으니 얇은 겉옷이나 가디건을 챙기시면 좋습니다."
+                                            : "쌀쌀하니 따뜻한 외투를 입으시고 보온에 유의하세요."}
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-xs text-[#64748b] py-6 text-center bg-[#e8edf2]/80 rounded-2xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                            날씨 정보를 가져올 수 없습니다.
+                        </p>
+                    )}
+
+                    <div className="text-[10px] text-[#94a3b8] text-right">
                         * Open-Meteo 실시간 기상 데이터
                     </div>
                 </div>
 
-                {/* 💡 카드 3: 오늘의 명언 & 영감 */}
-                <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4">
-                    <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm shadow-sm shadow-amber-200 font-bold">
-                                    <i className="fas fa-lightbulb"></i>
-                                </div>
-                                <div>
-                                    <h3 className="font-extrabold text-slate-800 text-sm">오늘의 지혜 & 명언</h3>
-                                    <p className="text-[10px] text-slate-400">하루를 깨우는 마인드셋</p>
-                                </div>
+                {/* 카드 3: 오늘의 명언 & 영감 */}
+                <div className="bg-[#f0f4f8] rounded-3xl p-5 sm:p-6 border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] hover:shadow-[8px_8px_16px_rgba(163,177,198,0.5),-6px_-6px_14px_rgba(255,255,255,0.9)] transition-all flex flex-col space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm shadow-sm font-bold shrink-0">
+                                <i className="fas fa-lightbulb"></i>
                             </div>
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                                #{currentQuote.category}
-                            </span>
+                            <div>
+                                <h3 className="font-extrabold text-[#1e293b] text-sm">오늘의 지혜 &amp; 명언</h3>
+                                <p className="text-[10px] text-[#64748b]">하루를 깨우는 마인드셋</p>
+                            </div>
                         </div>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                            #{currentQuote.category}
+                        </span>
+                    </div>
 
-                        <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3">
+                    <div className="space-y-3">
+                        <div className="p-4 rounded-2xl bg-[#e8edf2]/80 shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)] space-y-3">
                             <div className="flex gap-2">
-                                <i className="fas fa-quote-left text-amber-400 text-lg shrink-0"></i>
-                                <p className="font-bold text-xs sm:text-sm text-slate-800 leading-relaxed">
-                                    "{currentQuote.quote}"
+                                <i className="fas fa-quote-left text-indigo-400 text-lg shrink-0"></i>
+                                <p className="font-bold text-xs sm:text-sm text-[#1e293b] leading-relaxed">
+                                    &ldquo;{currentQuote.quote}&rdquo;
                                 </p>
                             </div>
-                            <div className="text-right text-xs font-black text-amber-900">
+                            <div className="text-right text-xs font-black text-indigo-700">
                                 — {currentQuote.author}
                             </div>
                         </div>
 
-                        <div className="mt-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-[11px] text-slate-600 flex items-center gap-2">
+                        <div className="bg-white/75 p-3 rounded-2xl shadow-[inset_2px_2px_5px_rgba(163,177,198,0.25),inset_-2px_-2px_5px_rgba(255,255,255,0.8)] text-[11px] text-[#64748b] flex items-center gap-2">
                             <i className="fas fa-heart text-rose-500 shrink-0"></i>
                             <span>오늘 하루도 긍정의 힘으로 힘차게 시작해 보세요!</span>
                         </div>
                     </div>
 
-                    <div className="text-[10px] text-slate-400 text-right">
+                    <div className="text-[10px] text-[#94a3b8] text-right">
                         * 매일 새로워지는 365 Daily Wisdom
                     </div>
                 </div>
             </div>
 
-            {/* 🌟 3. 하단: 스마트 캘린더 & 일정 관리 섹션 */}
-            <div className="pt-2">
+            {/* 4. 나의 TO-DO (할일 정리) 실시간 보드 */}
+            <MypageTodoCard variant="full" />
+
+            {/* 5. 스마트 캘린더 & 일정 관리 섹션 */}
+            <div>
                 <CalendarScheduleSection
                     calYear={calYear}
                     calMonth={calMonth}
@@ -566,6 +646,445 @@ export const MyLifeSection: React.FC<MyLifeSectionProps> = ({
                     handleRemoveAgenda={handleRemoveAgenda}
                     SCHEDULE_COLOR_CONFIG={SCHEDULE_COLOR_CONFIG}
                 />
+            </div>
+
+            {/* 6. 2열 퍼스널 인사이트 그리드 (내 관심 주식 + 사주 오행 밸런스) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 좌측: 내 관심 주식 종목 */}
+                <div className="bg-[#f0f4f8] rounded-3xl p-6 border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] hover:shadow-[8px_8px_16px_rgba(163,177,198,0.5),-6px_-6px_14px_rgba(255,255,255,0.9)] transition-all flex flex-col space-y-4">
+                    <div className="flex justify-between items-center border-b border-slate-200/70 pb-3">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-xs font-black shadow-sm">
+                                <i className="fas fa-chart-line"></i>
+                            </div>
+                            <div>
+                                <h3 className="font-extrabold text-[#1e293b] text-sm">
+                                    내 관심 주식 종목
+                                </h3>
+                                <p className="text-[10px] text-[#64748b]">관심 등록 종목 및 목표가 모니터링</p>
+                            </div>
+                        </div>
+                        {watchlist.length > 0 && (
+                            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100/80 px-2.5 py-0.5 rounded-full">
+                                {watchlist.length}개 모니터링
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="space-y-2.5">
+                        {watchlist.length > 0 ? (
+                            watchlist.slice(0, 3).map((stock) => (
+                                <Link
+                                    key={stock.id}
+                                    href="/finance"
+                                    className="flex justify-between items-center bg-[#e8edf2]/80 hover:bg-white p-3.5 rounded-2xl text-xs shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.75)] border border-white/70 transition-all group"
+                                >
+                                    <div className="min-w-0">
+                                        <span className="font-black text-[#1e293b] mr-2 group-hover:text-indigo-600 transition-colors">
+                                            {stock.stock_name}
+                                        </span>
+                                        <span className="font-mono text-[11px] text-[#64748b]">
+                                            {stock.stock_symbol}
+                                        </span>
+                                    </div>
+                                    {stock.target_price ? (
+                                        <span className="font-extrabold text-emerald-600 font-mono shrink-0">
+                                            목표가: {Number(stock.target_price).toLocaleString()}원
+                                        </span>
+                                    ) : (
+                                        <span className="text-[10px] font-bold text-[#64748b] shrink-0">
+                                            실시간 시세 <i className="fas fa-chevron-right text-[8px]"></i>
+                                        </span>
+                                    )}
+                                </Link>
+                            ))
+                        ) : (
+                            <div className="text-[#64748b] text-xs py-7 text-center bg-[#e8edf2]/80 rounded-2xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                                관심 등록한 주식이 없습니다
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5 pt-1">
+                        {onNavigateSection && (
+                            <button
+                                type="button"
+                                onClick={() => onNavigateSection('stocks')}
+                                className="py-2.5 bg-[#e8edf2] hover:bg-white text-[#1e293b] font-extrabold text-center text-xs rounded-xl shadow-[4px_4px_8px_rgba(163,177,198,0.4),-4px_-4px_8px_rgba(255,255,255,0.85)] transition-all cursor-pointer"
+                            >
+                                내 종목 상세 관리
+                            </button>
+                        )}
+                        <a
+                            href="/finance"
+                            className={`py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-extrabold text-center text-xs rounded-xl shadow-sm block transition-all ${
+                                onNavigateSection ? '' : 'col-span-2'
+                            }`}
+                        >
+                            주식/금융 센터 열기
+                        </a>
+                    </div>
+                </div>
+
+                {/* 우측: 사주팔자 오행 & 에너지 밸런스 */}
+                <div className="bg-[#f0f4f8] rounded-3xl p-6 border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] hover:shadow-[8px_8px_16px_rgba(163,177,198,0.5),-6px_-6px_14px_rgba(255,255,255,0.9)] transition-all flex flex-col space-y-4">
+                    <div className="flex justify-between items-center border-b border-slate-200/70 pb-3">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center text-sm font-black shadow-sm">
+                                <i className="fas fa-yin-yang"></i>
+                            </div>
+                            <div>
+                                <h3 className="font-extrabold text-[#1e293b] text-sm">
+                                    {user?.name || '회원'}님의 사주 오행
+                                </h3>
+                                <p className="text-[10px] text-[#64748b]">목·화·토·금·수 에너지 밸런스</p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowBirthEditor(!showBirthEditor)}
+                            className="text-[11px] bg-[#e8edf2] hover:bg-white text-indigo-600 px-3 py-1.5 rounded-xl font-bold shadow-[3px_3px_6px_rgba(163,177,198,0.35),-3px_-3px_6px_rgba(255,255,255,0.8)] transition-all cursor-pointer"
+                        >
+                            {birthDate ? '생일 수정' : '생일 등록'}
+                        </button>
+                    </div>
+
+                    {showBirthEditor ? (
+                        <form onSubmit={handleSaveBirth} className="space-y-3 bg-[#e8edf2]/80 p-4 rounded-2xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                            <p className="text-xs text-[#1e293b] font-bold">
+                                생년월일을 입력해 실시간 사주 오행을 확인해 보세요.
+                            </p>
+                            <input
+                                type="date"
+                                value={tempBirthDate}
+                                onChange={(e) => setTempBirthDate(e.target.value)}
+                                className="w-full px-3 py-2 rounded-xl bg-white border border-white/80 text-xs font-bold text-[#1e293b] shadow-[inset_2px_2px_4px_rgba(163,177,198,0.3),inset_-2px_-2px_4px_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                required
+                            />
+                            <div className="flex gap-2">
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-xs font-black cursor-pointer shadow-sm"
+                                >
+                                    확인
+                                </button>
+                                {birthDate && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowBirthEditor(false)}
+                                        className="flex-1 py-2 bg-white/80 hover:bg-white text-[#64748b] rounded-xl text-xs font-black cursor-pointer shadow-2xs"
+                                    >
+                                        취소
+                                    </button>
+                                )}
+                            </div>
+                        </form>
+                    ) : saju ? (
+                        <div className="space-y-3.5">
+                            <p className="text-xs text-[#1e293b] leading-relaxed font-bold break-keep bg-[#e8edf2]/80 p-3.5 rounded-2xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                                <span className="text-indigo-600 font-black">천성:</span> {saju.nature}
+                            </p>
+                            <div className="space-y-2 bg-white/75 p-3.5 rounded-2xl shadow-[inset_2px_2px_5px_rgba(163,177,198,0.25),inset_-2px_-2px_5px_rgba(255,255,255,0.8)]">
+                                <div className="flex justify-between text-[11px] font-black text-[#1e293b]">
+                                    <span className="text-emerald-600">목 {saju.wood}%</span>
+                                    <span className="text-rose-500">화 {saju.fire}%</span>
+                                    <span className="text-amber-600">토 {saju.earth}%</span>
+                                    <span className="text-slate-600">금 {saju.metal}%</span>
+                                    <span className="text-sky-600">수 {saju.water}%</span>
+                                </div>
+                                <svg
+                                    viewBox="0 0 100 6"
+                                    preserveAspectRatio="none"
+                                    className="h-3 w-full bg-slate-200/80 rounded-full overflow-hidden block"
+                                >
+                                    <rect x={woodOffset} y={0} width={saju.wood} height={6} className="fill-emerald-500" />
+                                    <rect x={fireOffset} y={0} width={saju.fire} height={6} className="fill-rose-500" />
+                                    <rect x={earthOffset} y={0} width={saju.earth} height={6} className="fill-amber-500" />
+                                    <rect x={metalOffset} y={0} width={saju.metal} height={6} className="fill-slate-400" />
+                                    <rect x={waterOffset} y={0} width={saju.water} height={6} className="fill-sky-500" />
+                                </svg>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="py-6 px-4 text-center space-y-2.5 bg-[#e8edf2]/80 rounded-2xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                            <p className="text-xs text-[#64748b]">
+                                생년월일을 등록하면 나만의 오행 에너지 밸런스가 표시됩니다.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => setShowBirthEditor(true)}
+                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-black cursor-pointer shadow-sm"
+                            >
+                                생년월일 등록하기
+                            </button>
+                        </div>
+                    )}
+
+                    <Link
+                        href="/entertainment/saju"
+                        className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-all"
+                    >
+                        전통 사주 종합 해설 열기
+                    </Link>
+                </div>
+            </div>
+
+            {/* 7. 내가 구독한 주제 최신 뉴스 (LIVE FEED) */}
+            <div className="bg-[#f0f4f8] rounded-3xl p-6 sm:p-7 border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] flex flex-col space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-sky-500 text-white flex items-center justify-center font-black text-xl shadow-sm">
+                            <i className="fas fa-newspaper"></i>
+                        </div>
+                        <div>
+                            <h3 className="font-extrabold text-[#1e293b] text-lg tracking-tight flex items-center gap-2">
+                                내가 구독한 주제 최신 뉴스
+                                <span className="text-[10px] font-black font-mono px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                                    LIVE FEED
+                                </span>
+                            </h3>
+                            <p className="text-xs text-[#64748b]">구독하신 맞춤 관심 주제의 실시간 관련 뉴스 피드입니다.</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            {newsKeywords && newsKeywords.length > 0 ? (
+                                newsKeywords.map((kw, idx) => {
+                                    const kwName = typeof kw === 'string' ? kw : (kw.keyword || kw.name || '');
+                                    const kwId = typeof kw === 'object' ? kw.id : undefined;
+                                    return (
+                                        <span
+                                            key={kwId || idx}
+                                            className="text-xs font-black px-3 py-1 rounded-xl bg-white/90 text-indigo-700 shadow-[3px_3px_6px_rgba(163,177,198,0.3),-3px_-3px_6px_rgba(255,255,255,0.85)] flex items-center gap-1.5"
+                                        >
+                                            <i className="fas fa-hashtag text-[10px] text-indigo-400"></i> {kwName}
+                                            <button
+                                                type="button"
+                                                onClick={() => onDeleteKeyword(kwId, kwName)}
+                                                className="text-slate-400 hover:text-rose-500 transition-colors ml-0.5 cursor-pointer"
+                                                title="구독 해제"
+                                            >
+                                                <i className="fas fa-times text-[10px]"></i>
+                                            </button>
+                                        </span>
+                                    );
+                                })
+                            ) : (
+                                <span className="text-xs font-bold text-[#64748b] bg-[#e8edf2] px-3 py-1 rounded-xl">
+                                    등록된 구독 키워드가 없습니다
+                                </span>
+                            )}
+                        </div>
+                        {onNavigateSection && (
+                            <button
+                                type="button"
+                                onClick={() => onNavigateSection('news')}
+                                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer ml-1 active:scale-95"
+                            >
+                                <i className="fas fa-plus text-[11px]"></i> 주제 추가/관리
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {keywordNews && keywordNews.length > 0 ? (
+                        keywordNews.slice(0, 3).map((article, idx) => (
+                            <a
+                                key={article.id || idx}
+                                href={article.origin_url || article.url || (article.id ? `/news/${article.id}` : '/news')}
+                                target={article.origin_url || article.url ? '_blank' : undefined}
+                                rel={article.origin_url || article.url ? 'noopener noreferrer' : undefined}
+                                className="bg-white/85 hover:bg-white border border-white/90 hover:border-indigo-300 p-4 sm:p-5 rounded-2xl shadow-[4px_4px_8px_rgba(163,177,198,0.35),-4px_-4px_8px_rgba(255,255,255,0.85)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col space-y-3 group cursor-pointer"
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[10px] font-black font-mono px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 border border-indigo-100">
+                                        #{article.category || article.keyword || '구독뉴스'}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-[#94a3b8] truncate max-w-[120px]">
+                                        {article.publisher || article.source || '주요뉴스'}
+                                    </span>
+                                </div>
+                                <h4 className="font-extrabold text-[#1e293b] text-sm line-clamp-2 group-hover:text-indigo-600 transition-colors leading-snug">
+                                    {article.title}
+                                </h4>
+                                {article.description && (
+                                    <p className="text-xs text-[#64748b] line-clamp-2 leading-relaxed font-normal">
+                                        {article.description}
+                                    </p>
+                                )}
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-[10px] font-extrabold text-[#94a3b8]">
+                                    <span className="font-mono">
+                                        {article.published_at ? String(article.published_at).substring(0, 10) : '최근'}
+                                    </span>
+                                    <span className="text-indigo-600 group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                                        기사 읽기 <i className="fas fa-arrow-right text-[9px]"></i>
+                                    </span>
+                                </div>
+                            </a>
+                        ))
+                    ) : (
+                        <div className="col-span-3 text-[#64748b] text-xs py-10 text-center bg-[#e8edf2]/80 rounded-2xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                            <i className="fas fa-newspaper text-slate-400 text-2xl mb-2 block"></i>
+                            구독한 주제의 뉴스 기사가 아직 등록되지 않았습니다.
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* 8. 베라포인트 리워드 정산 & 맞춤 쇼핑 (2열 대칭 그리드) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 위젯 1: 베라포인트 정산 & 미션 센터 */}
+                <div className="bg-[#f0f4f8] rounded-3xl p-6 border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] hover:shadow-[8px_8px_16px_rgba(163,177,198,0.5),-6px_-6px_14px_rgba(255,255,255,0.9)] transition-all flex flex-col space-y-4">
+                    <div className="flex justify-between items-center border-b border-slate-200/70 pb-3">
+                        <h3 className="font-black text-[#1e293b] text-sm flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xs font-black shadow-sm">
+                                <i className="fas fa-coins"></i>
+                            </div>
+                            베라포인트 정산 &amp; 미션 센터
+                        </h3>
+                        <span className="text-[10px] font-black font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                            POINT HUB
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3.5 bg-[#e8edf2]/80 rounded-2xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                            <span className="text-[10px] text-amber-700 font-black">누적 베라포인트</span>
+                            <span className="block text-lg font-mono font-black text-[#1e293b] mt-0.5">
+                                🪙 {veraPointsData.points.toLocaleString()} P
+                            </span>
+                        </div>
+                        <div className="p-3.5 bg-[#e8edf2]/80 rounded-2xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                            <span className="text-[10px] text-emerald-700 font-black">정산 대기 금액</span>
+                            <span className="block text-lg font-mono font-black text-[#1e293b] mt-0.5">
+                                {veraPointsData.pendingAmount.toLocaleString()} 원
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2.5 bg-white/75 p-3.5 rounded-2xl shadow-[inset_2px_2px_5px_rgba(163,177,198,0.25),inset_-2px_-2px_5px_rgba(255,255,255,0.8)]">
+                        <span className="text-[10px] text-[#64748b] font-bold block">베라포인트 활동 달성률</span>
+                        <div>
+                            <div className="flex justify-between text-[10px] font-bold text-[#1e293b] mb-1">
+                                <span>출석체크 &amp; 미션 완료</span>
+                                <span className="font-mono">{veraPointsData.attendanceRatio}%</span>
+                            </div>
+                            <svg
+                                viewBox="0 0 100 4"
+                                preserveAspectRatio="none"
+                                className="w-full h-2 bg-slate-200/80 rounded-full overflow-hidden block"
+                            >
+                                <rect
+                                    x={0}
+                                    y={0}
+                                    width={Math.min(100, Math.max(0, veraPointsData.attendanceRatio))}
+                                    height={4}
+                                    className="fill-emerald-500"
+                                />
+                            </svg>
+                        </div>
+                        <div>
+                            <div className="flex justify-between text-[10px] font-bold text-[#1e293b] mb-1">
+                                <span>소셜 라운지 &amp; 아지트 활동</span>
+                                <span className="font-mono">{veraPointsData.activityRatio}%</span>
+                            </div>
+                            <svg
+                                viewBox="0 0 100 4"
+                                preserveAspectRatio="none"
+                                className="w-full h-2 bg-slate-200/80 rounded-full overflow-hidden block"
+                            >
+                                <rect
+                                    x={0}
+                                    y={0}
+                                    width={Math.min(100, Math.max(0, veraPointsData.activityRatio))}
+                                    height={4}
+                                    className="fill-indigo-500"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {user?.email === 'sukman@naver.com' && (
+                        <Link
+                            href="/reward/exchange"
+                            className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-all"
+                        >
+                            베라포인트 리워드 교환 신청
+                        </Link>
+                    )}
+                </div>
+
+                {/* 위젯 2: 나를 위한 맞춤 쇼핑 & 신박템 */}
+                <div className="bg-[#f0f4f8] rounded-3xl p-6 border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] hover:shadow-[8px_8px_16px_rgba(163,177,198,0.5),-6px_-6px_14px_rgba(255,255,255,0.9)] transition-all flex flex-col space-y-4">
+                    <div className="flex justify-between items-center border-b border-slate-200/70 pb-3">
+                        <h3 className="font-black text-[#1e293b] text-sm flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center text-xs font-black shadow-sm">
+                                <i className="fas fa-shopping-bag"></i>
+                            </div>
+                            {user?.name || '회원'}님을 위한 맞춤 쇼핑
+                        </h3>
+                        <span className="text-[10px] bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-2.5 py-0.5 rounded-full font-black shadow-xs flex items-center gap-1">
+                            <i className="fas fa-wand-magic-sparkles text-[9px]"></i> 신박 꿀템
+                        </span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                        {shoppingItems && shoppingItems.length > 0 ? (
+                            shoppingItems.slice(0, 2).map((item) => (
+                                <a
+                                    key={item.productId}
+                                    href={item.productUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3.5 p-2.5 rounded-2xl bg-[#e8edf2]/80 hover:bg-white shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.75)] border border-white/70 transition-all group"
+                                >
+                                    <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-slate-200 border border-white">
+                                        <img
+                                            src={item.productImage}
+                                            alt={item.productName}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                        {item.discountRate && (
+                                            <span className="absolute top-0 right-0 bg-rose-600 text-white text-[8px] font-black px-1 rounded-bl">
+                                                {item.discountRate}%
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        {item.curationPoint && (
+                                            <div className="text-[10px] font-extrabold text-indigo-700 truncate flex items-center gap-0.5 mb-0.5">
+                                                <span>💡</span> {item.curationPoint}
+                                            </div>
+                                        )}
+                                        <h4 className="text-xs font-bold text-[#1e293b] truncate group-hover:text-indigo-600 transition-colors leading-tight">
+                                            {item.productName}
+                                        </h4>
+                                        <div className="text-xs font-black text-[#1e293b] mt-0.5">
+                                            {item.productPrice?.toLocaleString()}
+                                            <span className="text-[10px] font-normal text-[#64748b]">원</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all text-xs pr-1">
+                                        <i className="fas fa-chevron-right text-[10px]"></i>
+                                    </div>
+                                </a>
+                            ))
+                        ) : (
+                            <div className="text-[#64748b] text-xs py-7 text-center bg-[#e8edf2]/80 rounded-2xl shadow-[inset_3px_3px_6px_rgba(163,177,198,0.35),inset_-3px_-3px_6px_rgba(255,255,255,0.75)]">
+                                현재 등록된 맞춤 추천 상품이 없습니다.
+                            </div>
+                        )}
+                    </div>
+
+                    <Link
+                        href="/shopping"
+                        className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-all"
+                    >
+                        스마트 쇼핑 &amp; 핫딜 센터 바로가기
+                    </Link>
+                </div>
             </div>
         </div>
     );
