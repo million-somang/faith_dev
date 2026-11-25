@@ -647,143 +647,193 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     ).toFixed(1)} ${currentVbW.toFixed(1)} ${currentVbH.toFixed(1)}`;
 
     return (
-        <div className="relative h-full flex-1 flex flex-col bg-gradient-to-b from-slate-100 via-white to-slate-100 rounded-3xl border border-slate-200/90 overflow-hidden shadow-sm">
-            {/* 통합 아지트 헤더 바 (방문자수·핸들·타이틀·실내/텃밭 스위치·방명록·창고·상점·공유 통합) */}
-            <div className="flex flex-col gap-2.5 px-4 sm:px-5 py-3.5 bg-white/95 backdrop-blur-xs border-b border-slate-200/70 shrink-0">
-                {/* 1단: TODAY/TOTAL + @handle + 아지트 타이틀(수정) ─── 우측: 이웃·공유 */}
-                <div className="w-full flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2 min-w-0">
-                        <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black tracking-wide shrink-0">
-                            MY AGIT
-                        </span>
-
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200/80 text-[10px] sm:text-[11px] font-mono font-black shrink-0">
-                            <span className="text-rose-600">TODAY {todayVisitors.toLocaleString()}</span>
-                            <span className="text-slate-300">|</span>
-                            <span className="text-slate-700">TOTAL {totalVisitors.toLocaleString()}</span>
-                        </div>
-
-                        {handle && (
-                            <span className="text-[10px] sm:text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 shrink-0">
-                                @{handle}
-                            </span>
-                        )}
-
-                        {backHref && (
-                            <Link
-                                href={backHref}
-                                className="text-[11px] font-bold text-slate-500 hover:text-indigo-600 transition-colors shrink-0"
-                            >
-                                ← 마이페이지
-                            </Link>
-                        )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-1.5 ml-auto">
-                        {hasNeighbors && onRandomSurf && (
-                            <button
-                                type="button"
-                                onClick={onRandomSurf}
-                                className="px-2.5 py-1 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
-                            >
-                                <span>🌊 이웃 놀러가기</span>
-                            </button>
-                        )}
-                        {hasNeighbors && onOpenSurfModal && (
-                            <button
-                                type="button"
-                                onClick={onOpenSurfModal}
-                                className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
-                            >
-                                <i className="fas fa-users text-[10px]"></i>
-                                <span>이웃</span>
-                            </button>
-                        )}
-                        {onShare && (
-                            <button
-                                type="button"
-                                onClick={onShare}
-                                className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
-                                title="내 아지트 주소 복사/공유"
-                            >
-                                <i className="fas fa-share-nodes text-[10px]"></i>
-                                <span>공유</span>
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* 2단: 아지트 타이틀 + 인라인 수정 */}
-                <div className="w-full flex flex-wrap items-center gap-2">
-                    {isEditingTitle && isOwner ? (
-                        <div className="flex items-center gap-1.5 flex-1 min-w-[200px] max-w-md">
-                            <input
-                                type="text"
-                                maxLength={40}
-                                value={titleDraft}
-                                onChange={(e) => setTitleDraft(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleConfirmTitleSave();
-                                    if (e.key === 'Escape') {
-                                        setTitleDraft(displayRoomTitle);
-                                        setIsEditingTitle(false);
-                                    }
-                                }}
-                                placeholder="나만의 아지트 이름을 입력하세요"
-                                className="flex-1 min-w-0 px-3 py-1 rounded-xl bg-indigo-50/80 border border-indigo-300 text-sm font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                autoFocus
-                            />
-                            <button
-                                type="button"
-                                onClick={handleConfirmTitleSave}
-                                className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black shrink-0 cursor-pointer transition-colors"
-                            >
-                                저장
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setTitleDraft(displayRoomTitle);
-                                    setIsEditingTitle(false);
-                                }}
-                                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold shrink-0 cursor-pointer transition-colors"
-                            >
-                                취소
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex flex-wrap items-center gap-2 min-w-0">
-                            {headingTag === 'h1' ? (
-                                <h1 className="text-base sm:text-xl font-black text-slate-900 tracking-tight break-words">
-                                    {displayRoomTitle}
-                                </h1>
-                            ) : (
-                                <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight break-words">
-                                    {displayRoomTitle}
-                                </h2>
-                            )}
-                            {isOwner && onSaveRoomTitle && (
+        <div className="relative h-full flex-1 flex flex-col bg-[#f0f4f8] rounded-3xl border border-white/80 overflow-hidden shadow-[6px_6px_14px_rgba(163,177,198,0.45),-6px_-6px_14px_rgba(255,255,255,0.85)]">
+            {/* 통합 아지트 헤더 바 (3단 기능별 그룹화: 1단 아이덴티티+소셜·알림 / 2단 성장·운영 허브 / 3단 4구역 탭) */}
+            <div className="flex flex-col gap-2.5 px-4 sm:px-5 py-3.5 bg-[#f0f4f8] border-b border-slate-200/80 shrink-0">
+                {/* 1단: 아이덴티티(타이틀·핸들·방문자) + 우측 소셜·알림 통합 뉴모피즘 독 */}
+                <div className="w-full flex flex-wrap items-start sm:items-center justify-between gap-2.5">
+                    <div className="min-w-0 flex-1">
+                        {isEditingTitle && isOwner ? (
+                            <div className="flex items-center gap-1.5 flex-1 min-w-[200px] max-w-md">
+                                <input
+                                    type="text"
+                                    maxLength={40}
+                                    value={titleDraft}
+                                    onChange={(e) => setTitleDraft(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleConfirmTitleSave();
+                                        if (e.key === 'Escape') {
+                                            setTitleDraft(displayRoomTitle);
+                                            setIsEditingTitle(false);
+                                        }
+                                    }}
+                                    placeholder="나만의 아지트 이름을 입력하세요"
+                                    className="flex-1 min-w-0 px-3 py-1.5 rounded-xl bg-white border border-indigo-200 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.85)] text-sm font-extrabold text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                                    autoFocus
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleConfirmTitleSave}
+                                    className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white text-[11px] font-black shadow-xs shrink-0 cursor-pointer transition-all"
+                                >
+                                    저장
+                                </button>
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setTitleDraft(displayRoomTitle);
-                                        setIsEditingTitle(true);
+                                        setIsEditingTitle(false);
                                     }}
-                                    className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 border border-slate-200/90 text-[10px] font-extrabold transition-colors cursor-pointer shrink-0 flex items-center gap-1"
-                                    title="아지트 이름 수정"
+                                    className="px-2.5 py-1.5 rounded-xl bg-[#e8edf2] hover:bg-white text-[#64748b] border border-white/80 shadow-[2px_2px_4px_rgba(163,177,198,0.35),-2px_-2px_4px_rgba(255,255,255,0.85)] text-[11px] font-bold shrink-0 cursor-pointer transition-all"
                                 >
-                                    <i className="fas fa-pen text-[9px]"></i>
-                                    <span>수정</span>
+                                    취소
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-wrap items-center gap-2 min-w-0">
+                                {headingTag === 'h1' ? (
+                                    <h1 className="text-lg sm:text-xl font-black text-[#1e293b] tracking-tight break-words">
+                                        {displayRoomTitle}
+                                    </h1>
+                                ) : (
+                                    <h2 className="text-lg sm:text-xl font-black text-[#1e293b] tracking-tight break-words">
+                                        {displayRoomTitle}
+                                    </h2>
+                                )}
+                                {isOwner && onSaveRoomTitle && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setTitleDraft(displayRoomTitle);
+                                            setIsEditingTitle(true);
+                                        }}
+                                        className="px-2 py-0.5 rounded-lg bg-[#e8edf2] hover:bg-white text-[#64748b] hover:text-[#6366f1] border border-white/80 shadow-[2px_2px_4px_rgba(163,177,198,0.35),-2px_-2px_4px_rgba(255,255,255,0.85)] text-[10px] font-extrabold transition-all cursor-pointer shrink-0 flex items-center gap-1"
+                                        title="아지트 이름 수정"
+                                    >
+                                        <i className="fas fa-pen text-[9px]"></i>
+                                        <span>수정</span>
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-bold text-[#64748b]">
+                            {handle && (
+                                <>
+                                    <span className="font-extrabold text-[#6366f1]">@{handle}</span>
+                                    <span className="text-slate-300" aria-hidden="true">
+                                        ·
+                                    </span>
+                                </>
+                            )}
+                            <span className="inline-flex items-center gap-1 font-mono text-[10px] sm:text-[11px] font-black">
+                                <span className="text-rose-600">TODAY {todayVisitors.toLocaleString()}</span>
+                                <span className="text-slate-300">/</span>
+                                <span className="text-[#475569]">TOTAL {totalVisitors.toLocaleString()}</span>
+                            </span>
+                            {backHref && (
+                                <>
+                                    <span className="text-slate-300" aria-hidden="true">
+                                        ·
+                                    </span>
+                                    <Link
+                                        href={backHref}
+                                        className="text-[11px] font-bold text-[#64748b] hover:text-[#6366f1] transition-colors shrink-0"
+                                    >
+                                        ← 마이페이지
+                                    </Link>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {((isOwner && Boolean(onOpenNotificationCenter)) ||
+                        Boolean(onOpenGuestbookModal) ||
+                        (hasNeighbors && (Boolean(onRandomSurf) || Boolean(onOpenSurfModal))) ||
+                        Boolean(onShare)) && (
+                        <div className="inline-flex flex-wrap items-center gap-1 p-1 rounded-2xl bg-[#e8edf2] border border-white/70 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.35),inset_-2px_-2px_5px_rgba(255,255,255,0.8)] shrink-0">
+                            {isOwner && onOpenNotificationCenter && (
+                                <button
+                                    type="button"
+                                    onClick={onOpenNotificationCenter}
+                                    className="px-2 sm:px-2.5 py-1 rounded-xl bg-[#f0f4f8] hover:bg-white text-[#1e293b] border border-white/80 shadow-[2px_2px_4px_rgba(163,177,198,0.35),-2px_-2px_4px_rgba(255,255,255,0.85)] text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                                    title={
+                                        isPushSubscribed
+                                            ? '푸시 알림 ON · 클릭해 알림함 및 설정 열기'
+                                            : '푸시 알림 OFF · 클릭해 알림 구독 및 설정 열기'
+                                    }
+                                    aria-label={`알림 ${isPushSubscribed ? 'ON' : 'OFF'}${unreadNotificationCount > 0 ? `, 미읽음 ${unreadNotificationCount}건` : ''}`}
+                                >
+                                    <span>🔔</span>
+                                    <span
+                                        className={`w-1.5 h-1.5 rounded-full ${
+                                            isPushSubscribed ? 'bg-emerald-500' : 'bg-slate-300'
+                                        }`}
+                                        aria-hidden="true"
+                                    />
+                                    {unreadNotificationCount > 0 && (
+                                        <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-black leading-tight">
+                                            {unreadNotificationCount}
+                                        </span>
+                                    )}
+                                </button>
+                            )}
+                            {onOpenGuestbookModal && (
+                                <button
+                                    type="button"
+                                    onClick={onOpenGuestbookModal}
+                                    className="px-2 sm:px-2.5 py-1 rounded-xl bg-[#f0f4f8] hover:bg-white text-[#1e293b] border border-white/80 shadow-[2px_2px_4px_rgba(163,177,198,0.35),-2px_-2px_4px_rgba(255,255,255,0.85)] text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                                    title={`방명록 (${guestbookCount})`}
+                                    aria-label={`방명록 ${guestbookCount}개`}
+                                >
+                                    <span>📖</span>
+                                    <span className="hidden sm:inline">방명록</span>
+                                    <span className="font-mono text-[#6366f1] font-black">
+                                        {guestbookCount}
+                                    </span>
+                                </button>
+                            )}
+                            {hasNeighbors && onRandomSurf && (
+                                <button
+                                    type="button"
+                                    onClick={onRandomSurf}
+                                    className="px-2 sm:px-2.5 py-1 rounded-xl bg-[#f0f4f8] hover:bg-white text-[#1e293b] border border-white/80 shadow-[2px_2px_4px_rgba(163,177,198,0.35),-2px_-2px_4px_rgba(255,255,255,0.85)] text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                                    title="이웃 아지트 놀러가기"
+                                >
+                                    <span>🌊</span>
+                                    <span className="hidden sm:inline">이웃</span>
+                                </button>
+                            )}
+                            {hasNeighbors && onOpenSurfModal && (
+                                <button
+                                    type="button"
+                                    onClick={onOpenSurfModal}
+                                    className="px-2 sm:px-2.5 py-1 rounded-xl bg-[#f0f4f8] hover:bg-white text-[#1e293b] border border-white/80 shadow-[2px_2px_4px_rgba(163,177,198,0.35),-2px_-2px_4px_rgba(255,255,255,0.85)] text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                                    title="이웃 아지트 목록"
+                                    aria-label="이웃 아지트 목록"
+                                >
+                                    <i className="fas fa-users text-[10px] text-[#64748b]" aria-hidden="true"></i>
+                                </button>
+                            )}
+                            {onShare && (
+                                <button
+                                    type="button"
+                                    onClick={onShare}
+                                    className="px-2 sm:px-2.5 py-1 rounded-xl bg-[#f0f4f8] hover:bg-white text-[#1e293b] border border-white/80 shadow-[2px_2px_4px_rgba(163,177,198,0.35),-2px_-2px_4px_rgba(255,255,255,0.85)] text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                                    title="내 아지트 주소 복사/공유"
+                                >
+                                    <i className="fas fa-share-nodes text-[10px] text-[#64748b]" aria-hidden="true"></i>
+                                    <span className="hidden sm:inline">공유</span>
                                 </button>
                             )}
                         </div>
                     )}
                 </div>
 
-                {/* 3단: 실내 아지트 ↔ 앞마당 텃밭 스위치 + 방명록 · 농장 창고 · 상점·보관함 버튼 */}
+                {/* 2단·3단: 편집 모드 바 또는 성장·운영 허브 + 4구역 메인 공간 탭 */}
                 {isEditMode ? (
-                    <div className="w-full flex flex-wrap items-center justify-between gap-1.5 pt-2 border-t border-slate-100">
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
+                    <div className="w-full flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-slate-200/80">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#6366f1] bg-[#e8edf2] px-3 py-1 rounded-xl border border-white/80 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.8)]">
                             <i className="fas fa-hand-pointer animate-bounce"></i>
                             <span>바닥 타일 클릭 시 [{selectedItemMeta?.name || '아바타'}] 이동</span>
                         </span>
@@ -792,7 +842,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                 <button
                                     type="button"
                                     onClick={onOpenShopModal}
-                                    className="px-3 py-1 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                                    className="px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black shadow-xs transition-all cursor-pointer flex items-center gap-1"
                                 >
                                     <span>🎁 아지트 상점·보관함 팝업</span>
                                 </button>
@@ -801,7 +851,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                 <button
                                     type="button"
                                     onClick={onCancelEdit}
-                                    className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
+                                    className="px-2.5 py-1 rounded-xl bg-[#e8edf2] hover:bg-white text-[#64748b] border border-white/80 shadow-[2px_2px_4px_rgba(163,177,198,0.35),-2px_-2px_4px_rgba(255,255,255,0.85)] text-[11px] font-bold transition-all cursor-pointer"
                                 >
                                     취소
                                 </button>
@@ -811,7 +861,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                     type="button"
                                     onClick={onSaveRoom}
                                     disabled={isSaving}
-                                    className="px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                                    className="px-3 py-1 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] hover:from-indigo-600 hover:to-violet-600 text-white text-[11px] font-black shadow-xs transition-all cursor-pointer disabled:opacity-50"
                                 >
                                     {isSaving ? '저장 중...' : '💾 저장'}
                                 </button>
@@ -819,152 +869,130 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         </div>
                     </div>
                 ) : (
-                    <div className="w-full space-y-2 pt-2 border-t border-slate-100">
+                    <div className="w-full space-y-2.5 pt-2.5 border-t border-slate-200/80">
+                        {/* 2단: 성장·자산 & 경제·운영 허브 카드 */}
                         {isOwner && azitGame?.state && (
                             <AzitLevelHeaderBadge
                                 gameState={azitGame.state}
                                 onOpenMarketModal={() => setActiveAzitModal('market')}
                                 onOpenChefModal={() => setActiveAzitModal('chefs')}
                                 onOpenMercModal={() => setActiveAzitModal('mercs')}
+                                onOpenWarehouseModal={onOpenWarehouseModal}
+                                onOpenShopModal={onOpenShopModal}
                             />
                         )}
+
+                        {/* 3단: 4구역 메인 공간 탭 (캔버스 상단 밀착) */}
                         <div className="w-full flex flex-wrap items-center justify-between gap-2">
-                            {/* 좌측: 4구역 공간 전환 스위치 (실내 / 텃밭 / 주방 / 용병 캠프) */}
-                            <div className="flex flex-wrap items-center gap-1.5">
-                                <div className="inline-flex flex-wrap items-center p-0.5 rounded-2xl sm:rounded-full bg-slate-100 border border-slate-200/90 gap-0.5">
-                                    <button
-                                        type="button"
-                                        onClick={() => setActiveZone('indoor')}
-                                        className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
-                                            activeZone === 'indoor'
-                                                ? 'bg-indigo-600 text-white shadow-2xs'
-                                                : 'text-slate-600 hover:text-slate-900'
-                                        }`}
-                                    >
-                                        <span>🏠 실내</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setActiveZone('garden')}
-                                        data-screenshot-click="action"
-                                        className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
-                                            activeZone === 'garden'
-                                                ? 'bg-emerald-600 text-white shadow-2xs'
-                                                : 'text-emerald-700 hover:bg-emerald-50'
-                                        }`}
-                                    >
-                                        <span>🌿 텃밭</span>
-                                        {needWaterCount > 0 && (
-                                            <span className="px-1.5 py-0.2 rounded-full bg-sky-400 text-slate-950 text-[10px] font-black animate-pulse">
-                                                💧 {needWaterCount}
-                                            </span>
-                                        )}
-                                        {readyHarvestCount > 0 && (
-                                            <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
-                                                수확 {readyHarvestCount}
-                                            </span>
-                                        )}
-                                    </button>
-
-                                    {isOwner && azitGame?.state && (
-                                        <>
-                                            <button
-                                                type="button"
-                                                onClick={() => setActiveZone('kitchen')}
-                                                className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
-                                                    activeZone === 'kitchen'
-                                                        ? 'bg-orange-500 text-white shadow-2xs'
-                                                        : 'text-orange-700 hover:bg-orange-50'
-                                                }`}
-                                            >
-                                                <span>👨‍🍳 주방</span>
-                                                {kitchenReadyCount > 0 && (
-                                                    <span className="px-1.5 py-0.2 rounded-full bg-amber-300 text-slate-950 text-[10px] font-black animate-pulse">
-                                                        완성 {kitchenReadyCount}
-                                                    </span>
-                                                )}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setActiveZone('camp')}
-                                                className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
-                                                    activeZone === 'camp'
-                                                        ? 'bg-rose-600 text-white shadow-2xs'
-                                                        : 'text-rose-700 hover:bg-rose-50'
-                                                }`}
-                                            >
-                                                <span>⚔️ 용병 캠프</span>
-                                                {campReadyCount > 0 && (
-                                                    <span className="px-1.5 py-0.2 rounded-full bg-amber-300 text-slate-950 text-[10px] font-black animate-pulse">
-                                                        정산 {campReadyCount}
-                                                    </span>
-                                                )}
-                                            </button>
-                                        </>
+                            <div className="inline-flex flex-wrap items-center p-1 rounded-2xl bg-[#e8edf2] border border-white/70 shadow-[inset_2px_2px_6px_rgba(163,177,198,0.35),inset_-2px_-2px_6px_rgba(255,255,255,0.8)] gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveZone('indoor')}
+                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                        activeZone === 'indoor'
+                                            ? 'bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white shadow-sm'
+                                            : 'text-[#64748b] hover:text-[#1e293b] hover:bg-white/70'
+                                    }`}
+                                >
+                                    <span>🏠 실내</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveZone('garden')}
+                                    data-screenshot-click="action"
+                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                        activeZone === 'garden'
+                                            ? 'bg-emerald-600 text-white shadow-sm'
+                                            : 'text-[#64748b] hover:text-[#1e293b] hover:bg-white/70'
+                                    }`}
+                                >
+                                    <span>🌿 텃밭</span>
+                                    {needWaterCount > 0 && (
+                                        <span className="px-1.5 py-0.2 rounded-full bg-sky-400 text-slate-950 text-[10px] font-black animate-pulse">
+                                            💧 {needWaterCount}
+                                        </span>
                                     )}
-                                </div>
+                                    {readyHarvestCount > 0 && (
+                                        <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
+                                            수확 {readyHarvestCount}
+                                        </span>
+                                    )}
+                                </button>
 
-                                <span className="hidden xl:inline text-[11px] text-slate-400 font-bold">
+                                {isOwner && azitGame?.state && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveZone('kitchen')}
+                                            className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                                activeZone === 'kitchen'
+                                                    ? 'bg-orange-500 text-white shadow-sm'
+                                                    : 'text-[#64748b] hover:text-[#1e293b] hover:bg-white/70'
+                                            }`}
+                                        >
+                                            <span>👨‍🍳 주방</span>
+                                            {kitchenReadyCount > 0 && (
+                                                <span className="px-1.5 py-0.2 rounded-full bg-amber-300 text-slate-950 text-[10px] font-black animate-pulse">
+                                                    완성 {kitchenReadyCount}
+                                                </span>
+                                            )}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveZone('camp')}
+                                            className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                                activeZone === 'camp'
+                                                    ? 'bg-rose-600 text-white shadow-sm'
+                                                    : 'text-[#64748b] hover:text-[#1e293b] hover:bg-white/70'
+                                            }`}
+                                        >
+                                            <span>⚔️ 용병 캠프</span>
+                                            {campReadyCount > 0 && (
+                                                <span className="px-1.5 py-0.2 rounded-full bg-amber-300 text-slate-950 text-[10px] font-black animate-pulse">
+                                                    정산 {campReadyCount}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+
+                            {isOwner && azitGame?.state ? (
+                                <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-xl bg-[#e8edf2]/80 text-[11px] text-[#64748b] font-bold">
                                     {activeZone === 'indoor'
-                                        ? `· 가구 ${layout.placedItems.length}개`
+                                        ? `가구 ${layout.placedItems.length}개`
                                         : activeZone === 'garden'
-                                          ? `· 수확 누적 ${gardenState.totalHarvested}개`
-                                          : activeZone === 'kitchen' && azitGame?.state
-                                            ? `· 요리사 ${azitGame.state.chefs.length}명`
-                                            : azitGame?.state
-                                              ? `· 용병 ${azitGame.state.mercenaries.length}명`
-                                              : ''}
+                                          ? `수확 누적 ${gardenState.totalHarvested}개`
+                                          : activeZone === 'kitchen'
+                                            ? `요리사 ${azitGame.state.chefs.length}명`
+                                            : `용병 ${azitGame.state.mercenaries.length}명`}
                                 </span>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                {isOwner && onOpenNotificationCenter && (
-                                    <button
-                                        type="button"
-                                        onClick={onOpenNotificationCenter}
-                                        className={`px-2.5 sm:px-3 py-1 rounded-full border text-[11px] font-black transition-colors cursor-pointer flex items-center gap-1 ${
-                                            isPushSubscribed
-                                                ? 'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200'
-                                                : 'bg-slate-100 hover:bg-indigo-50 text-slate-700 border-slate-200'
-                                        }`}
-                                        title="푸시 알림 구독·카테고리 설정 및 최근 알림함 열기"
-                                    >
-                                        <span>{isPushSubscribed ? '🔔 알림 ON' : '🔕 알림 설정'}</span>
-                                        {unreadNotificationCount > 0 && (
-                                            <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-black">
-                                                {unreadNotificationCount}
-                                            </span>
+                            ) : (
+                                (onOpenWarehouseModal || onOpenShopModal) && (
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        {onOpenWarehouseModal && (
+                                            <button
+                                                type="button"
+                                                onClick={onOpenWarehouseModal}
+                                                className="px-2.5 py-1 rounded-xl bg-[#f0f4f8] hover:bg-white text-[#1e293b] border border-white/90 shadow-[3px_3px_6px_rgba(163,177,198,0.35),-3px_-3px_6px_rgba(255,255,255,0.85)] text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1"
+                                                title="농장 창고"
+                                            >
+                                                <span>🏚️ 창고</span>
+                                            </button>
                                         )}
-                                    </button>
-                                )}
-                                {onOpenGuestbookModal && (
-                                    <button
-                                        type="button"
-                                        onClick={onOpenGuestbookModal}
-                                        className="px-2.5 sm:px-3 py-1 rounded-full bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
-                                    >
-                                        <span>📖 방명록 ({guestbookCount})</span>
-                                    </button>
-                                )}
-                                {onOpenWarehouseModal && (
-                                    <button
-                                        type="button"
-                                        onClick={onOpenWarehouseModal}
-                                        className="px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
-                                    >
-                                        <span>🏚️ 농장 창고</span>
-                                    </button>
-                                )}
-                                {onOpenShopModal && (
-                                    <button
-                                        type="button"
-                                        onClick={onOpenShopModal}
-                                        className="px-2.5 sm:px-3 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
-                                    >
-                                        <span>🎁 상점·보관함 (0원)</span>
-                                    </button>
-                                )}
-                            </div>
+                                        {onOpenShopModal && (
+                                            <button
+                                                type="button"
+                                                onClick={onOpenShopModal}
+                                                className="px-2.5 py-1 rounded-xl bg-[#f0f4f8] hover:bg-white text-[#1e293b] border border-white/90 shadow-[3px_3px_6px_rgba(163,177,198,0.35),-3px_-3px_6px_rgba(255,255,255,0.85)] text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1"
+                                                title="상점·보관함 (0원)"
+                                            >
+                                                <span>🎁 상점</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                )
+                            )}
                         </div>
                     </div>
                 )}
