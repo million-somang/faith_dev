@@ -342,8 +342,8 @@ export function useAvatarLifeSim(params: {
                         : `💧 ${cropMeta.shortName} 밭에 정성껏 물 주는 중`;
                     gardenList.push({
                         id: `wp-garden-plot-${plot.plotIndex}`,
-                        targetX: clampGrid(coord.gridX - 0.55),
-                        targetY: clampGrid(coord.gridY + 0.55),
+                        targetX: clampGrid(coord.gridX - 0.72),
+                        targetY: clampGrid(coord.gridY + 0.25),
                         lookAtX: coord.gridX,
                         lookAtY: coord.gridY,
                         isSitting: false,
@@ -375,8 +375,8 @@ export function useAvatarLifeSim(params: {
                 const firstPlot = GARDEN_PLOT_COORDS[0];
                 gardenList.unshift({
                     id: 'wp-garden-soil-care',
-                    targetX: clampGrid(firstPlot.gridX - 0.55),
-                    targetY: clampGrid(firstPlot.gridY + 0.55),
+                    targetX: clampGrid(firstPlot.gridX - 0.72),
+                    targetY: clampGrid(firstPlot.gridY + 0.25),
                     lookAtX: firstPlot.gridX,
                     lookAtY: firstPlot.gridY,
                     isSitting: false,
@@ -637,8 +637,8 @@ export function useAvatarLifeSim(params: {
     useEffect(() => {
         if (!forcedGardenAction || activeZone !== 'garden' || isEditMode) return;
         const coord = GARDEN_PLOT_COORDS[forcedGardenAction.plotIndex] || GARDEN_PLOT_COORDS[0];
-        const targetX = clampGrid(coord.gridX - 0.55);
-        const targetY = clampGrid(coord.gridY + 0.55);
+        const targetX = clampGrid(coord.gridX - 0.72);
+        const targetY = clampGrid(coord.gridY + 0.25);
         const fromX = currentPosRef.current.x;
         const fromY = currentPosRef.current.y;
         const dist = Math.hypot(targetX - fromX, targetY - fromY);

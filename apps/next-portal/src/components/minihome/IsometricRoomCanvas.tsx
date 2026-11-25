@@ -11,6 +11,7 @@ import {
     GardenBenchAndWateringCan,
     GardenCourtyardBackdrop,
     GardenPlotActionBubble,
+    GardenPlotBadgeOverlay,
     GardenPlotIsoNode,
     MinihomeGardenControlPanel,
 } from '@/components/minihome/MinihomeGardenLayer';
@@ -1406,6 +1407,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                             pos={pos}
                                             isSelected={openBubblePlotIndex === entity.plot.plotIndex}
                                             isBubbleOpen={openBubblePlotIndex === entity.plot.plotIndex}
+                                            hideBadge
                                             onSelectPlot={(idx) =>
                                                 setOpenBubblePlotIndex((prev) => (prev === idx ? null : idx))
                                             }
@@ -1419,6 +1421,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                     <g
                                         key="garden-minimi-avatar"
                                         transform={`translate(${minimiPos.x}, ${minimiPos.y})`}
+                                        className="pointer-events-none"
                                     >
                                         {renderMinimiGraphic(layout.minimiItemId)}
 
@@ -1466,6 +1469,34 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                             {ownerName.slice(0, 8)}
                                         </text>
                                     </g>
+                                );
+                            })}
+
+                            {/* ==================== [앞마당 텃밭 모드] 4. 최상단 상태·원클릭 수확/물주기 배지 오버레이 ==================== */}
+                            {gardenState.plots.map((plot) => {
+                                const coord = GARDEN_PLOT_COORDS[plot.plotIndex] || GARDEN_PLOT_COORDS[0];
+                                const pos = getTileCenter(coord.gridX, coord.gridY);
+                                return (
+                                    <GardenPlotBadgeOverlay
+                                        key={`garden-plot-badge-${plot.plotIndex}`}
+                                        plot={plot}
+                                        pos={pos}
+                                        isOwner={isOwner}
+                                        isSelected={openBubblePlotIndex === plot.plotIndex}
+                                        isBubbleOpen={openBubblePlotIndex === plot.plotIndex}
+                                        onSelectPlot={(idx) =>
+                                            setOpenBubblePlotIndex((prev) => (prev === idx ? null : idx))
+                                        }
+                                        onQuickWater={(idx) => {
+                                            handleGardenWaterPlot(idx);
+                                            setOpenBubblePlotIndex(null);
+                                        }}
+                                        onQuickHarvest={(idx) => {
+                                            handleGardenHarvestPlot(idx);
+                                            setOpenBubblePlotIndex(null);
+                                        }}
+                                        nowMs={gardenTickMs}
+                                    />
                                 );
                             })}
                         </>
@@ -1877,6 +1908,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         onOpenMarket={isOwner && azitGame?.state ? () => setActiveAzitModal('market') : undefined}
                         onOpenNotificationCenter={onOpenNotificationCenter}
                         externalPushSubscribed={onOpenNotificationCenter ? isPushSubscribed : undefined}
+                        onWaterPlot={handleGardenWaterPlot}
+                        onHarvestPlot={handleGardenHarvestPlot}
                     />
                 )}
 

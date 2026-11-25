@@ -71,6 +71,8 @@ type KitchenDepthEntity =
           facingLeft: boolean;
           isMoving: boolean;
           actorState: KitchenActorState;
+          assignedSlotIndex: number | null;
+          isReady: boolean;
       }
     | {
           kind: 'owner';
@@ -252,16 +254,23 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
         return unstaffed.find((s) => s.endsAtMs !== null && s.endsAtMs > nowMs) || unstaffed[0];
     }, [gameState.kitchenSlots, nowMs]);
 
+    const readySlotKey = gameState.kitchenSlots
+        .map((s) => (s.status === 'cooking' && s.endsAtMs !== null && s.endsAtMs <= nowMs ? '1' : '0'))
+        .join('');
+
     const actorTargets = useMemo(() => {
         const map: Record<string, { x: number; y: number }> = {};
         gameState.chefs.forEach((chef, idx) => {
             const assignedSlot = gameState.kitchenSlots.find(
                 (s) => s.status === 'cooking' && s.chefCode === chef.chefCode
             );
-            if (assignedSlot) {
+            const isSlotReady = Boolean(
+                assignedSlot && assignedSlot.endsAtMs !== null && assignedSlot.endsAtMs <= nowMs
+            );
+            if (assignedSlot && !isSlotReady) {
                 const stoveCoord = KITCHEN_STOVE_COORDS.find((c) => c.slotIndex === assignedSlot.slotIndex);
                 if (stoveCoord) {
-                    map[chef.chefCode] = { x: stoveCoord.gridX - 0.15, y: stoveCoord.gridY + 1.15 };
+                    map[chef.chefCode] = { x: stoveCoord.gridX - 0.35, y: stoveCoord.gridY + 1.45 };
                     return;
                 }
             }
@@ -270,13 +279,25 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
         });
 
         if (apprenticeSlot) {
-            const stoveCoord = KITCHEN_STOVE_COORDS.find((c) => c.slotIndex === apprenticeSlot.slotIndex);
-            if (stoveCoord) {
-                map['owner-apprentice'] = { x: stoveCoord.gridX - 0.15, y: stoveCoord.gridY + 1.15 };
+            const isApprenticeReady =
+                apprenticeSlot.endsAtMs !== null && apprenticeSlot.endsAtMs <= nowMs;
+            if (isApprenticeReady) {
+                map['owner-apprentice'] = { x: 1.5, y: 5.2 };
+            } else {
+                const stoveCoord = KITCHEN_STOVE_COORDS.find(
+                    (c) => c.slotIndex === apprenticeSlot.slotIndex
+                );
+                if (stoveCoord) {
+                    map['owner-apprentice'] = {
+                        x: stoveCoord.gridX - 0.35,
+                        y: stoveCoord.gridY + 1.45,
+                    };
+                }
             }
         }
         return map;
-    }, [gameState.chefs, gameState.kitchenSlots, apprenticeSlot]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [gameState.chefs, gameState.kitchenSlots, apprenticeSlot, readySlotKey]);
 
     targetsRef.current = actorTargets;
 
@@ -373,6 +394,8 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
             facingLeft,
             isMoving,
             actorState,
+            assignedSlotIndex: assignedSlot ? assignedSlot.slotIndex : null,
+            isReady,
         });
     });
 
@@ -498,6 +521,10 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
                             transform={`translate(${pos.x}, ${pos.y})`}
                             onClick={(e) => {
                                 e.stopPropagation();
+                                if (isReady && onQuickClaimSlot && !isActing) {
+                                    onQuickClaimSlot(slot.slotIndex).catch(() => {});
+                                    return;
+                                }
                                 onSelectSlot(slot.slotIndex);
                             }}
                             className="cursor-pointer"
@@ -621,54 +648,6 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
                                     🍳
                                 </text>
                             )}
-
-                            {/* 화구 상태 라벨 뱃지 */}
-                            <g
-                                transform="translate(0, -56)"
-                                onClick={(e) => {
-                                    if (isReady && onQuickClaimSlot && !isActing) {
-                                        e.stopPropagation();
-                                        onQuickClaimSlot(slot.slotIndex).catch(() => {});
-                                    }
-                                }}
-                            >
-                                <rect
-                                    x="-46"
-                                    y="-11"
-                                    width="92"
-                                    height="20"
-                                    rx="10"
-                                    fill={
-                                        !slot.unlocked
-                                            ? 'rgba(51, 65, 85, 0.92)'
-                                            : isReady
-                                              ? '#f59e0b'
-                                              : isCooking
-                                                ? 'rgba(15, 23, 42, 0.88)'
-                                                : 'rgba(16, 185, 129, 0.92)'
-                                    }
-                                    stroke="#ffffff"
-                                    strokeWidth="1.2"
-                                />
-                                <text
-                                    x="0"
-                                    y="2.5"
-                                    textAnchor="middle"
-                                    fill={isReady ? '#0f172a' : '#ffffff'}
-                                    fontSize="9.5"
-                                    fontWeight="900"
-                                >
-                                    {!slot.unlocked
-                                        ? `Lv.${slot.unlockLevel} 해금`
-                                        : isReady
-                                          ? isActing
-                                              ? '수령 중...'
-                                              : '✨ 요리 수령!'
-                                          : isCooking
-                                            ? `⏱ ${countdown}`
-                                            : `#${slot.slotIndex + 1} 조리 시작`}
-                                </text>
-                            </g>
                         </g>
                     );
                 }
@@ -754,7 +733,7 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
                     );
                 }
 
-                const { chef, idx, curX, curY, facingLeft, isMoving, actorState } = entity;
+                const { chef, idx, curX, curY, facingLeft, isMoving, actorState, assignedSlotIndex, isReady } = entity;
                 const pos = getIsoCenter(curX, curY);
                 const meta = chefCatalogMap.get(chef.chefCode);
                 const sprite = getChefSpriteMeta(chef.chefCode);
@@ -774,9 +753,18 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
                 return (
                     <g
                         key={`chef-iso-${chef.chefCode}`}
+                        data-kitchen-stove={assignedSlotIndex !== null ? assignedSlotIndex : undefined}
                         transform={`translate(${pos.x}, ${pos.y})`}
                         onClick={(e) => {
                             e.stopPropagation();
+                            if (assignedSlotIndex !== null) {
+                                if (isReady && onQuickClaimSlot && !isActing) {
+                                    onQuickClaimSlot(assignedSlotIndex).catch(() => {});
+                                } else {
+                                    onSelectSlot(assignedSlotIndex);
+                                }
+                                return;
+                            }
                             onOpenChefModal();
                         }}
                         className="cursor-pointer"
@@ -849,6 +837,70 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
                         />
                         <text x="0" y="22.5" textAnchor="middle" fill="#ffffff" fontSize="9.2" fontWeight="800">
                             {meta?.name || chef.chefCode} Lv.{chef.level}
+                        </text>
+                    </g>
+                );
+            })}
+
+            {/* 화구 상태·수령 배지 최상단 오버레이 (캐릭터 위에 항상 노출되어 클릭 가림 방지) */}
+            {KITCHEN_STOVE_COORDS.map((coord) => {
+                const slot = gameState.kitchenSlots.find((s) => s.slotIndex === coord.slotIndex);
+                if (!slot) return null;
+                const pos = getIsoCenter(coord.gridX, coord.gridY);
+                const isCooking = slot.status === 'cooking' && Boolean(slot.recipeId);
+                const isReady = isCooking && slot.endsAtMs !== null && slot.endsAtMs <= nowMs;
+                const countdown = formatCountdownLabel(slot.endsAtMs, nowMs);
+
+                return (
+                    <g
+                        key={`kitchen-stove-badge-${slot.slotIndex}`}
+                        data-kitchen-stove={slot.slotIndex}
+                        transform={`translate(${pos.x}, ${pos.y - 56})`}
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (isReady && onQuickClaimSlot && !isActing) {
+                                onQuickClaimSlot(slot.slotIndex).catch(() => {});
+                                return;
+                            }
+                            onSelectSlot(slot.slotIndex);
+                        }}
+                    >
+                        <rect
+                            x={isReady ? -49 : -46}
+                            y={isReady ? -12 : -11}
+                            width={isReady ? 98 : 92}
+                            height={isReady ? 22 : 20}
+                            rx={isReady ? 11 : 10}
+                            fill={
+                                !slot.unlocked
+                                    ? 'rgba(51, 65, 85, 0.92)'
+                                    : isReady
+                                      ? '#f59e0b'
+                                      : isCooking
+                                        ? 'rgba(15, 23, 42, 0.88)'
+                                        : 'rgba(16, 185, 129, 0.92)'
+                            }
+                            stroke="#ffffff"
+                            strokeWidth="1.2"
+                        />
+                        <text
+                            x="0"
+                            y="2.5"
+                            textAnchor="middle"
+                            fill={isReady ? '#0f172a' : '#ffffff'}
+                            fontSize="9.5"
+                            fontWeight="900"
+                        >
+                            {!slot.unlocked
+                                ? `Lv.${slot.unlockLevel} 해금`
+                                : isReady
+                                  ? isActing
+                                      ? '수령 중...'
+                                      : '✨ 요리 수령!'
+                                  : isCooking
+                                    ? `⏱ ${countdown}`
+                                    : `#${slot.slotIndex + 1} 조리 시작`}
                         </text>
                     </g>
                 );
