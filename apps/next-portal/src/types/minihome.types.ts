@@ -47,13 +47,29 @@ export interface PlacedRoomItem {
     flipped: boolean;
 }
 
-export type GardenCropId =
+export type LegacyGardenCropId =
     | 'crop-carrot'
     | 'crop-pepper'
     | 'crop-tomato'
     | 'crop-lettuce'
     | 'crop-strawberry'
     | 'crop-potato';
+
+export type HighLevelGardenCropId =
+    | 'crop-blueberry'
+    | 'crop-pumpkin'
+    | 'crop-melon'
+    | 'crop-ginseng'
+    | 'crop-truffle'
+    | 'crop-moonfruit';
+
+export type KnownGardenCropId = LegacyGardenCropId | HighLevelGardenCropId;
+
+/**
+ * 6종 기본 작물 + Lv 20~50 고레벨 작물 포함 확장 호환 타입
+ * (기존 Record<GardenCropId, number> 형태 레거시 매핑과 12종 이상 동적 작물 키를 동시에 호환)
+ */
+export type GardenCropId = LegacyGardenCropId | (string & {});
 
 export type GardenCropStage = 0 | 1 | 2 | 3; // 0: 빈 밭, 1: 새싹, 2: 줄기·꽃 성장, 3: 수확 가능!
 
@@ -66,15 +82,24 @@ export interface GardenCropMeta {
     accentColor: string;
     stageLabels: [string, string, string, string];
     avatarCareBadge: string;
+    requiredAzitLevel?: number;
+    seedPrice?: number;
+    sellPrice?: number;
 }
 
 export interface GardenPlotItem {
-    plotIndex: number; // 0 ~ 5 (6구획 마당 텃밭 이랑)
+    plotIndex: number; // 0 ~ 15 (최대 16구획 마당 텃밭 이랑)
+    isUnlocked?: boolean;
+    unlockLevel?: number;
+    unlockCost?: number;
+    soilLevel?: number;
     cropId: GardenCropId | null;
     stage: GardenCropStage;
     waterCount: number;
     plantedAt: string | null;
     lastWateredAt: string | null;
+    nextWaterAtMs?: number | null;
+    fertilizerUsedCount?: number;
     waterNotifiedAt?: string | null;
 }
 
@@ -82,7 +107,10 @@ export interface MinihomeGardenState {
     plots: GardenPlotItem[];
     seedCounts: Record<GardenCropId, number>;
     harvestCounts: Record<GardenCropId, number>;
+    fertilizerCounts?: Record<string, number>;
     totalHarvested: number;
+    unlockedPlotCount?: number;
+    maxPlotCount?: number;
 }
 
 export interface MinihomeRoomLayout {

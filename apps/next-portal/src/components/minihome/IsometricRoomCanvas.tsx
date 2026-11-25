@@ -5,17 +5,23 @@ import Link from 'next/link';
 import { GardenCropId, GardenPlotItem, MinihomeRoomLayout, PlacedRoomItem } from '@/types/minihome.types';
 import { ensureGardenState, getCatalogItemById, getGardenCropById, getGardenPlotWaterStatus } from '@/data/minihomeCatalogData';
 import { useWeather, WeatherSceneType } from '@/hooks/useWeather';
-import { ForcedGardenActionTrigger, GARDEN_PLOT_COORDS, useAvatarLifeSim } from '@/hooks/useAvatarLifeSim';
+import { ForcedGardenActionTrigger, getGardenPlotCoord, useAvatarLifeSim } from '@/hooks/useAvatarLifeSim';
 import { MinihomeAvatarActionOverlay } from '@/components/minihome/MinihomeAvatarActionOverlay';
 import {
     GardenBenchAndWateringCan,
     GardenCourtyardBackdrop,
+    GardenFarmerIsoNode,
     GardenPlotActionBubble,
     GardenPlotBadgeOverlay,
     GardenPlotIsoNode,
     MinihomeGardenControlPanel,
 } from '@/components/minihome/MinihomeGardenLayer';
-import type { AzitZoneType, UseAzitGameController } from '@/types/azit-game.types';
+import type {
+    AzitZoneType,
+    FarmerActionLog,
+    OwnedFarmer,
+    UseAzitGameController,
+} from '@/types/azit-game.types';
 import { AzitLevelHeaderBadge } from '@/components/minihome/AzitLevelHeaderBadge';
 import {
     AzitKitchenIsoScene,
@@ -56,6 +62,7 @@ interface IsometricRoomCanvasProps {
     onChangeSpeechBubble?: (text: string) => void;
     onOpenShopModal?: () => void;
     onOpenSeedShopModal?: () => void;
+    onOpenFertilizerShopModal?: () => void;
     onOpenWarehouseModal?: () => void;
     onSaveRoom?: () => void;
     onCancelEdit?: () => void;
@@ -134,6 +141,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     onChangeSpeechBubble,
     onOpenShopModal,
     onOpenSeedShopModal,
+    onOpenFertilizerShopModal,
     onOpenWarehouseModal,
     onSaveRoom,
     onCancelEdit,
@@ -245,7 +253,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
 
     const { weather } = useWeather();
     const avatarSim = useAvatarLifeSim({ layout, isEditMode, activeZone, forcedGardenAction });
-    const gardenState = ensureGardenState(layout.garden);
+    const gardenState = ensureGardenState(isOwner && azitGame?.state?.garden ? azitGame.state.garden : layout.garden);
+    const ownerAzitLevel = isOwner ? azitGame?.state?.profile.azitLevel : undefined;
     const [gardenTickMs, setGardenTickMs] = useState<number>(() => Date.now());
 
     useEffect(() => {
@@ -255,9 +264,13 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         return () => window.clearInterval(timer);
     }, []);
 
-    const readyHarvestCount = gardenState.plots.filter((p) => p.cropId && p.stage === 3).length;
+    const activeGameNowMs = azitGame?.nowMs ?? gardenTickMs;
+    const readyHarvestCount = gardenState.plots.filter(
+        (p) => p.isUnlocked !== false && Boolean(p.cropId) && p.stage === 3
+    ).length;
     const needWaterCount = gardenState.plots.filter((p) => {
-        const st = getGardenPlotWaterStatus(p, gardenTickMs);
+        if (p.isUnlocked === false) return false;
+        const st = getGardenPlotWaterStatus(p, activeGameNowMs);
         return st.isPlanted && !st.isHarvestReady && st.canWater;
     }).length;
     const openBubblePlot =
@@ -268,7 +281,6 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         openKitchenSlotIndex !== null && azitGame?.state
             ? azitGame.state.kitchenSlots.find((s) => s.slotIndex === openKitchenSlotIndex) || null
             : null;
-    const activeGameNowMs = azitGame?.nowMs ?? gardenTickMs;
     const kitchenReadyCount = azitGame?.state
         ? azitGame.state.kitchenSlots.filter(
               (s) => s.status === 'cooking' && s.endsAtMs !== null && s.endsAtMs <= activeGameNowMs
@@ -510,14 +522,26 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         },
     ].sort((a, b) => a.depth - b.depth);
 
+    const hiredFarmers: OwnedFarmer[] = isOwner && azitGame?.state?.farmers ? azitGame.state.farmers : [];
+    const farmerLogs: FarmerActionLog[] = isOwner && azitGame?.state?.farmerLogs ? azitGame.state.farmerLogs : [];
+
     type GardenRenderEntity =
         | { kind: 'plot'; depth: number; plot: GardenPlotItem; gridX: number; gridY: number }
         | { kind: 'bench'; depth: number; gridX: number; gridY: number }
+        | {
+              kind: 'farmer';
+              depth: number;
+              farmer: OwnedFarmer;
+              gridX: number;
+              gridY: number;
+              latestLog?: FarmerActionLog;
+              facingLeft: boolean;
+          }
         | { kind: 'minimi'; depth: number };
 
     const sortedGardenEntities: GardenRenderEntity[] = [
         ...gardenState.plots.map((plot) => {
-            const coord = GARDEN_PLOT_COORDS[plot.plotIndex] || GARDEN_PLOT_COORDS[0];
+            const coord = getGardenPlotCoord(plot.plotIndex);
             return {
                 kind: 'plot' as const,
                 depth: coord.gridX + coord.gridY,
@@ -532,6 +556,53 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
             gridX: 0,
             gridY: 4,
         },
+        ...(() => {
+            const plantedPlots = gardenState.plots.filter(
+                (p) => p.isUnlocked !== false && p.cropId && p.stage > 0
+            );
+            const plotOccupancy = new Map<number, number>();
+            return hiredFarmers.map((farmer, idx) => {
+                const latestLog = farmerLogs.find((l) => l.farmerCode === farmer.farmerCode);
+                const targetPlot =
+                    latestLog !== undefined
+                        ? gardenState.plots.find((p) => p.plotIndex === latestLog.plotIndex && p.isUnlocked !== false)
+                        : plantedPlots.length > 0
+                          ? plantedPlots[idx % plantedPlots.length]
+                          : undefined;
+                if (targetPlot) {
+                    const occ = plotOccupancy.get(targetPlot.plotIndex) ?? 0;
+                    plotOccupancy.set(targetPlot.plotIndex, occ + 1);
+                    const coord = getGardenPlotCoord(targetPlot.plotIndex);
+                    const standRight = coord.gridX < 1.12;
+                    const baseGx = coord.gridX + (standRight ? 0.68 : -0.68);
+                    const baseGy = coord.gridY + 0.25;
+                    const gx = Math.max(
+                        0.4,
+                        Math.min(6.8, baseGx + (occ > 0 ? (standRight ? 0.45 * occ : -0.45 * occ) : 0))
+                    );
+                    const gy = Math.max(0.4, Math.min(6.8, baseGy + occ * 0.45));
+                    return {
+                        kind: 'farmer' as const,
+                        depth: gx + gy + 0.1,
+                        farmer,
+                        gridX: gx,
+                        gridY: gy,
+                        latestLog,
+                        facingLeft: standRight,
+                    };
+                }
+                const station = idx === 0 ? { gridX: 0.9, gridY: 2.2 } : { gridX: 6.7, gridY: 3.0 };
+                return {
+                    kind: 'farmer' as const,
+                    depth: station.gridX + station.gridY + 0.1,
+                    farmer,
+                    gridX: station.gridX,
+                    gridY: station.gridY,
+                    latestLog,
+                    facingLeft: idx !== 0,
+                };
+            });
+        })(),
         {
             kind: 'minimi' as const,
             depth: avatarSim.animX + avatarSim.animY + 0.1,
@@ -876,6 +947,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             <AzitLevelHeaderBadge
                                 gameState={azitGame.state}
                                 onOpenMarketModal={() => setActiveAzitModal('market')}
+                                onOpenFarmerModal={() => setActiveAzitModal('farmers')}
                                 onOpenChefModal={() => setActiveAzitModal('chefs')}
                                 onOpenMercModal={() => setActiveAzitModal('mercs')}
                                 onOpenWarehouseModal={onOpenWarehouseModal}
@@ -1387,7 +1459,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                 })
                             )}
 
-                            {/* ==================== [앞마당 텃밭 모드] 3. 깊이(Z-Order) 정렬된 6구획 텃밭·벤치·아바타 ==================== */}
+                            {/* ==================== [앞마당 텃밭 모드] 3. 깊이(Z-Order) 정렬된 최대 16구획 텃밭·벤치·농부·아바타 ==================== */}
                             {sortedGardenEntities.map((entity) => {
                                 if (entity.kind === 'bench') {
                                     return (
@@ -1411,7 +1483,21 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                             onSelectPlot={(idx) =>
                                                 setOpenBubblePlotIndex((prev) => (prev === idx ? null : idx))
                                             }
-                                            nowMs={gardenTickMs}
+                                            nowMs={activeGameNowMs}
+                                            azitLevel={ownerAzitLevel}
+                                        />
+                                    );
+                                }
+
+                                if (entity.kind === 'farmer') {
+                                    return (
+                                        <GardenFarmerIsoNode
+                                            key={`garden-farmer-${entity.farmer.farmerCode}`}
+                                            farmer={entity.farmer}
+                                            pos={getTileCenter(entity.gridX, entity.gridY)}
+                                            latestLog={entity.latestLog}
+                                            facingLeft={entity.facingLeft}
+                                            onClick={() => setActiveAzitModal('farmers')}
                                         />
                                     );
                                 }
@@ -1474,7 +1560,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
 
                             {/* ==================== [앞마당 텃밭 모드] 4. 최상단 상태·원클릭 수확/물주기 배지 오버레이 ==================== */}
                             {gardenState.plots.map((plot) => {
-                                const coord = GARDEN_PLOT_COORDS[plot.plotIndex] || GARDEN_PLOT_COORDS[0];
+                                const coord = getGardenPlotCoord(plot.plotIndex);
                                 const pos = getTileCenter(coord.gridX, coord.gridY);
                                 return (
                                     <GardenPlotBadgeOverlay
@@ -1495,7 +1581,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                             handleGardenHarvestPlot(idx);
                                             setOpenBubblePlotIndex(null);
                                         }}
-                                        nowMs={gardenTickMs}
+                                        nowMs={activeGameNowMs}
+                                        azitLevel={ownerAzitLevel}
                                     />
                                 );
                             })}
@@ -1855,13 +1942,23 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             gardenState={gardenState}
                             isOwner={isOwner}
                             isZoomed={zoomLevel > 1}
-                            nowMs={gardenTickMs}
+                            nowMs={activeGameNowMs}
+                            azitLevel={ownerAzitLevel}
+                            veraPoints={isOwner ? azitGame?.state?.veraPoints : undefined}
+                            isActing={azitGame?.isActing}
+                            cropCatalog={azitGame?.state?.catalog.crops}
+                            fertilizerCatalog={azitGame?.state?.catalog.fertilizers}
+                            soilLevelsCatalog={azitGame?.state?.catalog.soilLevels}
                             onClose={() => setOpenBubblePlotIndex(null)}
                             onPlantCrop={handleGardenPlantCrop}
                             onWaterPlot={handleGardenWaterPlot}
                             onHarvestPlot={handleGardenHarvestPlot}
                             onClearPlot={onClearPlot}
+                            onUnlockPlot={isOwner ? azitGame?.unlockPlot : undefined}
+                            onUpgradeSoil={isOwner ? azitGame?.upgradeSoil : undefined}
+                            onFertilizePlot={isOwner ? azitGame?.fertilizePlot : undefined}
                             onOpenSeedShop={onOpenSeedShopModal || onOpenShopModal}
+                            onOpenFertilizerShop={onOpenFertilizerShopModal || onOpenSeedShopModal || onOpenShopModal}
                         />
                     )}
 
@@ -1897,19 +1994,31 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                     )}
                 </div>
 
-                {/* 앞마당 텃밭 모드일 때 하단 안내·알림·창고 현황 패널 */}
+                {/* 앞마당 텃밭 모드일 때 하단 안내·알림·일괄 관리·창고 현황 패널 */}
                 {activeZone === 'garden' && !isEditMode && (
                     <MinihomeGardenControlPanel
                         gardenState={gardenState}
                         isOwner={isOwner}
                         isRainWeather={isRainWeather}
+                        nowMs={activeGameNowMs}
+                        azitLevel={ownerAzitLevel}
+                        isActing={azitGame?.isActing}
+                        cropCatalog={azitGame?.state?.catalog.crops}
+                        fertilizerCatalog={azitGame?.state?.catalog.fertilizers}
+                        farmers={isOwner ? azitGame?.state?.farmers : undefined}
+                        maxFarmers={isOwner ? azitGame?.state?.profile.limits.maxFarmers : undefined}
                         onOpenSeedShop={onOpenSeedShopModal || onOpenShopModal}
+                        onOpenFertilizerShop={onOpenFertilizerShopModal || onOpenSeedShopModal || onOpenShopModal}
+                        onOpenFarmerModal={isOwner && azitGame?.state ? () => setActiveAzitModal('farmers') : undefined}
                         onOpenWarehouse={onOpenWarehouseModal || onOpenShopModal}
                         onOpenMarket={isOwner && azitGame?.state ? () => setActiveAzitModal('market') : undefined}
                         onOpenNotificationCenter={onOpenNotificationCenter}
                         externalPushSubscribed={onOpenNotificationCenter ? isPushSubscribed : undefined}
                         onWaterPlot={handleGardenWaterPlot}
                         onHarvestPlot={handleGardenHarvestPlot}
+                        onWaterAll={isOwner ? azitGame?.waterAll : undefined}
+                        onHarvestAll={isOwner ? azitGame?.harvestAll : undefined}
+                        onPlantAll={isOwner ? azitGame?.plantAll : undefined}
                     />
                 )}
 

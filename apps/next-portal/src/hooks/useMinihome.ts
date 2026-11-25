@@ -15,6 +15,7 @@ import {
 import {
     DEFAULT_CLIENT_LAYOUT,
     ensureGardenState,
+    GARDEN_WATER_COOLDOWN_MS,
     getCatalogItemById,
     getGardenCropById,
     getGardenPlotWaterStatus,
@@ -504,6 +505,7 @@ export function useMinihome(
 
             const baseLayout = isEditMode ? draftLayout : (profile?.layout || draftLayout);
             const currentGarden = ensureGardenState(baseLayout.garden);
+            const targetPlot = currentGarden.plots.find((p) => p.plotIndex === plotIndex);
             const ownedSeedCount = currentGarden.seedCounts[cropId] || 0;
 
             if (ownedSeedCount <= 0) {
@@ -520,7 +522,13 @@ export function useMinihome(
                 return;
             }
 
-            const nowIso = new Date().toISOString();
+            if (!targetPlot || targetPlot.isUnlocked === false) {
+                showToast('🔒 아직 해금되지 않은 텃밭 구획입니다!');
+                return;
+            }
+
+            const nowMs = Date.now();
+            const nowIso = new Date(nowMs).toISOString();
             const remainingSeeds = Math.max(0, ownedSeedCount - 1);
 
             commitGardenState(
@@ -539,6 +547,8 @@ export function useMinihome(
                                   waterCount: 1,
                                   plantedAt: nowIso,
                                   lastWateredAt: nowIso,
+                                  nextWaterAtMs: nowMs + GARDEN_WATER_COOLDOWN_MS,
+                                  fertilizerUsedCount: 0,
                                   waterNotifiedAt: null,
                               }
                             : p
@@ -555,7 +565,7 @@ export function useMinihome(
             const baseLayout = isEditMode ? draftLayout : (profile?.layout || draftLayout);
             const garden = ensureGardenState(baseLayout.garden);
             const targetPlot = garden.plots.find((p) => p.plotIndex === plotIndex);
-            if (!targetPlot || !targetPlot.cropId) return false;
+            if (!targetPlot || targetPlot.isUnlocked === false || !targetPlot.cropId) return false;
 
             const cropMeta = getGardenCropById(targetPlot.cropId);
             if (targetPlot.stage >= 3) {
@@ -579,7 +589,8 @@ export function useMinihome(
             }
 
             const nextStage = Math.min(3, targetPlot.stage + 1) as 1 | 2 | 3;
-            const nowIso = new Date().toISOString();
+            const nowMs = Date.now();
+            const nowIso = new Date(nowMs).toISOString();
 
             commitGardenState(
                 (prevGarden) => ({
@@ -591,6 +602,7 @@ export function useMinihome(
                                   stage: nextStage,
                                   waterCount: p.waterCount + 1,
                                   lastWateredAt: nowIso,
+                                  nextWaterAtMs: nextStage < 3 ? nowMs + GARDEN_WATER_COOLDOWN_MS : null,
                                   waterNotifiedAt: null,
                               }
                             : p
@@ -610,7 +622,7 @@ export function useMinihome(
             const baseLayout = isEditMode ? draftLayout : (profile?.layout || draftLayout);
             const garden = ensureGardenState(baseLayout.garden);
             const targetPlot = garden.plots.find((p) => p.plotIndex === plotIndex);
-            if (!targetPlot || !targetPlot.cropId || targetPlot.stage < 3) return;
+            if (!targetPlot || targetPlot.isUnlocked === false || !targetPlot.cropId || targetPlot.stage < 3) return;
 
             if (user && profile?.isOwner) {
                 postAzitGardenEndpoint('/api/azit-game/garden/harvest', {
@@ -641,6 +653,8 @@ export function useMinihome(
                                       waterCount: 0,
                                       plantedAt: null,
                                       lastWateredAt: null,
+                                      nextWaterAtMs: null,
+                                      fertilizerUsedCount: 0,
                                       waterNotifiedAt: null,
                                   }
                                 : p
@@ -663,6 +677,11 @@ export function useMinihome(
                 }).catch(() => {});
                 return;
             }
+            const baseLayout = isEditMode ? draftLayout : (profile?.layout || draftLayout);
+            const garden = ensureGardenState(baseLayout.garden);
+            const targetPlot = garden.plots.find((p) => p.plotIndex === plotIndex);
+            if (!targetPlot || targetPlot.isUnlocked === false) return;
+
             commitGardenState(
                 (prevGarden) => ({
                     ...prevGarden,
@@ -675,6 +694,8 @@ export function useMinihome(
                                   waterCount: 0,
                                   plantedAt: null,
                                   lastWateredAt: null,
+                                  nextWaterAtMs: null,
+                                  fertilizerUsedCount: 0,
                                   waterNotifiedAt: null,
                               }
                             : p
@@ -683,7 +704,7 @@ export function useMinihome(
                 `🌿 ${plotIndex + 1}번 텃밭 이랑을 깨끗하게 정리했습니다. 새 씨앗을 심어보세요!`
             );
         },
-        [user, profile?.isOwner, commitGardenState, postAzitGardenEndpoint]
+        [user, isEditMode, draftLayout, profile, commitGardenState, postAzitGardenEndpoint]
     );
 
     const syncAzitState = useCallback((veraPoints: number, garden?: MinihomeGardenState) => {

@@ -8,7 +8,14 @@ import {
     MINIHOME_CATALOG_ITEMS,
     VERA_POINT_SHOP_ENABLED,
 } from '@/data/minihomeCatalogData';
+import type {
+    AzitCropCatalogItem,
+    AzitFertilizerCatalogItem,
+    AzitFertilizerId,
+} from '@/types/azit-game.types';
 import { GardenCropId, MinihomeItemCategory, MinihomeRoomLayout } from '@/types/minihome.types';
+
+export type ShopCategoryTab = 'all' | MinihomeItemCategory | 'fertilizer';
 
 interface MinihomeShopDrawerProps {
     isOpen: boolean;
@@ -20,25 +27,47 @@ interface MinihomeShopDrawerProps {
     onApplyItem: (itemId: string) => void;
     onPurchaseItem: (itemId: string) => Promise<boolean>;
     onBuySeed?: (cropId: GardenCropId, quantity?: number) => void;
+    onBuyFertilizer?: (fertilizerId: AzitFertilizerId, quantity?: number) => Promise<boolean> | void;
     onResetRoom: () => void;
     onSaveRoom: () => void;
     isSaving: boolean;
+    isActing?: boolean;
+    azitLevel?: number;
+    cropCatalog?: AzitCropCatalogItem[];
+    fertilizerCatalog?: AzitFertilizerCatalogItem[];
     initialMode?: 'shop' | 'inventory' | 'warehouse';
-    initialCategory?: 'all' | MinihomeItemCategory;
+    initialCategory?: ShopCategoryTab;
 }
 
-const SEED_POINT_PRICE_MAP: Record<GardenCropId, number> = {
-    'crop-carrot': 0,
-    'crop-pepper': 12,
-    'crop-tomato': 18,
-    'crop-lettuce': 24,
-    'crop-potato': 30,
-    'crop-strawberry': 45,
-};
+const FALLBACK_FERTILIZERS: AzitFertilizerCatalogItem[] = [
+    {
+        fertilizerId: 'fert-basic',
+        name: '일반 성장 비료',
+        shortName: '일반 비료',
+        emoji: '🧪',
+        requiredAzitLevel: 1,
+        price: 40,
+        reductionMs: 4 * 60 * 60 * 1000,
+        reductionHours: 4,
+        description: '작물의 다음 물주기 대기 시간을 4시간 단축시킵니다.',
+    },
+    {
+        fertilizerId: 'fert-rapid',
+        name: '고농축 급속 비료',
+        shortName: '급속 비료',
+        emoji: '⚡',
+        requiredAzitLevel: 1,
+        price: 75,
+        reductionMs: 8 * 60 * 60 * 1000,
+        reductionHours: 8,
+        description: '작물의 다음 물주기 대기 시간을 8시간 단축하여 즉시 물주기가 가능하게 합니다.',
+    },
+];
 
-const CATEGORY_TABS: Array<{ id: 'all' | MinihomeItemCategory; label: string; icon: string }> = [
+const CATEGORY_TABS: Array<{ id: ShopCategoryTab; label: string; icon: string }> = [
     { id: 'all', label: '전체', icon: 'fa-border-all' },
     { id: 'seed', label: '텃밭 씨앗', icon: 'fa-seedling' },
+    { id: 'fertilizer', label: '비료', icon: 'fa-flask' },
     { id: 'wall', label: '벽지', icon: 'fa-paint-roller' },
     { id: 'floor', label: '바닥', icon: 'fa-layer-group' },
     { id: 'furniture', label: '가구', icon: 'fa-couch' },
@@ -56,14 +85,19 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
     onApplyItem,
     onPurchaseItem,
     onBuySeed,
+    onBuyFertilizer,
     onResetRoom,
     onSaveRoom,
     isSaving,
+    isActing = false,
+    azitLevel = 1,
+    cropCatalog,
+    fertilizerCatalog,
     initialMode = 'shop',
     initialCategory = 'all',
 }) => {
     const [activeMode, setActiveMode] = useState<'shop' | 'inventory' | 'warehouse'>(initialMode);
-    const [selectedCategory, setSelectedCategory] = useState<'all' | MinihomeItemCategory>(initialCategory);
+    const [selectedCategory, setSelectedCategory] = useState<ShopCategoryTab>(initialCategory);
 
     useEffect(() => {
         if (isOpen) {
@@ -75,21 +109,57 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
     if (!isOpen) return null;
 
     const garden = ensureGardenState(draftLayout.garden);
+    const effectiveCrops =
+        cropCatalog && cropCatalog.length > 0
+            ? cropCatalog
+            : GARDEN_CROP_CATALOG.map((c) => ({
+                  cropId: c.cropId,
+                  name: c.name,
+                  shortName: c.shortName,
+                  emoji: c.emoji,
+                  requiredAzitLevel: c.requiredAzitLevel ?? 1,
+                  seedPrice: c.seedPrice ?? 0,
+                  harvestYield: 2,
+                  sellPrice: c.sellPrice ?? 10,
+                  description: c.description,
+              }));
+    const effectiveFertilizers =
+        fertilizerCatalog && fertilizerCatalog.length > 0 ? fertilizerCatalog : FALLBACK_FERTILIZERS;
+
     const totalSeedsInWarehouse = Object.values(garden.seedCounts).reduce((acc, v) => acc + v, 0);
+    const totalFertilizersInWarehouse = Object.values(garden.fertilizerCounts || {}).reduce(
+        (acc, v) => acc + v,
+        0
+    );
     const totalCropsInWarehouse = garden.totalHarvested;
 
-    const filteredItems = MINIHOME_CATALOG_ITEMS.filter((item) => {
-        if (item.category === 'seed') {
-            const seedQty = item.cropId ? garden.seedCounts[item.cropId] || 0 : 0;
-            const matchesTab = activeMode === 'inventory' ? seedQty > 0 : true;
-            const matchesCategory = selectedCategory === 'all' ? true : item.category === selectedCategory;
-            return matchesTab && matchesCategory;
-        }
-        const isOwned = !VERA_POINT_SHOP_ENABLED || ownedItemIds.includes(item.itemId) || item.price === 0;
-        const matchesTab = activeMode === 'inventory' ? isOwned : true;
-        const matchesCategory = selectedCategory === 'all' ? true : item.category === selectedCategory;
-        return matchesTab && matchesCategory;
-    });
+    const showSeedsInGrid = selectedCategory === 'all' || selectedCategory === 'seed';
+    const showFertilizersInGrid = selectedCategory === 'all' || selectedCategory === 'fertilizer';
+
+    const visibleSeeds = showSeedsInGrid
+        ? effectiveCrops.filter((crop) =>
+              activeMode === 'inventory' ? (garden.seedCounts[crop.cropId] || 0) > 0 : true
+          )
+        : [];
+
+    const visibleFertilizers = showFertilizersInGrid
+        ? effectiveFertilizers.filter((fert) =>
+              activeMode === 'inventory' ? (garden.fertilizerCounts?.[fert.fertilizerId] || 0) > 0 : true
+          )
+        : [];
+
+    const filteredItems =
+        selectedCategory === 'seed' || selectedCategory === 'fertilizer'
+            ? []
+            : MINIHOME_CATALOG_ITEMS.filter((item) => {
+                  if (item.category === 'seed') return false;
+                  const isOwned =
+                      !VERA_POINT_SHOP_ENABLED || ownedItemIds.includes(item.itemId) || item.price === 0;
+                  const matchesTab = activeMode === 'inventory' ? isOwned : true;
+                  const matchesCategory =
+                      selectedCategory === 'all' ? true : item.category === selectedCategory;
+                  return matchesTab && matchesCategory;
+              });
 
     const isItemEquipped = (itemId: string): boolean => {
         if (draftLayout.wallItemId === itemId) return true;
@@ -197,7 +267,7 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                             : 'bg-emerald-200/80 text-emerald-900'
                                     }`}
                                 >
-                                    씨앗 {totalSeedsInWarehouse} · 작물 {totalCropsInWarehouse}
+                                    씨앗 {totalSeedsInWarehouse} · 비료 {totalFertilizersInWarehouse} · 작물 {totalCropsInWarehouse}
                                 </span>
                             </button>
                             <button
@@ -215,7 +285,7 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                         </div>
 
                         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
-                            {VERA_POINT_SHOP_ENABLED && (
+                            {(VERA_POINT_SHOP_ENABLED || Boolean(onBuySeed) || Boolean(onBuyFertilizer)) && (
                                 <div className="px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] sm:text-xs font-black flex items-center gap-1">
                                     <i className="fas fa-coins text-amber-500"></i>
                                     <span className="hidden sm:inline">보유 베라포인트:</span>
@@ -246,10 +316,14 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                         selectedCategory === tab.id
                                             ? tab.id === 'seed'
                                                 ? 'bg-emerald-600 text-white shadow-2xs'
-                                                : 'bg-slate-900 text-white'
+                                                : tab.id === 'fertilizer'
+                                                  ? 'bg-violet-600 text-white shadow-2xs'
+                                                  : 'bg-slate-900 text-white'
                                             : tab.id === 'seed'
-                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                                              : tab.id === 'fertilizer'
+                                                ? 'bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                                 >
                                     <i className={`fas ${tab.icon} text-[10px] sm:text-[11px]`}></i>
@@ -274,24 +348,39 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                         <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] sm:text-[11px] font-black">
                                             보유 씨앗 {totalSeedsInWarehouse}봉지
                                         </span>
+                                        <span className="px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] sm:text-[11px] font-black">
+                                            비료 {totalFertilizersInWarehouse}개
+                                        </span>
                                         <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] sm:text-[11px] font-black">
                                             수확 작물 {totalCropsInWarehouse}개
                                         </span>
                                     </div>
                                     <p className="text-[11px] sm:text-xs font-semibold text-slate-600">
-                                        당근 씨앗(0P 무료)과 고급 씨앗(베라포인트)을 구매해 앞마당 텃밭에서 재배해 보세요.
+                                        당근 씨앗(0P 무료)과 고레벨 씨앗, 성장 비료를 구매해 앞마당 텃밭을 빠르게 가꿔보세요.
                                     </p>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setActiveMode('shop');
-                                        setSelectedCategory('seed');
-                                    }}
-                                    className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs transition-all cursor-pointer shrink-0"
-                                >
-                                    🌱 씨앗 상점 코너
-                                </button>
+                                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setActiveMode('shop');
+                                            setSelectedCategory('seed');
+                                        }}
+                                        className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs transition-all cursor-pointer shrink-0"
+                                    >
+                                        🌱 씨앗 상점
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setActiveMode('shop');
+                                            setSelectedCategory('fertilizer');
+                                        }}
+                                        className="px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-black shadow-xs transition-all cursor-pointer shrink-0"
+                                    >
+                                        🧪 비료 상점
+                                    </button>
+                                </div>
                             </div>
 
                             {/* 섹션 1: 보유 씨앗 창고 */}
@@ -309,18 +398,24 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3">
-                                    {GARDEN_CROP_CATALOG.map((crop) => {
+                                    {effectiveCrops.map((crop) => {
                                         const seedQty = garden.seedCounts[crop.cropId] || 0;
-                                        const seedPrice = SEED_POINT_PRICE_MAP[crop.cropId] ?? 0;
-                                        const canBuyOne = seedPrice === 0 || veraPoints >= seedPrice;
-                                        const canBuyFive = seedPrice === 0 || veraPoints >= seedPrice * 5;
+                                        const seedPrice = crop.seedPrice ?? 0;
+                                        const reqLv = crop.requiredAzitLevel ?? 1;
+                                        const isLocked = azitLevel < reqLv;
+                                        const canBuyOne =
+                                            !isLocked && !isActing && (seedPrice === 0 || veraPoints >= seedPrice);
+                                        const canBuyFive =
+                                            !isLocked && !isActing && (seedPrice === 0 || veraPoints >= seedPrice * 5);
                                         return (
                                             <div
                                                 key={`warehouse-seed-${crop.cropId}`}
                                                 className={`rounded-2xl p-3 border transition-all flex flex-col justify-between gap-2.5 ${
-                                                    seedQty > 0
-                                                        ? 'bg-emerald-50/50 border-emerald-300 shadow-2xs'
-                                                        : 'bg-slate-50/70 border-slate-200/80'
+                                                    isLocked
+                                                        ? 'bg-slate-100/80 border-slate-200 opacity-75'
+                                                        : seedQty > 0
+                                                          ? 'bg-emerald-50/50 border-emerald-300 shadow-2xs'
+                                                          : 'bg-slate-50/70 border-slate-200/80'
                                                 }`}
                                             >
                                                 <div className="flex items-start justify-between gap-2">
@@ -337,20 +432,37 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <span
-                                                        className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
-                                                            seedPrice === 0
-                                                                ? 'bg-emerald-100 text-emerald-800'
-                                                                : 'bg-amber-100 text-amber-800'
-                                                        }`}
-                                                    >
-                                                        {seedPrice === 0 ? '0P 무료' : `${seedPrice}P`}
-                                                    </span>
+                                                    <div className="flex flex-col items-end gap-1 shrink-0">
+                                                        <span
+                                                            className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                                                seedPrice === 0
+                                                                    ? 'bg-emerald-100 text-emerald-800'
+                                                                    : 'bg-amber-100 text-amber-800'
+                                                            }`}
+                                                        >
+                                                            {seedPrice === 0 ? '0P 무료' : `${seedPrice}P`}
+                                                        </span>
+                                                        {reqLv > 1 && (
+                                                            <span
+                                                                className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                                                    isLocked
+                                                                        ? 'bg-slate-200 text-slate-700'
+                                                                        : 'bg-indigo-50 text-indigo-700'
+                                                                }`}
+                                                            >
+                                                                {isLocked ? `🔒 Lv.${reqLv}` : `Lv.${reqLv}+`}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
 
                                                 <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-1.5">
                                                     <span className="text-[11px] font-black text-slate-700">
-                                                        {seedPrice === 0 ? '무료' : `${seedPrice}P/개`}
+                                                        {isLocked
+                                                            ? `🔒 아지트 Lv.${reqLv} 해금`
+                                                            : seedPrice === 0
+                                                              ? '무료'
+                                                              : `${seedPrice}P/개`}
                                                     </span>
                                                     <div className="flex items-center gap-1.5">
                                                         <button
@@ -359,7 +471,11 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                                             onClick={() => onBuySeed?.(crop.cropId, 1)}
                                                             className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                                         >
-                                                            {seedPrice === 0 ? '+1 무료' : `+1 (${seedPrice}P)`}
+                                                            {isLocked
+                                                                ? `🔒 Lv.${reqLv}`
+                                                                : seedPrice === 0
+                                                                  ? '+1 무료'
+                                                                  : `+1 (${seedPrice}P)`}
                                                         </button>
                                                         <button
                                                             type="button"
@@ -377,7 +493,94 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                 </div>
                             </div>
 
-                            {/* 섹션 2: 수확 작물 창고 */}
+                            {/* 섹션 2: 비료 보관함 */}
+                            <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                                <div className="flex items-center justify-between gap-2">
+                                    <h4 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
+                                        <span>🧪 비료 보관함</span>
+                                        <span className="text-[11px] font-bold text-slate-500">
+                                            (작물 물주기 대기 시간을 즉시 단축합니다)
+                                        </span>
+                                    </h4>
+                                    <span className="text-[11px] font-black text-violet-700">
+                                        총 {totalFertilizersInWarehouse}개 보관 중
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                                    {effectiveFertilizers.map((fert) => {
+                                        const fertQty = garden.fertilizerCounts?.[fert.fertilizerId] || 0;
+                                        const isLocked = azitLevel < (fert.requiredAzitLevel ?? 1);
+                                        const canBuyOne =
+                                            Boolean(onBuyFertilizer) &&
+                                            !isLocked &&
+                                            !isActing &&
+                                            veraPoints >= fert.price;
+                                        const canBuyFive =
+                                            Boolean(onBuyFertilizer) &&
+                                            !isLocked &&
+                                            !isActing &&
+                                            veraPoints >= fert.price * 5;
+                                        return (
+                                            <div
+                                                key={`warehouse-fert-${fert.fertilizerId}`}
+                                                className={`rounded-2xl p-3 border transition-all flex flex-col justify-between gap-2.5 ${
+                                                    fertQty > 0
+                                                        ? 'bg-violet-50/60 border-violet-300 shadow-2xs'
+                                                        : 'bg-slate-50/70 border-slate-200/80'
+                                                }`}
+                                            >
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <span className="w-10 h-10 rounded-xl bg-white border border-violet-200 flex items-center justify-center text-xl shadow-2xs shrink-0">
+                                                            {fert.emoji}
+                                                        </span>
+                                                        <div className="min-w-0">
+                                                            <div className="text-xs font-black text-slate-900 truncate">
+                                                                {fert.name}
+                                                            </div>
+                                                            <div className="text-[11px] font-extrabold text-violet-700 mt-0.5">
+                                                                보유: <span className="text-sm font-black">{fertQty}</span>개 · ⏳ -{fert.reductionHours}h
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black shrink-0">
+                                                        {fert.price}P
+                                                    </span>
+                                                </div>
+
+                                                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-1.5">
+                                                    <span className="text-[11px] font-semibold text-slate-600 truncate">
+                                                        {fert.description}
+                                                    </span>
+                                                    {onBuyFertilizer && (
+                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                disabled={!canBuyOne}
+                                                                onClick={() => onBuyFertilizer(fert.fertilizerId, 1)}
+                                                                className="px-2.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-extrabold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                            >
+                                                                +1 ({fert.price}P)
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={!canBuyFive}
+                                                                onClick={() => onBuyFertilizer(fert.fertilizerId, 5)}
+                                                                className="px-2 py-1.5 rounded-xl bg-violet-100 hover:bg-violet-200 text-violet-800 text-[11px] font-extrabold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                            >
+                                                                +5
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* 섹션 3: 수확 작물 창고 */}
                             <div className="space-y-2.5 pt-2 border-t border-slate-100">
                                 <div className="flex items-center justify-between gap-2">
                                     <h4 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -392,8 +595,10 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                 </div>
 
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                                    {GARDEN_CROP_CATALOG.map((crop) => {
+                                    {effectiveCrops.map((crop) => {
                                         const harvestQty = garden.harvestCounts[crop.cropId] || 0;
+                                        const reqLv = crop.requiredAzitLevel ?? 1;
+                                        const isLocked = azitLevel < reqLv;
                                         return (
                                             <div
                                                 key={`warehouse-crop-${crop.cropId}`}
@@ -412,7 +617,11 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                                                             {crop.name}
                                                         </div>
                                                         <div className="text-[10px] font-bold text-slate-500">
-                                                            {harvestQty > 0 ? '싱싱하게 창고 보관 중 ✨' : '아직 수확 전'}
+                                                            {harvestQty > 0
+                                                                ? '싱싱하게 창고 보관 중 ✨'
+                                                                : isLocked
+                                                                  ? `🔒 Lv.${reqLv} 해금`
+                                                                  : '아직 수확 전'}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -432,195 +641,333 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                             </div>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3.5 min-w-0">
-                            {filteredItems.map((item) => {
-                                const isSeed = item.category === 'seed' && Boolean(item.cropId);
-                                const seedCount = isSeed && item.cropId ? garden.seedCounts[item.cropId] || 0 : 0;
-
-                                const isOwned =
-                                    !VERA_POINT_SHOP_ENABLED ||
-                                    ownedItemIds.includes(item.itemId) ||
-                                    item.price === 0;
-                                const equipped = !isSeed && isItemEquipped(item.itemId);
-                                const isBuying = isBuyingItemId === item.itemId;
-
-                                return (
-                                    <div
-                                        key={item.itemId}
-                                        className={`rounded-2xl p-3 sm:p-3.5 border transition-all flex flex-col justify-between gap-2.5 sm:gap-3 min-w-0 ${
-                                            isSeed
-                                                ? seedCount > 0
-                                                    ? 'bg-emerald-50/50 border-emerald-300 shadow-2xs'
-                                                    : 'bg-slate-50/80 border-emerald-200/80 hover:border-emerald-400 hover:bg-white'
-                                                : equipped
-                                                ? 'bg-indigo-50/70 border-indigo-400 shadow-xs'
-                                                : 'bg-slate-50/80 border-slate-200/80 hover:border-indigo-200 hover:bg-white'
-                                        }`}
-                                    >
-                                        <div className="min-w-0">
-                                            <div className="flex items-start justify-between gap-2 mb-1.5 min-w-0">
-                                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                    {item.spriteUrl ? (
-                                                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white flex items-center justify-center shadow-2xs border border-slate-200/80 shrink-0 p-1 overflow-hidden">
-                                                            <img
-                                                                src={item.spriteUrl}
-                                                                alt={item.name}
-                                                                className="w-full h-full object-contain"
-                                                                loading="lazy"
-                                                            />
+                        visibleSeeds.length === 0 &&
+                        visibleFertilizers.length === 0 &&
+                        filteredItems.length === 0 ? (
+                            <div className="py-12 text-center rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                                <p className="text-xs sm:text-sm font-black text-slate-700">
+                                    보유 중인 항목이 아직 없습니다.
+                                </p>
+                                <p className="text-[11px] text-slate-500 font-semibold">
+                                    상점 탭에서 씨앗이나 비료, 아지트 아이템을 먼저 구매해 보세요.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3.5 min-w-0">
+                                {/* 동적 씨앗 카탈로그 카드 (Lv 1~50 전체 12종) */}
+                                {visibleSeeds.map((crop) => {
+                                    const seedCount = garden.seedCounts[crop.cropId] || 0;
+                                    const sPrice = crop.seedPrice ?? 0;
+                                    const reqLv = crop.requiredAzitLevel ?? 1;
+                                    const isLocked = azitLevel < reqLv;
+                                    const canOne = !isLocked && !isActing && (sPrice === 0 || veraPoints >= sPrice);
+                                    const canFive =
+                                        !isLocked && !isActing && (sPrice === 0 || veraPoints >= sPrice * 5);
+                                    return (
+                                        <div
+                                            key={`shop-seed-${crop.cropId}`}
+                                            className={`rounded-2xl p-3 sm:p-3.5 border transition-all flex flex-col justify-between gap-2.5 sm:gap-3 min-w-0 ${
+                                                isLocked
+                                                    ? 'bg-slate-100/80 border-slate-200 opacity-75'
+                                                    : seedCount > 0
+                                                      ? 'bg-emerald-50/50 border-emerald-300 shadow-2xs'
+                                                      : 'bg-slate-50/80 border-emerald-200/80 hover:border-emerald-400 hover:bg-white'
+                                            }`}
+                                        >
+                                            <div className="min-w-0">
+                                                <div className="flex items-start justify-between gap-2 mb-1.5 min-w-0">
+                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                        <span className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-xl shadow-2xs shrink-0">
+                                                            {crop.emoji}
+                                                        </span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <h4 className="text-[13px] sm:text-xs font-black text-slate-900 leading-snug truncate">
+                                                                {crop.name} 씨앗
+                                                            </h4>
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                                                                GARDEN SEED · 판매 {crop.sellPrice}P
+                                                            </span>
                                                         </div>
-                                                    ) : (
-                                                        <span
-                                                            className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shadow-2xs border shrink-0 ${
-                                                                isSeed
-                                                                    ? 'bg-emerald-50 border-emerald-200'
-                                                                    : 'bg-indigo-50 border-indigo-100'
-                                                            }`}
-                                                        >
-                                                            {getCategoryEmoji(item.category, item.isTrophy, item.cropId)}
-                                                        </span>
-                                                    )}
-                                                    <div className="min-w-0 flex-1">
-                                                        <h4 className="text-[13px] sm:text-xs font-black text-slate-900 leading-snug truncate">
-                                                            {item.name}
-                                                        </h4>
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase block">
-                                                            {item.category === 'minimi'
-                                                                ? 'AVATAR'
-                                                                : item.category === 'seed'
-                                                                ? 'GARDEN SEED · 창고보관'
-                                                                : item.category}
-                                                        </span>
                                                     </div>
+
+                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black shrink-0">
+                                                        창고 {seedCount}개
+                                                    </span>
                                                 </div>
 
-                                                {isSeed ? (
-                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black shrink-0">
-                                                        창고 보유 {seedCount}개
-                                                    </span>
-                                                ) : (
-                                                    item.badgeText && (
-                                                        <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-black shrink-0">
-                                                            {item.badgeText}
-                                                        </span>
-                                                    )
+                                                <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
+                                                    {crop.description}
+                                                </p>
+
+                                                {reqLv > 1 && (
+                                                    <div
+                                                        className={`mt-1.5 text-[10px] font-bold px-2 py-1 rounded-lg border ${
+                                                            isLocked
+                                                                ? 'text-slate-700 bg-slate-200/80 border-slate-300'
+                                                                : 'text-indigo-700 bg-indigo-50 border-indigo-200/70'
+                                                        }`}
+                                                    >
+                                                        {isLocked
+                                                            ? `🔒 아지트 Lv.${reqLv} 해금 (현재 Lv.${azitLevel})`
+                                                            : `✨ 아지트 Lv.${reqLv} 해금 완료`}
+                                                    </div>
                                                 )}
                                             </div>
 
-                                            <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
-                                                {item.description}
-                                            </p>
-
-                                            {item.unlockCondition && (
-                                                <div className="mt-1.5 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/70">
-                                                    🏆 {item.unlockCondition}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2 min-w-0">
-                                            <span className="text-[12px] sm:text-xs font-black text-slate-800 flex items-center gap-1.5 min-w-0">
-                                                {isSeed && item.cropId ? (
-                                                    (SEED_POINT_PRICE_MAP[item.cropId] ?? 0) === 0 ? (
+                                            <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2 min-w-0">
+                                                <span className="text-[12px] sm:text-xs font-black text-slate-800 flex items-center gap-1.5 min-w-0">
+                                                    {sPrice === 0 ? (
                                                         <span className="text-emerald-600">0P (무료)</span>
                                                     ) : (
-                                                        <span className="text-amber-600">
-                                                            🪙 {SEED_POINT_PRICE_MAP[item.cropId]} P
-                                                        </span>
-                                                    )
-                                                ) : !VERA_POINT_SHOP_ENABLED || item.price === 0 ? (
-                                                    <>
-                                                        <span className="text-emerald-600">0원 (무료)</span>
-                                                        {item.pointPrice && item.pointPrice > 0 ? (
-                                                            <span className="text-[10px] text-slate-400 line-through font-normal">
-                                                                {item.pointPrice}P
-                                                            </span>
-                                                        ) : null}
-                                                    </>
-                                                ) : isOwned ? (
-                                                    <span className="text-indigo-600">보유중 ✓</span>
-                                                ) : (
-                                                    <span className="text-amber-600">
-                                                        🪙 {item.price.toLocaleString()} P
-                                                    </span>
-                                                )}
-                                            </span>
+                                                        <span className="text-amber-600">🪙 {sPrice} P</span>
+                                                    )}
+                                                </span>
 
-                                            {isSeed && item.cropId ? (
-                                                (() => {
-                                                    const sPrice = SEED_POINT_PRICE_MAP[item.cropId] ?? 0;
-                                                    const canOne = sPrice === 0 || veraPoints >= sPrice;
-                                                    const canFive = sPrice === 0 || veraPoints >= sPrice * 5;
-                                                    return (
-                                                        <div className="flex items-center gap-1.5 shrink-0">
-                                                            <button
-                                                                type="button"
-                                                                disabled={!canOne}
-                                                                onClick={() => onBuySeed?.(item.cropId!, 1)}
-                                                                className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
-                                                            >
-                                                                {sPrice === 0 ? '+1 무료' : `+1 (${sPrice}P)`}
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                disabled={!canFive}
-                                                                onClick={() => onBuySeed?.(item.cropId!, 5)}
-                                                                className="px-2 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[11px] font-extrabold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                                                                title={sPrice === 0 ? '5개 묶음 무료 구매' : `5개 묶음 (${sPrice * 5}P)`}
-                                                            >
-                                                                +5
-                                                            </button>
-                                                        </div>
-                                                    );
-                                                })()
-                                            ) : isOwned ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (
-                                                            !ownedItemIds.includes(item.itemId) &&
-                                                            item.pointPrice &&
-                                                            item.pointPrice > 0
-                                                        ) {
-                                                            onPurchaseItem(item.itemId).catch(() => {});
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        disabled={!canOne}
+                                                        onClick={() => onBuySeed?.(crop.cropId, 1)}
+                                                        className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    >
+                                                        {isLocked
+                                                            ? `🔒 Lv.${reqLv}`
+                                                            : sPrice === 0
+                                                              ? '+1 무료'
+                                                              : `+1 (${sPrice}P)`}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={!canFive}
+                                                        onClick={() => onBuySeed?.(crop.cropId, 5)}
+                                                        className="px-2 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[11px] font-extrabold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        title={
+                                                            sPrice === 0 ? '5개 묶음 무료 구매' : `5개 묶음 (${sPrice * 5}P)`
                                                         }
-                                                        onApplyItem(item.itemId);
-                                                    }}
-                                                    className={`px-3 py-1.5 rounded-xl text-[12px] sm:text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
-                                                        equipped &&
-                                                        (item.category === 'wall' ||
-                                                            item.category === 'floor' ||
-                                                            item.category === 'minimi')
-                                                            ? 'bg-emerald-600 text-white'
-                                                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                                                    }`}
-                                                >
-                                                    {item.category === 'furniture' || item.category === 'prop'
-                                                        ? '+ 아지트에 배치'
-                                                        : equipped
-                                                        ? '적용중 ✓'
-                                                        : '적용하기'}
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    disabled={isBuying}
-                                                    onClick={async () => {
-                                                        const ok = await onPurchaseItem(item.itemId);
-                                                        if (ok) {
-                                                            onApplyItem(item.itemId);
-                                                        }
-                                                    }}
-                                                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[12px] sm:text-xs font-extrabold shadow-2xs transition-all cursor-pointer disabled:opacity-50 shrink-0"
-                                                >
-                                                    {isBuying ? '구매 중...' : '구매 후 배치'}
-                                                </button>
-                                            )}
+                                                    >
+                                                        +5
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+
+                                {/* 동적 비료 카탈로그 카드 */}
+                                {visibleFertilizers.map((fert) => {
+                                    const fertCount = garden.fertilizerCounts?.[fert.fertilizerId] || 0;
+                                    const reqLv = fert.requiredAzitLevel ?? 1;
+                                    const isLocked = azitLevel < reqLv;
+                                    const canOne =
+                                        Boolean(onBuyFertilizer) &&
+                                        !isLocked &&
+                                        !isActing &&
+                                        veraPoints >= fert.price;
+                                    const canFive =
+                                        Boolean(onBuyFertilizer) &&
+                                        !isLocked &&
+                                        !isActing &&
+                                        veraPoints >= fert.price * 5;
+                                    return (
+                                        <div
+                                            key={`shop-fert-${fert.fertilizerId}`}
+                                            className={`rounded-2xl p-3 sm:p-3.5 border transition-all flex flex-col justify-between gap-2.5 sm:gap-3 min-w-0 ${
+                                                fertCount > 0
+                                                    ? 'bg-violet-50/50 border-violet-300 shadow-2xs'
+                                                    : 'bg-slate-50/80 border-violet-200/80 hover:border-violet-400 hover:bg-white'
+                                            }`}
+                                        >
+                                            <div className="min-w-0">
+                                                <div className="flex items-start justify-between gap-2 mb-1.5 min-w-0">
+                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                        <span className="w-11 h-11 rounded-xl bg-violet-50 border border-violet-200 flex items-center justify-center text-xl shadow-2xs shrink-0">
+                                                            {fert.emoji}
+                                                        </span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <h4 className="text-[13px] sm:text-xs font-black text-slate-900 leading-snug truncate">
+                                                                {fert.name}
+                                                            </h4>
+                                                            <span className="text-[10px] font-bold text-violet-600 block">
+                                                                FERTILIZER · ⏳ -{fert.reductionHours}시간 단축
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <span className="px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 text-[10px] font-black shrink-0">
+                                                        창고 {fertCount}개
+                                                    </span>
+                                                </div>
+
+                                                <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
+                                                    {fert.description}
+                                                </p>
+                                            </div>
+
+                                            <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2 min-w-0">
+                                                <span className="text-[12px] sm:text-xs font-black text-amber-600">
+                                                    🪙 {fert.price} P
+                                                </span>
+
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        disabled={!canOne}
+                                                        onClick={() => onBuyFertilizer?.(fert.fertilizerId, 1)}
+                                                        className="px-2.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    >
+                                                        +1 ({fert.price}P)
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={!canFive}
+                                                        onClick={() => onBuyFertilizer?.(fert.fertilizerId, 5)}
+                                                        className="px-2 py-1.5 rounded-xl bg-violet-100 hover:bg-violet-200 text-violet-800 text-[11px] font-extrabold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        title={`5개 묶음 (${fert.price * 5}P)`}
+                                                    >
+                                                        +5
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                {/* 가구·벽지·바닥·소품·아바타 카탈로그 카드 */}
+                                {filteredItems.map((item) => {
+                                    const isOwned =
+                                        !VERA_POINT_SHOP_ENABLED ||
+                                        ownedItemIds.includes(item.itemId) ||
+                                        item.price === 0;
+                                    const equipped = isItemEquipped(item.itemId);
+                                    const isBuying = isBuyingItemId === item.itemId;
+
+                                    return (
+                                        <div
+                                            key={item.itemId}
+                                            className={`rounded-2xl p-3 sm:p-3.5 border transition-all flex flex-col justify-between gap-2.5 sm:gap-3 min-w-0 ${
+                                                equipped
+                                                    ? 'bg-indigo-50/70 border-indigo-400 shadow-xs'
+                                                    : 'bg-slate-50/80 border-slate-200/80 hover:border-indigo-200 hover:bg-white'
+                                            }`}
+                                        >
+                                            <div className="min-w-0">
+                                                <div className="flex items-start justify-between gap-2 mb-1.5 min-w-0">
+                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                        {item.spriteUrl ? (
+                                                            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white flex items-center justify-center shadow-2xs border border-slate-200/80 shrink-0 p-1 overflow-hidden">
+                                                                <img
+                                                                    src={item.spriteUrl}
+                                                                    alt={item.name}
+                                                                    className="w-full h-full object-contain"
+                                                                    loading="lazy"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shadow-2xs border shrink-0 bg-indigo-50 border-indigo-100">
+                                                                {getCategoryEmoji(
+                                                                    item.category,
+                                                                    item.isTrophy,
+                                                                    item.cropId
+                                                                )}
+                                                            </span>
+                                                        )}
+                                                        <div className="min-w-0 flex-1">
+                                                            <h4 className="text-[13px] sm:text-xs font-black text-slate-900 leading-snug truncate">
+                                                                {item.name}
+                                                            </h4>
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                                                                {item.category === 'minimi' ? 'AVATAR' : item.category}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {item.badgeText && (
+                                                        <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-black shrink-0">
+                                                            {item.badgeText}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
+                                                    {item.description}
+                                                </p>
+
+                                                {item.unlockCondition && (
+                                                    <div className="mt-1.5 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/70">
+                                                        🏆 {item.unlockCondition}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2 min-w-0">
+                                                <span className="text-[12px] sm:text-xs font-black text-slate-800 flex items-center gap-1.5 min-w-0">
+                                                    {!VERA_POINT_SHOP_ENABLED || item.price === 0 ? (
+                                                        <>
+                                                            <span className="text-emerald-600">0원 (무료)</span>
+                                                            {item.pointPrice && item.pointPrice > 0 ? (
+                                                                <span className="text-[10px] text-slate-400 line-through font-normal">
+                                                                    {item.pointPrice}P
+                                                                </span>
+                                                            ) : null}
+                                                        </>
+                                                    ) : isOwned ? (
+                                                        <span className="text-indigo-600">보유중 ✓</span>
+                                                    ) : (
+                                                        <span className="text-amber-600">
+                                                            🪙 {item.price.toLocaleString()} P
+                                                        </span>
+                                                    )}
+                                                </span>
+
+                                                {isOwned ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (
+                                                                !ownedItemIds.includes(item.itemId) &&
+                                                                item.pointPrice &&
+                                                                item.pointPrice > 0
+                                                            ) {
+                                                                onPurchaseItem(item.itemId).catch(() => {});
+                                                            }
+                                                            onApplyItem(item.itemId);
+                                                        }}
+                                                        className={`px-3 py-1.5 rounded-xl text-[12px] sm:text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+                                                            equipped &&
+                                                            (item.category === 'wall' ||
+                                                                item.category === 'floor' ||
+                                                                item.category === 'minimi')
+                                                                ? 'bg-emerald-600 text-white'
+                                                                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                                        }`}
+                                                    >
+                                                        {item.category === 'furniture' || item.category === 'prop'
+                                                            ? '+ 아지트에 배치'
+                                                            : equipped
+                                                              ? '적용중 ✓'
+                                                              : '적용하기'}
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        disabled={isBuying}
+                                                        onClick={async () => {
+                                                            const ok = await onPurchaseItem(item.itemId);
+                                                            if (ok) {
+                                                                onApplyItem(item.itemId);
+                                                            }
+                                                        }}
+                                                        className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[12px] sm:text-xs font-extrabold shadow-2xs transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                                                    >
+                                                        {isBuying ? '구매 중...' : '구매 후 배치'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )
                     )}
                 </div>
 

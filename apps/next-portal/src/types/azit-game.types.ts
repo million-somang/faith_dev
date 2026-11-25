@@ -1,8 +1,25 @@
-import type { GardenCropId, MinihomeGardenState } from '@/types/minihome.types';
+import type {
+    GardenCropId,
+    GardenPlotItem,
+    KnownGardenCropId,
+    MinihomeGardenState,
+} from '@/types/minihome.types';
 
 export type AzitZoneType = 'indoor' | 'garden' | 'kitchen' | 'camp';
 
+export type AzitKnownCropId = KnownGardenCropId;
+
 export type AzitCropId = GardenCropId;
+
+export type AzitKnownFertilizerId = 'fert-basic' | 'fert-rapid';
+
+export type AzitFertilizerId = AzitKnownFertilizerId | (string & {});
+
+export type AzitFarmerCode = string;
+
+export type AzitFarmerRole = 'water' | 'harvest' | 'plant' | 'fertilize';
+
+export type AzitFarmerGrade = 1 | 2 | 3 | 4;
 
 export type AzitMaterialId =
     | 'mat-slime-jelly'
@@ -19,7 +36,13 @@ export type AzitRecipeId =
     | 'dish-potato-gratin'
     | 'dish-strawberry-tart'
     | 'dish-knight-feast'
-    | 'dish-dragon-elixir';
+    | 'dish-dragon-elixir'
+    | 'dish-blueberry-parfait'
+    | 'dish-pumpkin-risotto'
+    | 'dish-melon-sorbet'
+    | 'dish-ginseng-tonic'
+    | 'dish-truffle-steak'
+    | 'dish-moon-elixir';
 
 export type AzitChefCode = 'chef-momo' | 'chef-bulta' | 'chef-claire' | 'chef-dragon';
 
@@ -44,10 +67,54 @@ export interface AzitCropCatalogItem {
     name: string;
     shortName: string;
     emoji: string;
+    requiredAzitLevel: number;
     seedPrice: number;
     harvestYield: number;
     sellPrice: number;
     description: string;
+}
+
+export type AzitCropDef = AzitCropCatalogItem;
+
+export interface AzitFertilizerCatalogItem {
+    fertilizerId: AzitFertilizerId;
+    name: string;
+    shortName: string;
+    emoji: string;
+    requiredAzitLevel: number;
+    price: number;
+    reductionMs: number;
+    reductionHours: number;
+    description: string;
+}
+
+export interface AzitSoilLevelCatalogItem {
+    level: number;
+    name: string;
+    upgradeCost: number;
+    requiredAzitLevel: number;
+    guaranteedBonusYield: number;
+    bonusChancePct: number;
+    description: string;
+}
+
+export interface AzitPlotUnlockCatalogItem {
+    plotIndex: number;
+    unlockLevel: number;
+    unlockCost: number;
+}
+
+export interface AzitFarmerCatalogItem {
+    farmerCode: AzitFarmerCode;
+    name: string;
+    title?: string;
+    emoji: string;
+    hireCost: number;
+    requiredAzitLevel: number;
+    maxLevel: number;
+    description: string;
+    baseWorkIntervalMs?: number;
+    baseWaterCooldownReductionPct?: number;
 }
 
 export interface AzitMaterialCatalogItem {
@@ -134,6 +201,65 @@ export interface AzitLevelStep {
     maxMercs: number;
     maxPartySize: number;
     maxActiveExpeditions: number;
+    gardenPlots: number;
+    maxFarmers: number;
+}
+
+export interface OwnedFarmer {
+    farmerCode: AzitFarmerCode;
+    name: string;
+    title?: string;
+    emoji?: string;
+    grade: AzitFarmerGrade | number;
+    gradeName: string;
+    level: number;
+    xp: number;
+    nextLevelXp: number | null;
+    autoEnabled: boolean;
+    autoFertilize: boolean;
+    preferredCropId: AzitCropId | null;
+    workIntervalMs: number;
+    waterCooldownReductionPct: number;
+    roles: AzitFarmerRole[];
+    nextAutoRunAtMs: number | null;
+    lastAutoTickMs: number;
+    totalWatered: number;
+    totalHarvested: number;
+    totalPlanted: number;
+    upgradeCost: number | null;
+}
+
+export interface FarmerActionLog {
+    id: number;
+    farmerCode: AzitFarmerCode;
+    actionType: AzitFarmerRole;
+    plotIndex: number;
+    cropId: AzitCropId | null;
+    detail: string;
+    createdAt: string;
+}
+
+export interface ServerGardenPlot extends GardenPlotItem {
+    isUnlocked: boolean;
+    unlockLevel: number;
+    unlockCost: number;
+    soilLevel: number;
+    nextWaterAtMs: number | null;
+    fertilizerUsedCount: number;
+}
+
+export interface ServerGardenState extends MinihomeGardenState {
+    plots: ServerGardenPlot[];
+    fertilizerCounts: Record<string, number>;
+    unlockedPlotCount: number;
+    maxPlotCount: number;
+}
+
+export interface AzitFarmerConfigurePayload {
+    farmerCode: AzitFarmerCode;
+    autoEnabled?: boolean;
+    preferredCropId?: AzitCropId | null;
+    autoFertilize?: boolean;
 }
 
 export interface AzitChefRecord {
@@ -221,6 +347,9 @@ export interface AzitFullGameState {
             maxMercs: number;
             maxPartySize: number;
             maxActiveExpeditions: number;
+            maxGardenPlots: number;
+            unlockedPlots: number;
+            maxFarmers: number;
         };
         totalCropsSold: number;
         totalDishesCooked: number;
@@ -229,7 +358,7 @@ export interface AzitFullGameState {
     };
     veraPoints: number;
     serverNowMs?: number;
-    garden: MinihomeGardenState;
+    garden: ServerGardenState;
     materials: Record<AzitMaterialId, number>;
     dishes: Record<AzitRecipeId, number>;
     chefs: AzitChefRecord[];
@@ -238,11 +367,17 @@ export interface AzitFullGameState {
     activeExpeditions: AzitExpeditionRecord[];
     recentExpeditions: AzitExpeditionRecord[];
     recentLedger: AzitLedgerRecord[];
+    farmers: OwnedFarmer[];
+    farmerLogs: FarmerActionLog[];
     catalog: {
         crops: AzitCropCatalogItem[];
+        fertilizers: AzitFertilizerCatalogItem[];
+        soilLevels: AzitSoilLevelCatalogItem[];
+        plotUnlocks: AzitPlotUnlockCatalogItem[];
         materials: AzitMaterialCatalogItem[];
         recipes: AzitRecipeCatalogItem[];
         chefs: AzitChefCatalogItem[];
+        farmers: AzitFarmerCatalogItem[];
         mercenaries: AzitMercenaryCatalogItem[];
         zones: AzitExpeditionZoneItem[];
         levels: AzitLevelStep[];
@@ -263,6 +398,16 @@ export interface UseAzitGameController {
     harvestPlot: (plotIndex: number) => Promise<boolean>;
     clearPlot: (plotIndex: number) => Promise<boolean>;
     sellCrop: (cropId: AzitCropId, quantity?: number) => Promise<boolean>;
+    unlockPlot: (plotIndex: number) => Promise<boolean>;
+    buyFertilizer: (fertilizerId?: AzitFertilizerId, quantity?: number) => Promise<boolean>;
+    fertilizePlot: (plotIndex: number, fertilizerId?: AzitFertilizerId) => Promise<boolean>;
+    upgradeSoil: (plotIndex: number) => Promise<boolean>;
+    waterAll: () => Promise<boolean>;
+    harvestAll: () => Promise<boolean>;
+    plantAll: (cropId: AzitCropId) => Promise<boolean>;
+    hireFarmer: (farmerCode: AzitFarmerCode) => Promise<boolean>;
+    upgradeFarmer: (farmerCode: AzitFarmerCode) => Promise<boolean>;
+    configureFarmer: (payload: AzitFarmerConfigurePayload) => Promise<boolean>;
     hireChef: (chefCode: AzitChefCode) => Promise<boolean>;
     upgradeChef: (chefCode: AzitChefCode) => Promise<boolean>;
     startCooking: (slotIndex: number, recipeId: AzitRecipeId, chefCode?: AzitChefCode | null) => Promise<boolean>;

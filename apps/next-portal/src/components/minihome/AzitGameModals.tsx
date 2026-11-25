@@ -5,6 +5,7 @@ import type {
     AzitBattleReport,
     AzitChefCode,
     AzitCropId,
+    AzitFarmerRole,
     AzitFullGameState,
     AzitMercCode,
     AzitRecipeId,
@@ -12,9 +13,15 @@ import type {
     UseAzitGameController,
 } from '@/types/azit-game.types';
 import { formatDurationCompact } from '@/types/azit-game.types';
-import { getChefSpriteMeta, getMercSpriteMeta } from '@/data/azitCharacterAssets';
+import {
+    getChefSpriteMeta,
+    getFarmerGradeBadge,
+    getFarmerRoleBadge,
+    getFarmerVisualMeta,
+    getMercSpriteMeta,
+} from '@/data/azitCharacterAssets';
 
-export type AzitModalKind = 'market' | 'chefs' | 'mercs' | 'expedition' | null;
+export type AzitModalKind = 'market' | 'farmers' | 'chefs' | 'mercs' | 'expedition' | null;
 
 interface AzitGameModalsProps {
     activeModal: AzitModalKind;
@@ -72,6 +79,7 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
     onOpenMercModal,
 }) => {
     const [marketTab, setMarketTab] = useState<'crops' | 'dishes' | 'ledger'>('crops');
+    const [hideEmptyMarket, setHideEmptyMarket] = useState<boolean>(false);
     const [selectedZoneId, setSelectedZoneId] = useState<AzitZoneId>('zone-slime');
     const [selectedParty, setSelectedParty] = useState<AzitMercCode[]>([]);
     const [selectedDishId, setSelectedDishId] = useState<AzitRecipeId | null>(null);
@@ -167,7 +175,7 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                             </button>
                         </div>
 
-                        <div className="px-5 pt-3 flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <div className="px-5 pt-3 flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3">
                             <button
                                 type="button"
                                 onClick={() => setMarketTab('crops')}
@@ -201,6 +209,20 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                             >
                                 📜 포인트 거래 내역
                             </button>
+
+                            {marketTab !== 'ledger' && (
+                                <button
+                                    type="button"
+                                    onClick={() => setHideEmptyMarket((prev) => !prev)}
+                                    className={`ml-auto px-2.5 py-1.5 rounded-xl text-[11px] font-black border cursor-pointer transition-colors ${
+                                        hideEmptyMarket
+                                            ? 'bg-indigo-600 text-white border-indigo-600'
+                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    {hideEmptyMarket ? '✓ 0개 숨기기 ON' : '0개 숨기기'}
+                                </button>
+                            )}
                         </div>
 
                         <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-3">
@@ -209,105 +231,151 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                     <div className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-800">
                                         💡 생작물을 바로 팔아 포인트를 얻거나, 주방에서 요리로 조리해 팔면 더 높은 수익을 얻을 수 있어요!
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {gameState.catalog.crops.map((crop) => {
-                                            const qty = gameState.garden.harvestCounts[crop.cropId as AzitCropId] || 0;
+                                    {(() => {
+                                        const visibleCrops = hideEmptyMarket
+                                            ? gameState.catalog.crops.filter(
+                                                  (c) => (gameState.garden.harvestCounts[c.cropId as AzitCropId] || 0) > 0
+                                              )
+                                            : gameState.catalog.crops;
+                                        if (visibleCrops.length === 0) {
                                             return (
-                                                <div
-                                                    key={`market-crop-${crop.cropId}`}
-                                                    className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
-                                                        qty > 0
-                                                            ? 'bg-emerald-50/60 border-emerald-300'
-                                                            : 'bg-slate-50 border-slate-200 opacity-75'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-2.5 min-w-0">
-                                                        <span className="w-10 h-10 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-xl shrink-0">
-                                                            {crop.emoji}
-                                                        </span>
-                                                        <div className="min-w-0">
-                                                            <div className="text-xs font-black text-slate-900 truncate">
-                                                                {crop.name} ({qty}개)
-                                                            </div>
-                                                            <div className="text-[11px] font-extrabold text-amber-700">
-                                                                개당 +{crop.sellPrice}P
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                        <button
-                                                            type="button"
-                                                            disabled={qty < 1 || azitGame.isActing}
-                                                            onClick={() => azitGame.sellCrop(crop.cropId, 1)}
-                                                            className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                                                        >
-                                                            1개
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            disabled={qty < 1 || azitGame.isActing}
-                                                            onClick={() => azitGame.sellCrop(crop.cropId, qty)}
-                                                            className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                                                        >
-                                                            모두 ({qty * crop.sellPrice}P)
-                                                        </button>
-                                                    </div>
+                                                <div className="py-10 text-center text-xs font-bold text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+                                                    보유 중인 수확 작물이 없습니다.
                                                 </div>
                                             );
-                                        })}
-                                    </div>
+                                        }
+                                        return (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {visibleCrops.map((crop) => {
+                                                    const qty =
+                                                        gameState.garden.harvestCounts[crop.cropId as AzitCropId] || 0;
+                                                    return (
+                                                        <div
+                                                            key={`market-crop-${crop.cropId}`}
+                                                            className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
+                                                                qty > 0
+                                                                    ? 'bg-emerald-50/60 border-emerald-300'
+                                                                    : 'bg-slate-50 border-slate-200 opacity-75'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                                <span className="w-10 h-10 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-xl shrink-0">
+                                                                    {crop.emoji}
+                                                                </span>
+                                                                <div className="min-w-0">
+                                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                                        <span className="text-xs font-black text-slate-900 truncate">
+                                                                            {crop.name} ({qty}개)
+                                                                        </span>
+                                                                        {crop.requiredAzitLevel > 1 && (
+                                                                            <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[9px] font-black shrink-0">
+                                                                                Lv.{crop.requiredAzitLevel}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="text-[11px] font-extrabold text-amber-700">
+                                                                        개당 +{crop.sellPrice}P
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={qty < 1 || azitGame.isActing}
+                                                                    onClick={() => azitGame.sellCrop(crop.cropId, 1)}
+                                                                    className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                >
+                                                                    1개
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={qty < 1 || azitGame.isActing}
+                                                                    onClick={() => azitGame.sellCrop(crop.cropId, qty)}
+                                                                    className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                >
+                                                                    모두 ({qty * crop.sellPrice}P)
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        );
+                                    })()}
                                 </>
                             )}
 
-                            {marketTab === 'dishes' && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {gameState.catalog.recipes.map((recipe) => {
-                                        const qty = gameState.dishes[recipe.recipeId] || 0;
+                            {marketTab === 'dishes' &&
+                                (() => {
+                                    const visibleRecipes = hideEmptyMarket
+                                        ? gameState.catalog.recipes.filter(
+                                              (r) => (gameState.dishes[r.recipeId] || 0) > 0
+                                          )
+                                        : gameState.catalog.recipes;
+                                    if (visibleRecipes.length === 0) {
                                         return (
-                                            <div
-                                                key={`market-dish-${recipe.recipeId}`}
-                                                className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
-                                                    qty > 0
-                                                        ? 'bg-orange-50/70 border-orange-300'
-                                                        : 'bg-slate-50 border-slate-200 opacity-75'
-                                                }`}
-                                            >
-                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                    <span className="w-10 h-10 rounded-xl bg-white border border-orange-200 flex items-center justify-center text-xl shrink-0">
-                                                        {recipe.emoji}
-                                                    </span>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-black text-slate-900 truncate">
-                                                            {recipe.name} ({qty}개)
-                                                        </div>
-                                                        <div className="text-[11px] font-extrabold text-amber-700">
-                                                            판매 +{recipe.sellPrice.toLocaleString()}P · 티어{recipe.tier}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                    <button
-                                                        type="button"
-                                                        disabled={qty < 1 || azitGame.isActing}
-                                                        onClick={() => azitGame.sellDish(recipe.recipeId, 1)}
-                                                        className="px-2.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                                                    >
-                                                        1개
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        disabled={qty < 1 || azitGame.isActing}
-                                                        onClick={() => azitGame.sellDish(recipe.recipeId, qty)}
-                                                        className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                                                    >
-                                                        모두
-                                                    </button>
-                                                </div>
+                                            <div className="py-10 text-center text-xs font-bold text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+                                                보유 중인 완성 요리가 없습니다.
                                             </div>
                                         );
-                                    })}
-                                </div>
-                            )}
+                                    }
+                                    return (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {visibleRecipes.map((recipe) => {
+                                                const qty = gameState.dishes[recipe.recipeId] || 0;
+                                                return (
+                                                    <div
+                                                        key={`market-dish-${recipe.recipeId}`}
+                                                        className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
+                                                            qty > 0
+                                                                ? 'bg-orange-50/70 border-orange-300'
+                                                                : 'bg-slate-50 border-slate-200 opacity-75'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <span className="w-10 h-10 rounded-xl bg-white border border-orange-200 flex items-center justify-center text-xl shrink-0">
+                                                                {recipe.emoji}
+                                                            </span>
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                                    <span className="text-xs font-black text-slate-900 truncate">
+                                                                        {recipe.name} ({qty}개)
+                                                                    </span>
+                                                                    {recipe.requiredAzitLevel > 1 && (
+                                                                        <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[9px] font-black shrink-0">
+                                                                            Lv.{recipe.requiredAzitLevel}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="text-[11px] font-extrabold text-amber-700">
+                                                                    판매 +{recipe.sellPrice.toLocaleString()}P · 티어{recipe.tier}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                disabled={qty < 1 || azitGame.isActing}
+                                                                onClick={() => azitGame.sellDish(recipe.recipeId, 1)}
+                                                                className="px-2.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                            >
+                                                                1개
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={qty < 1 || azitGame.isActing}
+                                                                onClick={() => azitGame.sellDish(recipe.recipeId, qty)}
+                                                                className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                            >
+                                                                모두
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })()}
 
                             {marketTab === 'ledger' && (
                                 gameState.recentLedger.length === 0 ? (
@@ -347,6 +415,374 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                     </div>
                                 )
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeModal === 'farmers' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 backdrop-blur-xs p-3 sm:p-4">
+                    <div className="bg-white w-full max-w-4xl max-h-[88vh] rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-2 bg-gradient-to-r from-emerald-50 to-teal-50">
+                            <div>
+                                <h3 className="text-base sm:text-lg font-black text-slate-900">
+                                    👨‍🌾 아지트 농부 길드 &amp; 자동화
+                                </h3>
+                                <p className="text-xs text-slate-600 font-semibold">
+                                    고용 한도 {gameState.farmers.length}/{gameState.profile.limits.maxFarmers}명 · 보유{' '}
+                                    <span className="text-amber-700 font-black font-mono">
+                                        {gameState.veraPoints.toLocaleString()} P
+                                    </span>
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={onCloseModal}
+                                className="w-8 h-8 rounded-full bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 font-black cursor-pointer"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-5">
+                            {gameState.profile.azitLevel < 20 && (
+                                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex items-center gap-3">
+                                    <span className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xl shrink-0">
+                                        🔒
+                                    </span>
+                                    <div className="space-y-0.5">
+                                        <div className="text-xs sm:text-sm font-black text-amber-950">
+                                            🔒 아지트 Lv.20 달성 시 농부 고용 해금 — 현재 Lv.{gameState.profile.azitLevel}
+                                        </div>
+                                        <p className="text-[11px] font-semibold text-amber-800">
+                                            아지트 레벨이 20에 도달하면 전담 농부를 고용하여 물주기·수확·심기·비료 자동화를 맡길 수 있습니다.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {gameState.catalog.farmers.length === 0 ? (
+                                <div className="py-10 text-center text-xs font-bold text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+                                    고용 가능한 농부 정보가 없습니다.
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                    {gameState.catalog.farmers.map((farmerDef) => {
+                                        const owned = gameState.farmers.find(
+                                            (f) => f.farmerCode === farmerDef.farmerCode
+                                        );
+                                        const visual = getFarmerVisualMeta(farmerDef.farmerCode, owned?.grade ?? 1);
+                                        const isGuildLocked = gameState.profile.azitLevel < 20;
+                                        const levelLocked =
+                                            isGuildLocked || gameState.profile.azitLevel < farmerDef.requiredAzitLevel;
+                                        const slotsFull =
+                                            !owned && gameState.farmers.length >= gameState.profile.limits.maxFarmers;
+                                        const gradeBadge = owned ? getFarmerGradeBadge(owned.grade) : null;
+                                        const xpPct =
+                                            owned && owned.nextLevelXp
+                                                ? Math.min(100, Math.round((owned.xp / Math.max(1, owned.nextLevelXp)) * 100))
+                                                : 100;
+                                        const allRoles: Array<{ role: AzitFarmerRole; unlockLv: number }> = [
+                                            { role: 'water', unlockLv: 1 },
+                                            { role: 'harvest', unlockLv: 5 },
+                                            { role: 'plant', unlockLv: 10 },
+                                            { role: 'fertilize', unlockLv: 15 },
+                                        ];
+
+                                        return (
+                                            <div
+                                                key={`guild-farmer-${farmerDef.farmerCode}`}
+                                                className={`p-4 rounded-2xl border flex flex-col justify-between gap-3 ${
+                                                    owned
+                                                        ? 'bg-emerald-50/70 border-emerald-300'
+                                                        : 'bg-slate-50 border-slate-200'
+                                                }`}
+                                            >
+                                                <div className="space-y-2.5">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <div
+                                                                className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center text-2xl shadow-2xs shrink-0 ${
+                                                                    levelLocked && !owned ? 'grayscale opacity-65' : ''
+                                                                }`}
+                                                                style={{
+                                                                    backgroundColor: `${visual.outfitColor}18`,
+                                                                    borderColor: visual.accentRingColor,
+                                                                }}
+                                                            >
+                                                                <span>{visual.emoji}</span>
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                                    <span className="text-sm font-black text-slate-900">
+                                                                        {farmerDef.name}
+                                                                    </span>
+                                                                    {owned && (
+                                                                        <span className="text-xs font-black text-emerald-700">
+                                                                            Lv.{owned.level}/{farmerDef.maxLevel}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="text-[11px] font-bold text-slate-500">
+                                                                    {farmerDef.title || '전담 농부'}
+                                                                </div>
+                                                                {gradeBadge && (
+                                                                    <span
+                                                                        className={`mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border ${gradeBadge.bgClass} ${gradeBadge.textClass} ${gradeBadge.borderClass}`}
+                                                                    >
+                                                                        {gradeBadge.emoji} {gradeBadge.label}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-black shrink-0">
+                                                            해금 Lv.{farmerDef.requiredAzitLevel}
+                                                        </span>
+                                                    </div>
+
+                                                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                                                        {farmerDef.description}
+                                                    </p>
+
+                                                    {owned && (
+                                                        <>
+                                                            <div className="flex flex-wrap gap-1.5 text-[10px] font-extrabold">
+                                                                <span className="px-2 py-0.5 rounded-md bg-sky-100 text-sky-800">
+                                                                    ⏱ 주기 {Math.round(owned.workIntervalMs / 1000)}초
+                                                                </span>
+                                                                <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                                                                    💧 물쿨감 -{owned.waterCooldownReductionPct}%
+                                                                </span>
+                                                                <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-mono">
+                                                                    물 {owned.totalWatered} · 수확 {owned.totalHarvested} · 심기 {owned.totalPlanted}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* 작업 역할 범위 */}
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {allRoles.map(({ role, unlockLv }) => {
+                                                                    const meta = getFarmerRoleBadge(role);
+                                                                    const active = owned.roles.includes(role);
+                                                                    return (
+                                                                        <span
+                                                                            key={`farmer-role-${owned.farmerCode}-${role}`}
+                                                                            className={`px-2 py-0.5 rounded-lg text-[10px] font-black border ${
+                                                                                active
+                                                                                    ? `${meta.bgClass} ${meta.textClass} border-current/20`
+                                                                                    : 'bg-slate-100 text-slate-400 border-slate-200 opacity-70'
+                                                                            }`}
+                                                                        >
+                                                                            {meta.emoji} {meta.label}
+                                                                            {!active ? ` (Lv.${unlockLv})` : ''}
+                                                                        </span>
+                                                                    );
+                                                                })}
+                                                            </div>
+
+                                                            {/* XP 바 */}
+                                                            <div className="space-y-0.5">
+                                                                <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                                                                    <span>농부 숙련도 EXP</span>
+                                                                    <span>
+                                                                        {owned.nextLevelXp !== null
+                                                                            ? `${owned.xp}/${owned.nextLevelXp}`
+                                                                            : `${owned.xp} (MAX)`}
+                                                                    </span>
+                                                                </div>
+                                                                <svg viewBox="0 0 100 6" className="w-full h-1.5" aria-hidden="true">
+                                                                    <rect x="0" y="0" width="100" height="6" rx="3" fill="#e2e8f0" />
+                                                                    <rect x="0" y="0" width={xpPct} height="6" rx="3" fill="#10b981" />
+                                                                </svg>
+                                                            </div>
+
+                                                            {/* 자동화 설정 */}
+                                                            <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200/80 space-y-2">
+                                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={azitGame.isActing}
+                                                                        onClick={() =>
+                                                                            azitGame.configureFarmer({
+                                                                                farmerCode: owned.farmerCode,
+                                                                                autoEnabled: !owned.autoEnabled,
+                                                                            })
+                                                                        }
+                                                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-colors disabled:opacity-50 ${
+                                                                            owned.autoEnabled
+                                                                                ? 'bg-emerald-600 text-white'
+                                                                                : 'bg-slate-200 text-slate-700'
+                                                                        }`}
+                                                                    >
+                                                                        {owned.autoEnabled ? '⚡ 자동 작업 ON' : '⏸️ 자동 작업 OFF'}
+                                                                    </button>
+
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={
+                                                                            azitGame.isActing ||
+                                                                            !owned.roles.includes('fertilize')
+                                                                        }
+                                                                        onClick={() =>
+                                                                            azitGame.configureFarmer({
+                                                                                farmerCode: owned.farmerCode,
+                                                                                autoFertilize: !owned.autoFertilize,
+                                                                            })
+                                                                        }
+                                                                        title={
+                                                                            owned.roles.includes('fertilize')
+                                                                                ? '보유 비료 자동 사용 토글'
+                                                                                : '농부 Lv.15 (마스터 농부) 달성 시 해금'
+                                                                        }
+                                                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-colors disabled:opacity-45 disabled:cursor-not-allowed ${
+                                                                            owned.autoFertilize && owned.roles.includes('fertilize')
+                                                                                ? 'bg-violet-600 text-white cursor-pointer'
+                                                                                : 'bg-slate-100 text-slate-600 border border-slate-200 cursor-pointer'
+                                                                        }`}
+                                                                    >
+                                                                        {owned.roles.includes('fertilize')
+                                                                            ? owned.autoFertilize
+                                                                                ? '🧪 자동 비료 ON'
+                                                                                : '🧪 자동 비료 OFF'
+                                                                            : '🔒 자동 비료 (Lv.15)'}
+                                                                    </button>
+                                                                </div>
+
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <label
+                                                                        htmlFor={`preferred-crop-${owned.farmerCode}`}
+                                                                        className="text-[11px] font-bold text-slate-600 shrink-0"
+                                                                    >
+                                                                        선호 자동 심기
+                                                                    </label>
+                                                                    <select
+                                                                        id={`preferred-crop-${owned.farmerCode}`}
+                                                                        value={owned.preferredCropId ?? ''}
+                                                                        disabled={azitGame.isActing}
+                                                                        onChange={(e) =>
+                                                                            azitGame.configureFarmer({
+                                                                                farmerCode: owned.farmerCode,
+                                                                                preferredCropId: e.target.value
+                                                                                    ? (e.target.value as AzitCropId)
+                                                                                    : null,
+                                                                            })
+                                                                        }
+                                                                        className="flex-1 min-w-0 px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-[11px] font-bold text-slate-800"
+                                                                    >
+                                                                        <option value="">보유 씨앗 자동 선택</option>
+                                                                        {gameState.catalog.crops.map((crop) => {
+                                                                            const cropLocked =
+                                                                                gameState.profile.azitLevel <
+                                                                                crop.requiredAzitLevel;
+                                                                            return (
+                                                                                <option
+                                                                                    key={`opt-crop-${crop.cropId}`}
+                                                                                    value={crop.cropId}
+                                                                                    disabled={cropLocked}
+                                                                                >
+                                                                                    {crop.emoji} {crop.shortName}
+                                                                                    {cropLocked
+                                                                                        ? ` (🔒 Lv.${crop.requiredAzitLevel})`
+                                                                                        : ''}
+                                                                                </option>
+                                                                            );
+                                                                        })}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                <div className="pt-2 border-t border-slate-200/70">
+                                                    {owned ? (
+                                                        owned.upgradeCost !== null ? (
+                                                            <button
+                                                                type="button"
+                                                                disabled={
+                                                                    gameState.veraPoints < owned.upgradeCost ||
+                                                                    azitGame.isActing
+                                                                }
+                                                                onClick={() => azitGame.upgradeFarmer(owned.farmerCode)}
+                                                                className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
+                                                            >
+                                                                ✨ 농부 육성 ({owned.upgradeCost.toLocaleString()}P)
+                                                            </button>
+                                                        ) : (
+                                                            <div className="w-full py-2 rounded-xl bg-emerald-100 text-emerald-800 text-center text-xs font-black">
+                                                                최고 등급 달성 (MAX)
+                                                            </div>
+                                                        )
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            disabled={
+                                                                levelLocked ||
+                                                                slotsFull ||
+                                                                gameState.veraPoints < farmerDef.hireCost ||
+                                                                azitGame.isActing
+                                                            }
+                                                            onClick={() => azitGame.hireFarmer(farmerDef.farmerCode)}
+                                                            className="w-full py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
+                                                        >
+                                                            {isGuildLocked
+                                                                ? '🔒 아지트 Lv.20 필요'
+                                                                : levelLocked
+                                                                  ? `🔒 아지트 Lv.${farmerDef.requiredAzitLevel} 필요`
+                                                                  : slotsFull
+                                                                    ? '고용 한도 초과 (아지트 레벨업 필요)'
+                                                                    : gameState.veraPoints < farmerDef.hireCost
+                                                                      ? `포인트 부족 (${farmerDef.hireCost.toLocaleString()}P 필요)`
+                                                                      : `고용하기 (${farmerDef.hireCost.toLocaleString()}P)`}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* 농부 자동화 작업 기록 */}
+                            <div className="space-y-2 pt-2 border-t border-slate-100">
+                                <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                                    📋 농부 자동화 작업 기록
+                                </h4>
+                                {gameState.farmerLogs.length === 0 ? (
+                                    <div className="py-6 text-center text-xs font-bold text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+                                        아직 농부가 수행한 작업 기록이 없습니다.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                                        {gameState.farmerLogs.map((log) => {
+                                            const roleMeta = getFarmerRoleBadge(log.actionType);
+                                            const farmerMeta = gameState.catalog.farmers.find(
+                                                (f) => f.farmerCode === log.farmerCode
+                                            );
+                                            return (
+                                                <div
+                                                    key={`farmer-log-${log.id}`}
+                                                    className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs"
+                                                >
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <span
+                                                            className={`px-2 py-0.5 rounded-lg text-[10px] font-black shrink-0 ${roleMeta.bgClass} ${roleMeta.textClass}`}
+                                                        >
+                                                            {roleMeta.emoji} {roleMeta.label}
+                                                        </span>
+                                                        <span className="font-bold text-slate-800 truncate">
+                                                            [{farmerMeta?.name || log.farmerCode}] #{log.plotIndex + 1} · {log.detail}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                                                        {log.createdAt}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

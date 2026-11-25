@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { useMinihome } from '@/hooks/useMinihome';
+import { useAzitGame } from '@/hooks/useAzitGame';
 import { IsometricRoomCanvas } from '@/components/minihome/IsometricRoomCanvas';
 import { MinihomeShopDrawer } from '@/components/minihome/MinihomeShopDrawer';
 import { MinihomeGuestbook } from '@/components/minihome/MinihomeGuestbook';
@@ -19,7 +21,9 @@ import {
 export default function MinihomePage() {
     const params = useParams();
     const router = useRouter();
+    const { user } = useAuth();
     const rawHandleParam = typeof params?.handle === 'string' ? params.handle : 'me';
+    const azitRefreshRef = useRef<(() => void) | null>(null);
 
     const {
         profile,
@@ -67,11 +71,28 @@ export default function MinihomePage() {
         handleAddGuestbook,
         handleReplyGuestbook,
         handleSoftDeleteGuestbook,
+        syncAzitState,
         showToast,
-    } = useMinihome(rawHandleParam);
+    } = useMinihome(rawHandleParam, {
+        onGardenSynced: () => azitRefreshRef.current?.(),
+    });
+
+    const isOwner = Boolean(user && profile?.isOwner);
+    const azitGame = useAzitGame({
+        enabled: isOwner,
+        onSyncState: syncAzitState,
+        onToast: showToast,
+    });
+
+    useEffect(() => {
+        azitRefreshRef.current = () => {
+            azitGame.refreshState().catch(() => {});
+        };
+    }, [azitGame.refreshState]);
 
     const [seoTab, setSeoTab] = useState<'howto' | 'faq' | 'neighbors'>('howto');
     const [showSurfModal, setShowSurfModal] = useState<boolean>(false);
+    const [shopCategoryOverride, setShopCategoryOverride] = useState<'fertilizer' | null>(null);
 
     const activeMoodId = isEditMode ? draftMood : (profile?.statusMood || 'happy');
     const currentMoodMeta = MINIHOME_MOODS.find((m) => m.id === activeMoodId) || MINIHOME_MOODS[0];
@@ -330,7 +351,11 @@ export default function MinihomePage() {
                                                 <span>🪙 베라포인트</span>
                                             </div>
                                             <div className="text-xs font-black text-amber-900 mt-0.5 font-mono truncate">
-                                                {profile.veraPoints.toLocaleString()} P
+                                                {(isOwner && azitGame.state
+                                                    ? azitGame.state.veraPoints
+                                                    : profile.veraPoints
+                                                ).toLocaleString()}{' '}
+                                                P
                                             </div>
                                         </div>
                                         <div
@@ -430,9 +455,22 @@ export default function MinihomePage() {
                                     onChangeSpeechBubble={(text) =>
                                         setDraftLayout((prev) => ({ ...prev, speechBubble: text }))
                                     }
-                                    onOpenShopModal={() => handleOpenShopModal('shop', 'all')}
-                                    onOpenSeedShopModal={() => handleOpenShopModal('shop', 'seed')}
-                                    onOpenWarehouseModal={() => handleOpenShopModal('warehouse', 'all')}
+                                    onOpenShopModal={() => {
+                                        setShopCategoryOverride(null);
+                                        handleOpenShopModal('shop', 'all');
+                                    }}
+                                    onOpenSeedShopModal={() => {
+                                        setShopCategoryOverride(null);
+                                        handleOpenShopModal('shop', 'seed');
+                                    }}
+                                    onOpenFertilizerShopModal={() => {
+                                        setShopCategoryOverride('fertilizer');
+                                        handleOpenShopModal('shop', 'all');
+                                    }}
+                                    onOpenWarehouseModal={() => {
+                                        setShopCategoryOverride(null);
+                                        handleOpenShopModal('warehouse', 'all');
+                                    }}
                                     onSaveRoom={() => handleSaveMinihome()}
                                     onCancelEdit={handleCancelEditMode}
                                     isSaving={isSaving}
@@ -440,6 +478,7 @@ export default function MinihomePage() {
                                     onWaterPlot={handleWaterPlot}
                                     onHarvestPlot={handleHarvestPlot}
                                     onClearPlot={handleClearPlot}
+                                    azitGame={isOwner ? azitGame : undefined}
                                 />
                             </div>
                         </div>
@@ -599,19 +638,27 @@ export default function MinihomePage() {
                 <>
                     <MinihomeShopDrawer
                         isOpen={isShopModalOpen}
-                        onClose={() => setIsShopModalOpen(false)}
+                        onClose={() => {
+                            setShopCategoryOverride(null);
+                            setIsShopModalOpen(false);
+                        }}
                         ownedItemIds={profile.ownedItemIds}
-                        veraPoints={profile.veraPoints}
+                        veraPoints={isOwner && azitGame.state ? azitGame.state.veraPoints : profile.veraPoints}
                         draftLayout={draftLayout}
                         isBuyingItemId={isBuyingItemId}
                         onApplyItem={handleApplyCatalogItem}
                         onPurchaseItem={handlePurchaseItem}
                         onBuySeed={handleBuySeed}
+                        onBuyFertilizer={isOwner ? azitGame.buyFertilizer : undefined}
                         onResetRoom={handleResetDefaultRoom}
                         onSaveRoom={() => handleSaveMinihome()}
                         isSaving={isSaving}
+                        isActing={isOwner ? azitGame.isActing : false}
+                        azitLevel={isOwner ? azitGame.state?.profile.azitLevel : undefined}
+                        cropCatalog={isOwner ? azitGame.state?.catalog.crops : undefined}
+                        fertilizerCatalog={isOwner ? azitGame.state?.catalog.fertilizers : undefined}
                         initialMode={shopModalInitialTab}
-                        initialCategory={shopModalInitialCategory}
+                        initialCategory={shopCategoryOverride ?? shopModalInitialCategory}
                     />
 
                     <MinihomeGuestbook

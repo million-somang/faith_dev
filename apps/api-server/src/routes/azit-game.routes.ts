@@ -13,6 +13,17 @@ azitGameRoutes.post('/api/azit-game/garden/plant', (c) => AzitGameController.pla
 azitGameRoutes.post('/api/azit-game/garden/water', (c) => AzitGameController.waterPlot(c));
 azitGameRoutes.post('/api/azit-game/garden/harvest', (c) => AzitGameController.harvestPlot(c));
 azitGameRoutes.post('/api/azit-game/garden/clear', (c) => AzitGameController.clearPlot(c));
+azitGameRoutes.post('/api/azit-game/garden/unlock-plot', (c) => AzitGameController.unlockPlot(c));
+azitGameRoutes.post('/api/azit-game/garden/fertilizer/buy', (c) => AzitGameController.buyFertilizer(c));
+azitGameRoutes.post('/api/azit-game/garden/fertilize', (c) => AzitGameController.fertilizePlot(c));
+azitGameRoutes.post('/api/azit-game/garden/upgrade-soil', (c) => AzitGameController.upgradeSoil(c));
+azitGameRoutes.post('/api/azit-game/garden/water-all', (c) => AzitGameController.waterAll(c));
+azitGameRoutes.post('/api/azit-game/garden/harvest-all', (c) => AzitGameController.harvestAll(c));
+azitGameRoutes.post('/api/azit-game/garden/plant-all', (c) => AzitGameController.plantAll(c));
+
+azitGameRoutes.post('/api/azit-game/farmers/hire', (c) => AzitGameController.hireFarmer(c));
+azitGameRoutes.post('/api/azit-game/farmers/upgrade', (c) => AzitGameController.upgradeFarmer(c));
+azitGameRoutes.post('/api/azit-game/farmers/config', (c) => AzitGameController.configureFarmer(c));
 
 azitGameRoutes.post('/api/azit-game/crops/sell', (c) => AzitGameController.sellCrop(c));
 

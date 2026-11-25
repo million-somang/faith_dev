@@ -6,6 +6,9 @@ import type {
     AzitBattleReport,
     AzitChefCode,
     AzitCropId,
+    AzitFarmerCode,
+    AzitFarmerConfigurePayload,
+    AzitFertilizerId,
     AzitFullGameState,
     AzitMercCode,
     AzitRecipeId,
@@ -50,12 +53,24 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
     onToastRef.current = onToast;
 
     const applyState = useCallback((nextState: AzitFullGameState) => {
-        if (typeof nextState.serverNowMs === 'number') {
-            clockOffsetRef.current = nextState.serverNowMs - Date.now();
-            setNowMs(nextState.serverNowMs);
+        const normalizedState: AzitFullGameState = {
+            ...nextState,
+            farmers: Array.isArray(nextState.farmers) ? nextState.farmers : [],
+            farmerLogs: Array.isArray(nextState.farmerLogs) ? nextState.farmerLogs : [],
+            catalog: {
+                ...nextState.catalog,
+                fertilizers: Array.isArray(nextState.catalog?.fertilizers) ? nextState.catalog.fertilizers : [],
+                soilLevels: Array.isArray(nextState.catalog?.soilLevels) ? nextState.catalog.soilLevels : [],
+                plotUnlocks: Array.isArray(nextState.catalog?.plotUnlocks) ? nextState.catalog.plotUnlocks : [],
+                farmers: Array.isArray(nextState.catalog?.farmers) ? nextState.catalog.farmers : [],
+            },
+        };
+        if (typeof normalizedState.serverNowMs === 'number') {
+            clockOffsetRef.current = normalizedState.serverNowMs - Date.now();
+            setNowMs(normalizedState.serverNowMs);
         }
-        setState(nextState);
-        onSyncRef.current?.(nextState.veraPoints, nextState.garden);
+        setState(normalizedState);
+        onSyncRef.current?.(normalizedState.veraPoints, normalizedState.garden);
     }, []);
 
     const refreshState = useCallback(async (): Promise<AzitFullGameState | null> => {
@@ -79,6 +94,8 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
 
     useEffect(() => {
         if (!enabled) {
+            clockOffsetRef.current = 0;
+            setLastBattleReport(null);
             setState(null);
             return;
         }
@@ -121,7 +138,7 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
                 if (!res.ok || !json.success || !json.data) {
                     const errMsg = json.error?.message || '요청을 처리하지 못했습니다.';
                     onToastRef.current?.(`⚠️ ${errMsg}`);
-                    if (res.status >= 502) {
+                    if (res.status === 409 || res.status >= 502) {
                         await refreshState();
                     }
                     return false;
@@ -175,6 +192,64 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
 
     const sellCrop = useCallback(
         (cropId: AzitCropId, quantity = 1) => runAction('/api/azit-game/crops/sell', { cropId, quantity }),
+        [runAction]
+    );
+
+    const unlockPlot = useCallback(
+        (plotIndex: number) => runAction('/api/azit-game/garden/unlock-plot', { plotIndex }),
+        [runAction]
+    );
+
+    const buyFertilizer = useCallback(
+        (fertilizerId: AzitFertilizerId = 'fert-basic', quantity = 1) =>
+            runAction('/api/azit-game/garden/fertilizer/buy', { fertilizerId, quantity }),
+        [runAction]
+    );
+
+    const fertilizePlot = useCallback(
+        (plotIndex: number, fertilizerId: AzitFertilizerId = 'fert-basic') =>
+            runAction('/api/azit-game/garden/fertilize', { plotIndex, fertilizerId }),
+        [runAction]
+    );
+
+    const upgradeSoil = useCallback(
+        (plotIndex: number) => runAction('/api/azit-game/garden/upgrade-soil', { plotIndex }),
+        [runAction]
+    );
+
+    const waterAll = useCallback(
+        () => runAction('/api/azit-game/garden/water-all', {}),
+        [runAction]
+    );
+
+    const harvestAll = useCallback(
+        () => runAction('/api/azit-game/garden/harvest-all', {}),
+        [runAction]
+    );
+
+    const plantAll = useCallback(
+        (cropId: AzitCropId) => runAction('/api/azit-game/garden/plant-all', { cropId }),
+        [runAction]
+    );
+
+    const hireFarmer = useCallback(
+        (farmerCode: AzitFarmerCode) => runAction('/api/azit-game/farmers/hire', { farmerCode }),
+        [runAction]
+    );
+
+    const upgradeFarmer = useCallback(
+        (farmerCode: AzitFarmerCode) => runAction('/api/azit-game/farmers/upgrade', { farmerCode }),
+        [runAction]
+    );
+
+    const configureFarmer = useCallback(
+        (payload: AzitFarmerConfigurePayload) =>
+            runAction('/api/azit-game/farmers/config', {
+                farmerCode: payload.farmerCode,
+                ...(typeof payload.autoEnabled === 'boolean' ? { autoEnabled: payload.autoEnabled } : {}),
+                ...(payload.preferredCropId !== undefined ? { preferredCropId: payload.preferredCropId } : {}),
+                ...(typeof payload.autoFertilize === 'boolean' ? { autoFertilize: payload.autoFertilize } : {}),
+            }),
         [runAction]
     );
 
@@ -239,6 +314,16 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
         harvestPlot,
         clearPlot,
         sellCrop,
+        unlockPlot,
+        buyFertilizer,
+        fertilizePlot,
+        upgradeSoil,
+        waterAll,
+        harvestAll,
+        plantAll,
+        hireFarmer,
+        upgradeFarmer,
+        configureFarmer,
         hireChef,
         upgradeChef,
         startCooking,

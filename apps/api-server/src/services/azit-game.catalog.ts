@@ -1,10 +1,20 @@
+import crypto from 'crypto';
+
 export type AzitCropId =
     | 'crop-carrot'
     | 'crop-pepper'
     | 'crop-tomato'
     | 'crop-lettuce'
     | 'crop-potato'
-    | 'crop-strawberry';
+    | 'crop-strawberry'
+    | 'crop-blueberry'
+    | 'crop-pumpkin'
+    | 'crop-melon'
+    | 'crop-ginseng'
+    | 'crop-truffle'
+    | 'crop-moonfruit';
+
+export type AzitFertilizerId = 'fert-basic' | 'fert-rapid';
 
 export type AzitMaterialId =
     | 'mat-slime-jelly'
@@ -21,9 +31,19 @@ export type AzitRecipeId =
     | 'dish-potato-gratin'
     | 'dish-strawberry-tart'
     | 'dish-knight-feast'
-    | 'dish-dragon-elixir';
+    | 'dish-dragon-elixir'
+    | 'dish-blueberry-parfait'
+    | 'dish-pumpkin-risotto'
+    | 'dish-melon-sorbet'
+    | 'dish-ginseng-tonic'
+    | 'dish-truffle-steak'
+    | 'dish-moon-elixir';
 
 export type AzitChefCode = 'chef-momo' | 'chef-bulta' | 'chef-claire' | 'chef-dragon';
+
+export type AzitFarmerCode = 'farmer-bomi' | 'farmer-dori' | 'farmer-eldin';
+
+export type AzitFarmerRole = 'water' | 'harvest' | 'plant' | 'fertilize';
 
 export type AzitMercCode =
     | 'merc-leo'
@@ -46,10 +66,47 @@ export interface AzitCropDef {
     name: string;
     shortName: string;
     emoji: string;
+    requiredAzitLevel: number;
     seedPrice: number;
     harvestYield: number;
     sellPrice: number;
     description: string;
+}
+
+export interface AzitPlotUnlockDef {
+    plotIndex: number;
+    unlockLevel: number;
+    unlockCost: number;
+}
+
+export interface AzitFertilizerDef {
+    fertilizerId: AzitFertilizerId;
+    name: string;
+    shortName: string;
+    emoji: string;
+    requiredAzitLevel: number;
+    price: number;
+    reductionMs: number;
+    reductionHours: number;
+    description: string;
+}
+
+export interface AzitSoilLevelDef {
+    level: number;
+    name: string;
+    upgradeCost: number;
+    requiredAzitLevel: number;
+    guaranteedBonusYield: number;
+    bonusChancePct: number;
+    description: string;
+}
+
+export interface SoilHarvestYieldResult {
+    baseYield: number;
+    guaranteedBonus: number;
+    chanceBonus: number;
+    totalBonus: number;
+    totalYield: number;
 }
 
 export interface AzitMaterialDef {
@@ -91,6 +148,26 @@ export interface AzitChefDef {
     baseGreatChancePct: number;
     maxLevel: number;
     description: string;
+}
+
+export interface AzitFarmerDef {
+    farmerCode: AzitFarmerCode;
+    name: string;
+    title: string;
+    emoji: string;
+    hireCost: number;
+    requiredAzitLevel: number;
+    maxLevel: number;
+    description: string;
+}
+
+export interface AzitFarmerLevelStats {
+    level: number;
+    grade: 1 | 2 | 3 | 4;
+    gradeName: string;
+    roles: AzitFarmerRole[];
+    workIntervalMs: number;
+    waterCooldownReductionPct: number;
 }
 
 export interface AzitMercenaryDef {
@@ -136,10 +213,20 @@ export interface AzitLevelStep {
     maxMercs: number;
     maxPartySize: number;
     maxActiveExpeditions: number;
+    gardenPlots: number;
+    maxFarmers: number;
 }
 
+export const MAX_AZIT_LEVEL = 50;
+export const STARTER_GARDEN_PLOTS = 6;
+export const MAX_GARDEN_PLOTS = 16;
+export const DEFAULT_FERTILIZER_ID: AzitFertilizerId = 'fert-basic';
+export const MAX_FERTILIZER_PER_CROP = 4;
+export const MAX_SOIL_LEVEL = 5;
 export const GARDEN_WATER_COOLDOWN_MS = 8 * 60 * 60 * 1000;
 export const GARDEN_HARVEST_AZIT_XP = 8;
+export const MAX_FARMER_LEVEL = 20;
+export const FARMER_TASK_XP = 5;
 
 export const AZIT_CROPS: AzitCropDef[] = [
     {
@@ -147,6 +234,7 @@ export const AZIT_CROPS: AzitCropDef[] = [
         name: '달콤 미니당근',
         shortName: '당근',
         emoji: '🥕',
+        requiredAzitLevel: 1,
         seedPrice: 0,
         harvestYield: 2,
         sellPrice: 8,
@@ -157,6 +245,7 @@ export const AZIT_CROPS: AzitCropDef[] = [
         name: '알싸한 청양고추',
         shortName: '고추',
         emoji: '🌶️',
+        requiredAzitLevel: 1,
         seedPrice: 12,
         harvestYield: 2,
         sellPrice: 16,
@@ -167,6 +256,7 @@ export const AZIT_CROPS: AzitCropDef[] = [
         name: '탱글 방울토마토',
         shortName: '토마토',
         emoji: '🍅',
+        requiredAzitLevel: 1,
         seedPrice: 18,
         harvestYield: 2,
         sellPrice: 22,
@@ -177,6 +267,7 @@ export const AZIT_CROPS: AzitCropDef[] = [
         name: '아삭 유기농 청상추',
         shortName: '상추',
         emoji: '🥬',
+        requiredAzitLevel: 1,
         seedPrice: 24,
         harvestYield: 2,
         sellPrice: 28,
@@ -187,6 +278,7 @@ export const AZIT_CROPS: AzitCropDef[] = [
         name: '포슬포슬 햇감자',
         shortName: '감자',
         emoji: '🥔',
+        requiredAzitLevel: 1,
         seedPrice: 30,
         harvestYield: 2,
         sellPrice: 36,
@@ -197,10 +289,178 @@ export const AZIT_CROPS: AzitCropDef[] = [
         name: '설향 꿀딸기',
         shortName: '딸기',
         emoji: '🍓',
+        requiredAzitLevel: 1,
         seedPrice: 45,
         harvestYield: 2,
         sellPrice: 55,
         description: '최고급 디저트와 드래곤 정식에 쓰이는 희귀 고급 과일입니다.',
+    },
+    {
+        cropId: 'crop-blueberry',
+        name: '서리 빛 블루베리',
+        shortName: '블루베리',
+        emoji: '🫐',
+        requiredAzitLevel: 20,
+        seedPrice: 55,
+        harvestYield: 2,
+        sellPrice: 68,
+        description: '아지트 Lv.20부터 재배할 수 있는 새콤달콤한 서리 과실입니다.',
+    },
+    {
+        cropId: 'crop-pumpkin',
+        name: '황금 잭오 호박',
+        shortName: '황금호박',
+        emoji: '🎃',
+        requiredAzitLevel: 25,
+        seedPrice: 70,
+        harvestYield: 2,
+        sellPrice: 86,
+        description: '아지트 Lv.25부터 재배 가능한 묵직하고 달콤한 황금 호박입니다.',
+    },
+    {
+        cropId: 'crop-melon',
+        name: '왕실 머스크멜론',
+        shortName: '멜론',
+        emoji: '🍈',
+        requiredAzitLevel: 30,
+        seedPrice: 90,
+        harvestYield: 2,
+        sellPrice: 110,
+        description: '아지트 Lv.30부터 재배 가능한 왕실 진상품 최고급 멜론입니다.',
+    },
+    {
+        cropId: 'crop-ginseng',
+        name: '천년 산삼',
+        shortName: '산삼',
+        emoji: '🌿',
+        requiredAzitLevel: 36,
+        seedPrice: 115,
+        harvestYield: 2,
+        sellPrice: 140,
+        description: '아지트 Lv.36부터 재배할 수 있는 영험한 기운이 담긴 희귀 약초입니다.',
+    },
+    {
+        cropId: 'crop-truffle',
+        name: '심연 블랙 트러플',
+        shortName: '트러플',
+        emoji: '🍄',
+        requiredAzitLevel: 42,
+        seedPrice: 145,
+        harvestYield: 2,
+        sellPrice: 175,
+        description: '아지트 Lv.42부터 재배 가능한 미식가들의 보물 블랙 트러플입니다.',
+    },
+    {
+        cropId: 'crop-moonfruit',
+        name: '영원의 달빛 열매',
+        shortName: '달빛열매',
+        emoji: '🌙',
+        requiredAzitLevel: 50,
+        seedPrice: 180,
+        harvestYield: 2,
+        sellPrice: 220,
+        description: '아지트 최고 레벨 Lv.50에 해금되는 전설의 영약 열매입니다.',
+    },
+];
+
+export const AZIT_PLOT_UNLOCKS: AzitPlotUnlockDef[] = [
+    { plotIndex: 0, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 1, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 2, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 3, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 4, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 5, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 6, unlockLevel: 5, unlockCost: 60 },
+    { plotIndex: 7, unlockLevel: 10, unlockCost: 100 },
+    { plotIndex: 8, unlockLevel: 15, unlockCost: 150 },
+    { plotIndex: 9, unlockLevel: 20, unlockCost: 220 },
+    { plotIndex: 10, unlockLevel: 25, unlockCost: 300 },
+    { plotIndex: 11, unlockLevel: 30, unlockCost: 400 },
+    { plotIndex: 12, unlockLevel: 35, unlockCost: 520 },
+    { plotIndex: 13, unlockLevel: 40, unlockCost: 660 },
+    { plotIndex: 14, unlockLevel: 45, unlockCost: 820 },
+    { plotIndex: 15, unlockLevel: 50, unlockCost: 1000 },
+];
+
+export const AZIT_FERTILIZERS: AzitFertilizerDef[] = [
+    {
+        fertilizerId: 'fert-basic',
+        name: '일반 성장 비료',
+        shortName: '일반 비료',
+        emoji: '🧪',
+        requiredAzitLevel: 1,
+        price: 40,
+        reductionMs: 4 * 60 * 60 * 1000,
+        reductionHours: 4,
+        description: '작물의 다음 물주기 대기 시간을 4시간 단축시킵니다.',
+    },
+    {
+        fertilizerId: 'fert-rapid',
+        name: '고농축 급속 비료',
+        shortName: '급속 비료',
+        emoji: '⚡',
+        requiredAzitLevel: 1,
+        price: 75,
+        reductionMs: 8 * 60 * 60 * 1000,
+        reductionHours: 8,
+        description: '작물의 다음 물주기 대기 시간을 8시간 단축하여 즉시 물주기가 가능하게 합니다.',
+    },
+];
+
+export const AZIT_SOIL_LEVELS: AzitSoilLevelDef[] = [
+    {
+        level: 0,
+        name: '기본 흙',
+        upgradeCost: 0,
+        requiredAzitLevel: 1,
+        guaranteedBonusYield: 0,
+        bonusChancePct: 0,
+        description: '기본 상태의 텃밭 토양입니다. 기본 수확량만 획득합니다.',
+    },
+    {
+        level: 1,
+        name: '비옥한 겉흙',
+        upgradeCost: 80,
+        requiredAzitLevel: 1,
+        guaranteedBonusYield: 0,
+        bonusChancePct: 25,
+        description: '수확 시 25% 확률로 보너스 작물 +1개를 추가 획득합니다.',
+    },
+    {
+        level: 2,
+        name: '유기농 배양토',
+        upgradeCost: 180,
+        requiredAzitLevel: 5,
+        guaranteedBonusYield: 1,
+        bonusChancePct: 0,
+        description: '수확 시 확정 보너스 작물 +1개를 추가로 획득합니다.',
+    },
+    {
+        level: 3,
+        name: '미네랄 황금토',
+        upgradeCost: 350,
+        requiredAzitLevel: 12,
+        guaranteedBonusYield: 1,
+        bonusChancePct: 35,
+        description: '확정 보너스 +1개 및 35% 확률로 추가 보너스 +1개를 획득합니다.',
+    },
+    {
+        level: 4,
+        name: '정령의 축복토',
+        upgradeCost: 620,
+        requiredAzitLevel: 22,
+        guaranteedBonusYield: 2,
+        bonusChancePct: 25,
+        description: '확정 보너스 +2개 및 25% 확률로 추가 보너스 +1개를 획득합니다.',
+    },
+    {
+        level: 5,
+        name: '전설의 에덴 토양',
+        upgradeCost: 1000,
+        requiredAzitLevel: 35,
+        guaranteedBonusYield: 2,
+        bonusChancePct: 60,
+        description: '최고 등급 토양! 확정 보너스 +2개 및 60% 확률로 추가 보너스 +1개를 획득합니다.',
     },
 ];
 
@@ -376,6 +636,114 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
             { kind: 'material', id: 'mat-dragon-powder', qty: 1 },
         ],
     },
+    {
+        recipeId: 'dish-blueberry-parfait',
+        name: '서리 블루베리 파르페',
+        emoji: '🍨',
+        tier: 3,
+        cookDurationSec: 3000,
+        sellPrice: 520,
+        powerBonusPct: 95,
+        winRateBonusPct: 20,
+        azitXpReward: 95,
+        requiredAzitLevel: 20,
+        description: '서리 빛 블루베리와 숲의 정령꿀을 겹겹이 쌓은 시원한 3티어 디저트입니다.',
+        ingredients: [
+            { kind: 'crop', id: 'crop-blueberry', qty: 2 },
+            { kind: 'crop', id: 'crop-strawberry', qty: 1 },
+            { kind: 'material', id: 'mat-forest-honey', qty: 1 },
+        ],
+    },
+    {
+        recipeId: 'dish-pumpkin-risotto',
+        name: '황금 호박 리조또',
+        emoji: '🥘',
+        tier: 3,
+        cookDurationSec: 3900,
+        sellPrice: 620,
+        powerBonusPct: 120,
+        winRateBonusPct: 23,
+        azitXpReward: 115,
+        requiredAzitLevel: 25,
+        description: '황금 호박과 고블린 향신료의 깊은 풍미가 살아있는 든든한 고급 요리입니다.',
+        ingredients: [
+            { kind: 'crop', id: 'crop-pumpkin', qty: 2 },
+            { kind: 'crop', id: 'crop-potato', qty: 1 },
+            { kind: 'material', id: 'mat-goblin-spice', qty: 1 },
+        ],
+    },
+    {
+        recipeId: 'dish-melon-sorbet',
+        name: '왕실 멜론 샤베트',
+        emoji: '🍧',
+        tier: 3,
+        cookDurationSec: 4500,
+        sellPrice: 820,
+        powerBonusPct: 140,
+        winRateBonusPct: 25,
+        azitXpReward: 140,
+        requiredAzitLevel: 30,
+        description: '왕실 머스크멜론의 과즙을 그대로 얼려낸 청량한 궁중 샤베트입니다.',
+        ingredients: [
+            { kind: 'crop', id: 'crop-melon', qty: 2 },
+            { kind: 'crop', id: 'crop-blueberry', qty: 1 },
+            { kind: 'material', id: 'mat-forest-honey', qty: 1 },
+        ],
+    },
+    {
+        recipeId: 'dish-ginseng-tonic',
+        name: '천년 산삼 원기탕',
+        emoji: '🫖',
+        tier: 4,
+        cookDurationSec: 5400,
+        sellPrice: 1250,
+        powerBonusPct: 175,
+        winRateBonusPct: 30,
+        azitXpReward: 175,
+        requiredAzitLevel: 36,
+        description: '천년 산삼과 와이번 육포를 오랜 시간 달여낸 4티어 최고급 보양 영약입니다.',
+        ingredients: [
+            { kind: 'crop', id: 'crop-ginseng', qty: 2 },
+            { kind: 'crop', id: 'crop-pumpkin', qty: 1 },
+            { kind: 'material', id: 'mat-wyvern-jerky', qty: 1 },
+        ],
+    },
+    {
+        recipeId: 'dish-truffle-steak',
+        name: '심연 트러플 스테이크',
+        emoji: '🥩',
+        tier: 4,
+        cookDurationSec: 6300,
+        sellPrice: 1500,
+        powerBonusPct: 200,
+        winRateBonusPct: 33,
+        azitXpReward: 210,
+        requiredAzitLevel: 42,
+        description: '블랙 트러플 향이 배어든 최상급 육포 스테이크로 파티 전투력을 극대화합니다.',
+        ingredients: [
+            { kind: 'crop', id: 'crop-truffle', qty: 2 },
+            { kind: 'crop', id: 'crop-ginseng', qty: 1 },
+            { kind: 'material', id: 'mat-wyvern-jerky', qty: 1 },
+        ],
+    },
+    {
+        recipeId: 'dish-moon-elixir',
+        name: '영원의 달빛 만찬',
+        emoji: '🌌',
+        tier: 4,
+        cookDurationSec: 7200,
+        sellPrice: 2200,
+        powerBonusPct: 240,
+        winRateBonusPct: 36,
+        azitXpReward: 280,
+        requiredAzitLevel: 50,
+        description: '달빛 열매와 트러플, 드래곤 비늘 가루가 어우러진 Lv.50 궁극의 만찬입니다.',
+        ingredients: [
+            { kind: 'crop', id: 'crop-moonfruit', qty: 2 },
+            { kind: 'crop', id: 'crop-truffle', qty: 1 },
+            { kind: 'material', id: 'mat-dragon-powder', qty: 1 },
+        ],
+    },
 ];
 
 export const AZIT_CHEFS: AzitChefDef[] = [
@@ -426,6 +794,39 @@ export const AZIT_CHEFS: AzitChefDef[] = [
         baseGreatChancePct: 35,
         maxLevel: 10,
         description: '궁중 비법으로 전설급 요리를 순식간에 빚어내는 최고봉 셰프입니다.',
+    },
+];
+
+export const AZIT_FARMERS: AzitFarmerDef[] = [
+    {
+        farmerCode: 'farmer-bomi',
+        name: '보미',
+        title: '새싹 농장지기',
+        emoji: '👩‍🌾',
+        hireCost: 350,
+        requiredAzitLevel: 20,
+        maxLevel: MAX_FARMER_LEVEL,
+        description: '아지트 Lv.20부터 고용 가능한 성실한 전담 농부입니다. 텃밭 관리의 기초를 책임집니다.',
+    },
+    {
+        farmerCode: 'farmer-dori',
+        name: '도리',
+        title: '수확 베테랑 농부',
+        emoji: '🧑‍🌾',
+        hireCost: 700,
+        requiredAzitLevel: 30,
+        maxLevel: MAX_FARMER_LEVEL,
+        description: '아지트 Lv.30부터 합류하는 숙련 농부로 넓은 텃밭의 물주기와 수확을 거뜬히 돕습니다.',
+    },
+    {
+        farmerCode: 'farmer-eldin',
+        name: '엘딘',
+        title: '대자연의 현자 농부',
+        emoji: '🧙‍♂️',
+        hireCost: 1400,
+        requiredAzitLevel: 42,
+        maxLevel: MAX_FARMER_LEVEL,
+        description: '아지트 Lv.42부터 초빙 가능한 원로 농부로 텃밭 순환 자동화를 완성합니다.',
     },
 ];
 
@@ -628,17 +1029,101 @@ export const AZIT_EXPEDITION_ZONES: AzitExpeditionZoneDef[] = [
 ];
 
 export const AZIT_LEVEL_TABLE: AzitLevelStep[] = [
-    { level: 1, requiredXp: 0, title: '새내기 개척지', kitchenSlots: 1, maxChefs: 1, maxMercs: 2, maxPartySize: 1, maxActiveExpeditions: 1 },
-    { level: 2, requiredXp: 80, title: '활기찬 초원 아지트', kitchenSlots: 1, maxChefs: 2, maxMercs: 2, maxPartySize: 2, maxActiveExpeditions: 1 },
-    { level: 3, requiredXp: 220, title: '향긋한 비스트로 아지트', kitchenSlots: 2, maxChefs: 2, maxMercs: 3, maxPartySize: 2, maxActiveExpeditions: 1 },
-    { level: 4, requiredXp: 460, title: '모험가 길드 쉼터', kitchenSlots: 2, maxChefs: 3, maxMercs: 3, maxPartySize: 3, maxActiveExpeditions: 1 },
-    { level: 5, requiredXp: 820, title: '이중 원정 사령부', kitchenSlots: 2, maxChefs: 3, maxMercs: 4, maxPartySize: 3, maxActiveExpeditions: 2 },
-    { level: 6, requiredXp: 1350, title: '황금 화덕 대저택', kitchenSlots: 3, maxChefs: 4, maxMercs: 4, maxPartySize: 3, maxActiveExpeditions: 2 },
-    { level: 7, requiredXp: 2100, title: '로열 토벌 기사단 본부', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2 },
-    { level: 8, requiredXp: 3100, title: '영웅의 성채 아지트', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2 },
-    { level: 9, requiredXp: 4400, title: '그랜드 마스터 요새', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2 },
-    { level: 10, requiredXp: 6200, title: '전설의 베라 왕국 아지트', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2 },
+    { level: 1, requiredXp: 0, title: '새내기 개척지', kitchenSlots: 1, maxChefs: 1, maxMercs: 2, maxPartySize: 1, maxActiveExpeditions: 1, gardenPlots: 6, maxFarmers: 0 },
+    { level: 2, requiredXp: 80, title: '활기찬 초원 아지트', kitchenSlots: 1, maxChefs: 2, maxMercs: 2, maxPartySize: 2, maxActiveExpeditions: 1, gardenPlots: 6, maxFarmers: 0 },
+    { level: 3, requiredXp: 220, title: '향긋한 비스트로 아지트', kitchenSlots: 2, maxChefs: 2, maxMercs: 3, maxPartySize: 2, maxActiveExpeditions: 1, gardenPlots: 6, maxFarmers: 0 },
+    { level: 4, requiredXp: 460, title: '모험가 길드 쉼터', kitchenSlots: 2, maxChefs: 3, maxMercs: 3, maxPartySize: 3, maxActiveExpeditions: 1, gardenPlots: 6, maxFarmers: 0 },
+    { level: 5, requiredXp: 820, title: '이중 원정 사령부', kitchenSlots: 2, maxChefs: 3, maxMercs: 4, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 7, maxFarmers: 0 },
+    { level: 6, requiredXp: 1350, title: '황금 화덕 대저택', kitchenSlots: 3, maxChefs: 4, maxMercs: 4, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 7, maxFarmers: 0 },
+    { level: 7, requiredXp: 2100, title: '로열 토벌 기사단 본부', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 7, maxFarmers: 0 },
+    { level: 8, requiredXp: 3100, title: '영웅의 성채 아지트', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 7, maxFarmers: 0 },
+    { level: 9, requiredXp: 4400, title: '그랜드 마스터 요새', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 7, maxFarmers: 0 },
+    { level: 10, requiredXp: 6200, title: '전설의 베라 왕국 아지트', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 8, maxFarmers: 0 },
+    { level: 11, requiredXp: 8300, title: '은빛 개척단 전초기지', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 8, maxFarmers: 0 },
+    { level: 12, requiredXp: 10700, title: '비옥한 햇살 농원', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 8, maxFarmers: 0 },
+    { level: 13, requiredXp: 13400, title: '상아탑 보급 장원', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 8, maxFarmers: 0 },
+    { level: 14, requiredXp: 16400, title: '황금 이삭 영지', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 8, maxFarmers: 0 },
+    { level: 15, requiredXp: 19700, title: '수호자의 성역 농장', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 9, maxFarmers: 0 },
+    { level: 16, requiredXp: 23300, title: '번영의 길드 대농원', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 9, maxFarmers: 0 },
+    { level: 17, requiredXp: 27200, title: '창공의 바람 요새', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 9, maxFarmers: 0 },
+    { level: 18, requiredXp: 31400, title: '성좌의 축복 영지', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 9, maxFarmers: 0 },
+    { level: 19, requiredXp: 35900, title: '여명의 대공국 아지트', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 9, maxFarmers: 0 },
+    { level: 20, requiredXp: 40700, title: '농부 길드 개척령', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 10, maxFarmers: 1 },
+    { level: 21, requiredXp: 45900, title: '청록빛 숲의 장원', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 10, maxFarmers: 1 },
+    { level: 22, requiredXp: 51500, title: '정령이 깃든 온실', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 10, maxFarmers: 1 },
+    { level: 23, requiredXp: 57500, title: '백은 기사단 농원', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 10, maxFarmers: 1 },
+    { level: 24, requiredXp: 63900, title: '풍요의 대지 성채', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 10, maxFarmers: 1 },
+    { level: 25, requiredXp: 70700, title: '황금 호박 대영지', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 11, maxFarmers: 1 },
+    { level: 26, requiredXp: 77900, title: '붉은 노을 왕립 농장', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 11, maxFarmers: 1 },
+    { level: 27, requiredXp: 85500, title: '고대 수호수의 쉼터', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 11, maxFarmers: 1 },
+    { level: 28, requiredXp: 93500, title: '비취빛 현자의 정원', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 11, maxFarmers: 1 },
+    { level: 29, requiredXp: 101900, title: '별빛 마도원의 영지', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 11, maxFarmers: 1 },
+    { level: 30, requiredXp: 110700, title: '왕실 직할 대농장', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 12, maxFarmers: 1 },
+    { level: 31, requiredXp: 120000, title: '오색 무지개 비경', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 12, maxFarmers: 1 },
+    { level: 32, requiredXp: 129800, title: '백금 수확단 본부', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 12, maxFarmers: 1 },
+    { level: 33, requiredXp: 140100, title: '용의 숨결 온실 성채', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 12, maxFarmers: 1 },
+    { level: 34, requiredXp: 150900, title: '천공 정원의 관문', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 12, maxFarmers: 1 },
+    { level: 35, requiredXp: 162200, title: '쌍둥이 농부 대영지', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 13, maxFarmers: 2 },
+    { level: 36, requiredXp: 174000, title: '천년 영약의 계곡', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 13, maxFarmers: 2 },
+    { level: 37, requiredXp: 186300, title: '태양왕의 황금 성소', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 13, maxFarmers: 2 },
+    { level: 38, requiredXp: 199100, title: '대현자의 아카데미 농원', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 13, maxFarmers: 2 },
+    { level: 39, requiredXp: 212400, title: '성운의 축복 요새', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 13, maxFarmers: 2 },
+    { level: 40, requiredXp: 226200, title: '제국 최상급 영빈 장원', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 14, maxFarmers: 2 },
+    { level: 41, requiredXp: 240600, title: '영원한 봄의 낙원', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 14, maxFarmers: 2 },
+    { level: 42, requiredXp: 255600, title: '심연 트러플 성역', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 14, maxFarmers: 2 },
+    { level: 43, requiredXp: 271200, title: '은하수 별빛 궁전', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 14, maxFarmers: 2 },
+    { level: 44, requiredXp: 287400, title: '황혼의 대군주 요새', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 14, maxFarmers: 2 },
+    { level: 45, requiredXp: 304200, title: '신화의 대지 아발론', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 15, maxFarmers: 2 },
+    { level: 46, requiredXp: 321600, title: '초월자의 황금 수목원', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 15, maxFarmers: 2 },
+    { level: 47, requiredXp: 339600, title: '성황의 천상 대정원', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 15, maxFarmers: 2 },
+    { level: 48, requiredXp: 358200, title: '불멸의 아르카디아 성채', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 15, maxFarmers: 2 },
+    { level: 49, requiredXp: 377400, title: '창세의 에덴 전당', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 15, maxFarmers: 2 },
+    { level: 50, requiredXp: 397200, title: '절대군주의 달빛 에덴', kitchenSlots: 3, maxChefs: 4, maxMercs: 6, maxPartySize: 3, maxActiveExpeditions: 2, gardenPlots: 16, maxFarmers: 2 },
 ];
+
+export function getPlotUnlockDef(plotIndex: number): AzitPlotUnlockDef | undefined {
+    return AZIT_PLOT_UNLOCKS.find((p) => p.plotIndex === plotIndex);
+}
+
+export function getFertilizerDef(fertilizerId: string): AzitFertilizerDef | undefined {
+    return AZIT_FERTILIZERS.find((f) => f.fertilizerId === fertilizerId);
+}
+
+export function getSoilLevelDef(level: number): AzitSoilLevelDef | undefined {
+    return AZIT_SOIL_LEVELS.find((s) => s.level === level);
+}
+
+export function getNextSoilLevelDef(currentLevel: number): AzitSoilLevelDef | undefined {
+    if (currentLevel >= MAX_SOIL_LEVEL) return undefined;
+    return AZIT_SOIL_LEVELS.find((s) => s.level === currentLevel + 1);
+}
+
+export function calculateHarvestYieldWithSoil(
+    baseYield: number,
+    soilLevel: number,
+    rollPct?: number
+): SoilHarvestYieldResult {
+    const safeBase = Math.max(0, Math.floor(baseYield));
+    const clampedSoil = Math.max(0, Math.min(MAX_SOIL_LEVEL, Math.floor(soilLevel)));
+    const soilDef = getSoilLevelDef(clampedSoil);
+    const guaranteedBonus = soilDef ? soilDef.guaranteedBonusYield : 0;
+    const bonusChancePct = soilDef ? soilDef.bonusChancePct : 0;
+    let chanceBonus = 0;
+    if (bonusChancePct > 0) {
+        const roll = typeof rollPct === 'number' ? rollPct : crypto.randomInt(1, 101);
+        if (roll <= bonusChancePct) {
+            chanceBonus = 1;
+        }
+    }
+    const totalBonus = guaranteedBonus + chanceBonus;
+    return {
+        baseYield: safeBase,
+        guaranteedBonus,
+        chanceBonus,
+        totalBonus,
+        totalYield: safeBase + totalBonus,
+    };
+}
 
 export function getCropDef(cropId: string): AzitCropDef | undefined {
     return AZIT_CROPS.find((c) => c.cropId === cropId);
@@ -664,11 +1149,69 @@ export function getZoneDef(zoneId: string): AzitExpeditionZoneDef | undefined {
     return AZIT_EXPEDITION_ZONES.find((z) => z.zoneId === zoneId);
 }
 
+export function getFarmerDef(farmerCode: string): AzitFarmerDef | undefined {
+    return AZIT_FARMERS.find((f) => f.farmerCode === farmerCode);
+}
+
+export function getFarmerLevelStats(level: number): AzitFarmerLevelStats {
+    const safeRaw = Number.isFinite(level) ? Math.floor(level) : 1;
+    const lv = Math.max(1, Math.min(MAX_FARMER_LEVEL, safeRaw));
+
+    if (lv <= 4) {
+        return {
+            level: lv,
+            grade: 1,
+            gradeName: '견습 농부',
+            roles: ['water'],
+            workIntervalMs: Math.round(120 - ((lv - 1) * 30) / 3) * 1000,
+            waterCooldownReductionPct: Math.round(2 + ((lv - 1) * 4) / 3),
+        };
+    }
+    if (lv <= 9) {
+        return {
+            level: lv,
+            grade: 2,
+            gradeName: '숙련 농부',
+            roles: ['water', 'harvest'],
+            workIntervalMs: Math.round(75 - ((lv - 5) * 25) / 4) * 1000,
+            waterCooldownReductionPct: Math.round(8 + ((lv - 5) * 6) / 4),
+        };
+    }
+    if (lv <= 14) {
+        return {
+            level: lv,
+            grade: 3,
+            gradeName: '전문 농부',
+            roles: ['water', 'harvest', 'plant'],
+            workIntervalMs: Math.round(40 - ((lv - 10) * 15) / 4) * 1000,
+            waterCooldownReductionPct: Math.round(15 + ((lv - 10) * 7) / 4),
+        };
+    }
+    return {
+        level: lv,
+        grade: 4,
+        gradeName: '마스터 농부',
+        roles: ['water', 'harvest', 'plant', 'fertilize'],
+        workIntervalMs: Math.round(20 - ((lv - 15) * 10) / 5) * 1000,
+        waterCooldownReductionPct: Math.round(24 + ((lv - 15) * 6) / 5),
+    };
+}
+
+export function getFarmerNextLevelXp(currentLevel: number): number {
+    const safeRaw = Number.isFinite(currentLevel) ? Math.floor(currentLevel) : 1;
+    return Math.max(1, Math.min(MAX_FARMER_LEVEL, safeRaw)) * 25;
+}
+
+export function getFarmerUpgradeCost(currentLevel: number): number {
+    const safeRaw = Number.isFinite(currentLevel) ? Math.floor(currentLevel) : 1;
+    return 80 * Math.max(1, Math.min(MAX_FARMER_LEVEL, safeRaw));
+}
+
 export function getAzitLevelInfo(xp: number): AzitLevelStep & {
     nextLevelXp: number | null;
     progressPct: number;
 } {
-    const safeXp = Math.max(0, Math.floor(xp));
+    const safeXp = Number.isFinite(xp) ? Math.max(0, Math.floor(xp)) : 0;
     let current = AZIT_LEVEL_TABLE[0];
     for (const step of AZIT_LEVEL_TABLE) {
         if (safeXp >= step.requiredXp) {

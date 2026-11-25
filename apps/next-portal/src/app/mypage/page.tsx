@@ -177,6 +177,7 @@ export default function MyPage() {
     });
 
     const [showSurfModal, setShowSurfModal] = useState<boolean>(false);
+    const [shopCategoryOverride, setShopCategoryOverride] = useState<'fertilizer' | null>(null);
     const activeMoodId = minihomeEditMode ? minihomeDraftMood : (minihomeProfile?.statusMood || 'happy');
     const currentMoodMeta = MINIHOME_MOODS.find((m) => m.id === activeMoodId) || MINIHOME_MOODS[0];
 
@@ -818,22 +819,22 @@ export default function MyPage() {
                 
                 {/* 상단 타이틀 & 광고 영역 */}
                 <div className="mb-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <span className="w-8 h-8 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center text-sm shadow-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-8 h-8 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center text-sm shadow-xs shrink-0">
                                 <i className="fas fa-user"></i>
                             </span>
-                            <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
+                            <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight whitespace-nowrap shrink-0">
                                 {t('마이페이지')}
                             </h1>
-                            <span className="text-xs font-bold text-slate-400 ml-1">
+                            <span className="text-xs font-bold text-slate-400 ml-1 truncate min-w-0">
                                 {user.name}{t('님')}
                             </span>
                         </div>
                         {user.email && (
-                            <div className="text-xs font-semibold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-xs flex items-center gap-1.5">
-                                <i className="fas fa-envelope text-violet-500"></i>
-                                <span>{user.email}</span>
+                            <div className="text-xs font-semibold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-xs flex items-center gap-1.5 max-w-full min-w-0">
+                                <i className="fas fa-envelope text-violet-500 shrink-0"></i>
+                                <span className="truncate">{user.email}</span>
                             </div>
                         )}
                     </div>
@@ -962,7 +963,7 @@ export default function MyPage() {
                                     ) : minihomeProfile ? (
                                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                                             {/* 좌측 사이드바: Today is 기분 & 아바타 프로필 & 아지트 전용 퀵스탯 & 이웃 아지트 (lg:col-span-4) */}
-                                            <aside className="order-2 lg:order-1 lg:col-span-4 flex flex-col gap-5">
+                                            <aside className="order-2 lg:order-1 lg:col-span-4 flex flex-col gap-5 min-w-0">
                                                 <div className="bg-[#f0f4f8] rounded-3xl border border-white/80 shadow-[6px_6px_12px_rgba(163,177,198,0.45),-6px_-6px_12px_rgba(255,255,255,0.85)] p-5 sm:p-6 flex flex-col space-y-4">
                                                     {/* Today is... 상태창 */}
                                                     <div
@@ -1180,7 +1181,7 @@ export default function MyPage() {
                                             </aside>
 
                                             {/* 우측 메인 스테이지: 2.5D 아이소메트릭 아지트 + 방문자 방명록 (lg:col-span-8) */}
-                                            <div className="order-1 lg:order-2 lg:col-span-8 flex flex-col">
+                                            <div className="order-1 lg:order-2 lg:col-span-8 flex flex-col min-w-0">
                                                 {/* 1) 2.5D 아이소메트릭 아지트 캔버스 (통합 헤더 포함) */}
                                                 <IsometricRoomCanvas
                                                     layout={minihomeEditMode ? minihomeDraftLayout : minihomeProfile.layout}
@@ -1215,9 +1216,22 @@ export default function MyPage() {
                                                     onChangeSpeechBubble={(text) =>
                                                         setMinihomeDraftLayout((prev) => ({ ...prev, speechBubble: text }))
                                                     }
-                                                    onOpenShopModal={() => handleMinihomeOpenShopModal('shop', 'all')}
-                                                    onOpenSeedShopModal={() => handleMinihomeOpenShopModal('shop', 'seed')}
-                                                    onOpenWarehouseModal={() => handleMinihomeOpenShopModal('warehouse', 'all')}
+                                                    onOpenShopModal={() => {
+                                                        setShopCategoryOverride(null);
+                                                        handleMinihomeOpenShopModal('shop', 'all');
+                                                    }}
+                                                    onOpenSeedShopModal={() => {
+                                                        setShopCategoryOverride(null);
+                                                        handleMinihomeOpenShopModal('shop', 'seed');
+                                                    }}
+                                                    onOpenFertilizerShopModal={() => {
+                                                        setShopCategoryOverride('fertilizer');
+                                                        handleMinihomeOpenShopModal('shop', 'all');
+                                                    }}
+                                                    onOpenWarehouseModal={() => {
+                                                        setShopCategoryOverride(null);
+                                                        handleMinihomeOpenShopModal('warehouse', 'all');
+                                                    }}
                                                     onSaveRoom={() => handleSaveMinihome()}
                                                     onCancelEdit={handleMinihomeCancelEditMode}
                                                     isSaving={minihomeSaving}
@@ -1241,7 +1255,10 @@ export default function MyPage() {
                                         <>
                                             <MinihomeShopDrawer
                                                 isOpen={minihomeShopModalOpen}
-                                                onClose={() => setMinihomeShopModalOpen(false)}
+                                                onClose={() => {
+                                                    setShopCategoryOverride(null);
+                                                    setMinihomeShopModalOpen(false);
+                                                }}
                                                 ownedItemIds={minihomeProfile.ownedItemIds}
                                                 veraPoints={azitGame.state?.veraPoints ?? minihomeProfile.veraPoints}
                                                 draftLayout={minihomeDraftLayout}
@@ -1254,11 +1271,16 @@ export default function MyPage() {
                                                 }}
                                                 onPurchaseItem={handleMinihomePurchaseItem}
                                                 onBuySeed={handleMinihomeBuySeed}
+                                                onBuyFertilizer={azitGame.buyFertilizer}
                                                 onResetRoom={handleMinihomeResetDefaultRoom}
                                                 onSaveRoom={() => handleSaveMinihome()}
                                                 isSaving={minihomeSaving}
+                                                isActing={azitGame.isActing}
+                                                azitLevel={azitGame.state?.profile.azitLevel}
+                                                cropCatalog={azitGame.state?.catalog.crops}
+                                                fertilizerCatalog={azitGame.state?.catalog.fertilizers}
                                                 initialMode={minihomeShopInitialTab}
-                                                initialCategory={minihomeShopInitialCategory}
+                                                initialCategory={shopCategoryOverride ?? minihomeShopInitialCategory}
                                             />
 
                                             <MinihomeGuestbook

@@ -11,7 +11,21 @@ export const GARDEN_PLOT_COORDS: Array<{ plotIndex: number; gridX: number; gridY
     { plotIndex: 3, gridX: 2, gridY: 5 },
     { plotIndex: 4, gridX: 4, gridY: 5 },
     { plotIndex: 5, gridX: 6, gridY: 5 },
+    { plotIndex: 6, gridX: 2, gridY: 3.5 },
+    { plotIndex: 7, gridX: 4, gridY: 3.5 },
+    { plotIndex: 8, gridX: 6, gridY: 3.5 },
+    { plotIndex: 9, gridX: 2, gridY: 6.5 },
+    { plotIndex: 10, gridX: 4, gridY: 6.5 },
+    { plotIndex: 11, gridX: 6, gridY: 6.5 },
+    { plotIndex: 12, gridX: 2.0, gridY: 0.6 },
+    { plotIndex: 13, gridX: 3.8, gridY: 0.6 },
+    { plotIndex: 14, gridX: 5.6, gridY: 0.6 },
+    { plotIndex: 15, gridX: 0.5, gridY: 6.4 },
 ];
+
+export function getGardenPlotCoord(plotIndex: number): { plotIndex: number; gridX: number; gridY: number } {
+    return GARDEN_PLOT_COORDS.find((c) => c.plotIndex === plotIndex) || GARDEN_PLOT_COORDS[0];
+}
 
 export type AvatarActivityType =
     | 'walking'
@@ -70,6 +84,14 @@ interface ActivityWaypoint {
 
 function clampGrid(v: number): number {
     return Math.max(0.4, Math.min(6.8, v));
+}
+
+function getGardenStandTarget(coord: { gridX: number; gridY: number }): { targetX: number; targetY: number } {
+    const offsetX = coord.gridX < 1.12 ? 0.72 : -0.72;
+    return {
+        targetX: clampGrid(coord.gridX + offsetX),
+        targetY: clampGrid(coord.gridY + 0.25),
+    };
 }
 
 function screenDeltaX(fromX: number, fromY: number, toX: number, toY: number): number {
@@ -333,17 +355,19 @@ export function useAvatarLifeSim(params: {
             const gardenList: ActivityWaypoint[] = [];
 
             for (const plot of gardenState.plots) {
-                const coord = GARDEN_PLOT_COORDS[plot.plotIndex] || GARDEN_PLOT_COORDS[0];
+                if (plot.isUnlocked === false) continue;
+                const coord = getGardenPlotCoord(plot.plotIndex);
                 const cropMeta = getGardenCropById(plot.cropId);
                 if (cropMeta) {
                     const isReady = plot.stage === 3;
                     const badgeText = isReady
                         ? `✨ 다 자란 ${cropMeta.shortName} 수확 준비!`
                         : `💧 ${cropMeta.shortName} 밭에 정성껏 물 주는 중`;
+                    const stand = getGardenStandTarget(coord);
                     gardenList.push({
                         id: `wp-garden-plot-${plot.plotIndex}`,
-                        targetX: clampGrid(coord.gridX - 0.72),
-                        targetY: clampGrid(coord.gridY + 0.25),
+                        targetX: stand.targetX,
+                        targetY: stand.targetY,
                         lookAtX: coord.gridX,
                         lookAtY: coord.gridY,
                         isSitting: false,
@@ -636,9 +660,8 @@ export function useAvatarLifeSim(params: {
     // 유저가 마당에서 물주기/파종/수확 클릭 시 현재 위치에서 빠르게 달려가 전용 모션을 1.8~2.0초 유지
     useEffect(() => {
         if (!forcedGardenAction || activeZone !== 'garden' || isEditMode) return;
-        const coord = GARDEN_PLOT_COORDS[forcedGardenAction.plotIndex] || GARDEN_PLOT_COORDS[0];
-        const targetX = clampGrid(coord.gridX - 0.72);
-        const targetY = clampGrid(coord.gridY + 0.25);
+        const coord = getGardenPlotCoord(forcedGardenAction.plotIndex);
+        const { targetX, targetY } = getGardenStandTarget(coord);
         const fromX = currentPosRef.current.x;
         const fromY = currentPosRef.current.y;
         const dist = Math.hypot(targetX - fromX, targetY - fromY);

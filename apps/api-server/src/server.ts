@@ -396,3 +396,7 @@ startMarketingScheduler();
 import { startWatchdogScheduler } from './services/watchdog.service.js';
 startWatchdogScheduler();
 
+// 아지트 농부 자동화 스케줄러 시작 (기동 12초 후 첫 실행 · 30초 주기)
+import { startAzitFarmerScheduler } from './services/azit-farmer-scheduler.js';
+startAzitFarmerScheduler();
+

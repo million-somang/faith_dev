@@ -1,6 +1,7 @@
 import {
     GardenCropId,
     GardenCropMeta,
+    GardenPlotItem,
     MinihomeBgmTrack,
     MinihomeCatalogItem,
     MinihomeGardenState,
@@ -654,6 +655,34 @@ export const QUICK_ILCHON_MESSAGES: string[] = [
     'BGM 선곡 센스 최고예요! 잘 듣고 갑니다 🎵',
 ];
 
+export const MAX_GARDEN_PLOTS = 16;
+export const STARTER_GARDEN_PLOTS = 6;
+export const MAX_SOIL_LEVEL = 5;
+export const MAX_FERTILIZER_PER_CROP = 4;
+
+export const GARDEN_PLOT_UNLOCK_SCHEDULE: Array<{
+    plotIndex: number;
+    unlockLevel: number;
+    unlockCost: number;
+}> = [
+    { plotIndex: 0, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 1, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 2, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 3, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 4, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 5, unlockLevel: 1, unlockCost: 0 },
+    { plotIndex: 6, unlockLevel: 5, unlockCost: 60 },
+    { plotIndex: 7, unlockLevel: 10, unlockCost: 100 },
+    { plotIndex: 8, unlockLevel: 15, unlockCost: 150 },
+    { plotIndex: 9, unlockLevel: 20, unlockCost: 220 },
+    { plotIndex: 10, unlockLevel: 25, unlockCost: 300 },
+    { plotIndex: 11, unlockLevel: 30, unlockCost: 400 },
+    { plotIndex: 12, unlockLevel: 35, unlockCost: 520 },
+    { plotIndex: 13, unlockLevel: 40, unlockCost: 660 },
+    { plotIndex: 14, unlockLevel: 45, unlockCost: 820 },
+    { plotIndex: 15, unlockLevel: 50, unlockCost: 1000 },
+];
+
 export const GARDEN_CROP_CATALOG: GardenCropMeta[] = [
     {
         cropId: 'crop-carrot',
@@ -664,6 +693,9 @@ export const GARDEN_CROP_CATALOG: GardenCropMeta[] = [
         accentColor: '#f97316',
         stageLabels: ['빈 텃밭', '🌱 당근 새싹', '🌿 당근 잎 무성', '🥕 당근 수확 가능!'],
         avatarCareBadge: '🥕 당근 밭 살펴보는 중',
+        requiredAzitLevel: 1,
+        seedPrice: 0,
+        sellPrice: 8,
     },
     {
         cropId: 'crop-pepper',
@@ -674,6 +706,9 @@ export const GARDEN_CROP_CATALOG: GardenCropMeta[] = [
         accentColor: '#ef4444',
         stageLabels: ['빈 텃밭', '🌱 고추 모종', '🌼 고추꽃 개화', '🌶️ 고추 수확 가능!'],
         avatarCareBadge: '🌶️ 고추 자라는 모습 관찰 중',
+        requiredAzitLevel: 1,
+        seedPrice: 12,
+        sellPrice: 16,
     },
     {
         cropId: 'crop-tomato',
@@ -684,6 +719,9 @@ export const GARDEN_CROP_CATALOG: GardenCropMeta[] = [
         accentColor: '#e11d48',
         stageLabels: ['빈 텃밭', '🌱 토마토 새싹', '🌼 노란 토마토꽃', '🍅 토마토 수확 가능!'],
         avatarCareBadge: '🍅 방울토마토 돌보는 중',
+        requiredAzitLevel: 1,
+        seedPrice: 18,
+        sellPrice: 22,
     },
     {
         cropId: 'crop-lettuce',
@@ -694,6 +732,9 @@ export const GARDEN_CROP_CATALOG: GardenCropMeta[] = [
         accentColor: '#22c55e',
         stageLabels: ['빈 텃밭', '🌱 상추 떡잎', '🌿 여린 상추잎', '🥬 청상추 수확 가능!'],
         avatarCareBadge: '🥬 상추 잎사귀 확인 중',
+        requiredAzitLevel: 1,
+        seedPrice: 24,
+        sellPrice: 28,
     },
     {
         cropId: 'crop-strawberry',
@@ -704,6 +745,9 @@ export const GARDEN_CROP_CATALOG: GardenCropMeta[] = [
         accentColor: '#f43f5e',
         stageLabels: ['빈 텃밭', '🌱 딸기 런너', '🌸 하얀 딸기꽃', '🍓 딸기 수확 가능!'],
         avatarCareBadge: '🍓 달콤한 딸기 향기 맡는 중',
+        requiredAzitLevel: 1,
+        seedPrice: 45,
+        sellPrice: 55,
     },
     {
         cropId: 'crop-potato',
@@ -714,77 +758,202 @@ export const GARDEN_CROP_CATALOG: GardenCropMeta[] = [
         accentColor: '#d97706',
         stageLabels: ['빈 텃밭', '🌱 감자 싹', '🌿 감자 줄기 성장', '🥔 햇감자 수확 가능!'],
         avatarCareBadge: '🥔 감자 밭 흙 다독이는 중',
+        requiredAzitLevel: 1,
+        seedPrice: 30,
+        sellPrice: 36,
+    },
+    {
+        cropId: 'crop-blueberry',
+        name: '서리 빛 블루베리',
+        shortName: '블루베리',
+        emoji: '🫐',
+        description: '아지트 Lv.20부터 재배할 수 있는 새콤달콤한 서리 과실입니다.',
+        accentColor: '#3b82f6',
+        stageLabels: ['빈 텃밭', '🌱 블루베리 묘목', '🌼 푸른 꽃봉오리', '🫐 블루베리 수확 가능!'],
+        avatarCareBadge: '🫐 서리 블루베리 열매 확인 중',
+        requiredAzitLevel: 20,
+        seedPrice: 55,
+        sellPrice: 68,
+    },
+    {
+        cropId: 'crop-pumpkin',
+        name: '황금 잭오 호박',
+        shortName: '황금호박',
+        emoji: '🎃',
+        description: '아지트 Lv.25부터 재배 가능한 묵직하고 달콤한 황금 호박입니다.',
+        accentColor: '#f59e0b',
+        stageLabels: ['빈 텃밭', '🌱 호박 떡잎', '🌿 뻗어가는 호박 덩굴', '🎃 황금호박 수확 가능!'],
+        avatarCareBadge: '🎃 묵직한 황금호박 돌보는 중',
+        requiredAzitLevel: 25,
+        seedPrice: 70,
+        sellPrice: 86,
+    },
+    {
+        cropId: 'crop-melon',
+        name: '왕실 머스크멜론',
+        shortName: '멜론',
+        emoji: '🍈',
+        description: '아지트 Lv.30부터 재배 가능한 왕실 진상품 최고급 멜론입니다.',
+        accentColor: '#84cc16',
+        stageLabels: ['빈 텃밭', '🌱 멜론 새싹', '🌿 달콤한 멜론 덩굴', '🍈 머스크멜론 수확 가능!'],
+        avatarCareBadge: '🍈 왕실 멜론 그물 무늬 살펴보는 중',
+        requiredAzitLevel: 30,
+        seedPrice: 90,
+        sellPrice: 110,
+    },
+    {
+        cropId: 'crop-ginseng',
+        name: '천년 산삼',
+        shortName: '산삼',
+        emoji: '🌿',
+        description: '아지트 Lv.36부터 재배할 수 있는 영험한 기운이 담긴 희귀 약초입니다.',
+        accentColor: '#10b981',
+        stageLabels: ['빈 텃밭', '🌱 산삼 여린 잎', '🌺 붉은 산삼 열매', '🌿 천년 산삼 수확 가능!'],
+        avatarCareBadge: '🌿 영험한 산삼 정성껏 돌보는 중',
+        requiredAzitLevel: 36,
+        seedPrice: 115,
+        sellPrice: 140,
+    },
+    {
+        cropId: 'crop-truffle',
+        name: '심연 블랙 트러플',
+        shortName: '트러플',
+        emoji: '🍄',
+        description: '아지트 Lv.42부터 재배 가능한 미식가들의 보물 블랙 트러플입니다.',
+        accentColor: '#78716c',
+        stageLabels: ['빈 텃밭', '🌱 트러플 균사체', '🍄 향긋한 포자 성장', '🍄 블랙 트러플 수확 가능!'],
+        avatarCareBadge: '🍄 진귀한 트러플 향기 맡는 중',
+        requiredAzitLevel: 42,
+        seedPrice: 145,
+        sellPrice: 175,
+    },
+    {
+        cropId: 'crop-moonfruit',
+        name: '영원의 달빛 열매',
+        shortName: '달빛열매',
+        emoji: '🌙',
+        description: '아지트 최고 레벨 Lv.50에 해금되는 전설의 영약 열매입니다.',
+        accentColor: '#8b5cf6',
+        stageLabels: ['빈 텃밭', '🌱 달빛 새싹', '✨ 은은한 별빛 개화', '🌙 달빛 열매 수확 가능!'],
+        avatarCareBadge: '🌙 신비로운 달빛 열매 감상 중',
+        requiredAzitLevel: 50,
+        seedPrice: 180,
+        sellPrice: 220,
     },
 ];
 
+function createEmptyCropCountMap(): Record<GardenCropId, number> {
+    const counts: Record<GardenCropId, number> = {
+        'crop-carrot': 0,
+        'crop-pepper': 0,
+        'crop-tomato': 0,
+        'crop-lettuce': 0,
+        'crop-strawberry': 0,
+        'crop-potato': 0,
+    };
+    for (const crop of GARDEN_CROP_CATALOG) {
+        counts[crop.cropId] = 0;
+    }
+    return counts;
+}
+
+function getScheduleEntry(plotIndex: number): { unlockLevel: number; unlockCost: number } {
+    const found = GARDEN_PLOT_UNLOCK_SCHEDULE.find((s) => s.plotIndex === plotIndex);
+    return found ?? { unlockLevel: 1, unlockCost: 0 };
+}
+
 export const DEFAULT_GARDEN_STATE: MinihomeGardenState = {
-    plots: [
-        {
-            plotIndex: 0,
-            cropId: 'crop-carrot',
-            stage: 2,
-            waterCount: 2,
-            plantedAt: '2026-10-26T00:00:00.000Z',
-            lastWateredAt: '2026-10-26T00:00:00.000Z',
-        },
-        {
-            plotIndex: 1,
-            cropId: 'crop-pepper',
-            stage: 3,
-            waterCount: 3,
-            plantedAt: '2026-10-26T00:00:00.000Z',
-            lastWateredAt: '2026-10-26T00:00:00.000Z',
-        },
-        {
-            plotIndex: 2,
-            cropId: 'crop-tomato',
-            stage: 1,
-            waterCount: 1,
-            plantedAt: '2026-10-26T00:00:00.000Z',
-            lastWateredAt: '2026-10-26T00:00:00.000Z',
-        },
-        {
-            plotIndex: 3,
-            cropId: 'crop-lettuce',
-            stage: 2,
-            waterCount: 2,
-            plantedAt: '2026-10-26T00:00:00.000Z',
-            lastWateredAt: '2026-10-26T00:00:00.000Z',
-        },
-        {
-            plotIndex: 4,
+    plots: Array.from({ length: MAX_GARDEN_PLOTS }).map((_, idx): GardenPlotItem => {
+        const sched = getScheduleEntry(idx);
+        const isUnlocked = idx < STARTER_GARDEN_PLOTS;
+        if (idx === 0) {
+            return {
+                plotIndex: 0,
+                isUnlocked: true,
+                unlockLevel: 1,
+                unlockCost: 0,
+                soilLevel: 0,
+                cropId: 'crop-carrot',
+                stage: 2,
+                waterCount: 2,
+                plantedAt: '2026-10-26T00:00:00.000Z',
+                lastWateredAt: '2026-10-26T00:00:00.000Z',
+                nextWaterAtMs: null,
+                fertilizerUsedCount: 0,
+            };
+        }
+        if (idx === 1) {
+            return {
+                plotIndex: 1,
+                isUnlocked: true,
+                unlockLevel: 1,
+                unlockCost: 0,
+                soilLevel: 0,
+                cropId: 'crop-pepper',
+                stage: 3,
+                waterCount: 3,
+                plantedAt: '2026-10-26T00:00:00.000Z',
+                lastWateredAt: '2026-10-26T00:00:00.000Z',
+                nextWaterAtMs: null,
+                fertilizerUsedCount: 0,
+            };
+        }
+        if (idx === 2) {
+            return {
+                plotIndex: 2,
+                isUnlocked: true,
+                unlockLevel: 1,
+                unlockCost: 0,
+                soilLevel: 0,
+                cropId: 'crop-tomato',
+                stage: 1,
+                waterCount: 1,
+                plantedAt: '2026-10-26T00:00:00.000Z',
+                lastWateredAt: '2026-10-26T00:00:00.000Z',
+                nextWaterAtMs: null,
+                fertilizerUsedCount: 0,
+            };
+        }
+        if (idx === 3) {
+            return {
+                plotIndex: 3,
+                isUnlocked: true,
+                unlockLevel: 1,
+                unlockCost: 0,
+                soilLevel: 0,
+                cropId: 'crop-lettuce',
+                stage: 2,
+                waterCount: 2,
+                plantedAt: '2026-10-26T00:00:00.000Z',
+                lastWateredAt: '2026-10-26T00:00:00.000Z',
+                nextWaterAtMs: null,
+                fertilizerUsedCount: 0,
+            };
+        }
+        return {
+            plotIndex: idx,
+            isUnlocked,
+            unlockLevel: sched.unlockLevel,
+            unlockCost: sched.unlockCost,
+            soilLevel: 0,
             cropId: null,
             stage: 0,
             waterCount: 0,
             plantedAt: null,
             lastWateredAt: null,
-        },
-        {
-            plotIndex: 5,
-            cropId: null,
-            stage: 0,
-            waterCount: 0,
-            plantedAt: null,
-            lastWateredAt: null,
-        },
-    ],
-    seedCounts: {
-        'crop-carrot': 0,
-        'crop-pepper': 0,
-        'crop-tomato': 0,
-        'crop-lettuce': 0,
-        'crop-strawberry': 0,
-        'crop-potato': 0,
-    },
-    harvestCounts: {
-        'crop-carrot': 0,
-        'crop-pepper': 0,
-        'crop-tomato': 0,
-        'crop-lettuce': 0,
-        'crop-strawberry': 0,
-        'crop-potato': 0,
+            nextWaterAtMs: null,
+            fertilizerUsedCount: 0,
+        };
+    }),
+    seedCounts: createEmptyCropCountMap(),
+    harvestCounts: createEmptyCropCountMap(),
+    fertilizerCounts: {
+        'fert-basic': 0,
+        'fert-rapid': 0,
     },
     totalHarvested: 0,
+    unlockedPlotCount: STARTER_GARDEN_PLOTS,
+    maxPlotCount: MAX_GARDEN_PLOTS,
 };
 
 export function getGardenCropById(cropId: GardenCropId | null | undefined): GardenCropMeta | undefined {
@@ -808,7 +977,14 @@ export interface GardenPlotWaterStatus {
 }
 
 export function getGardenPlotWaterStatus(
-    plot: { cropId: GardenCropId | null; stage: number; lastWateredAt?: string | null } | undefined,
+    plot:
+        | {
+              cropId: GardenCropId | null;
+              stage: number;
+              lastWateredAt?: string | null;
+              nextWaterAtMs?: number | null;
+          }
+        | undefined,
     nowMs: number = Date.now()
 ): GardenPlotWaterStatus {
     if (!plot || !plot.cropId || plot.stage <= 0) {
@@ -835,7 +1011,17 @@ export function getGardenPlotWaterStatus(
         };
     }
 
-    if (!plot.lastWateredAt) {
+    let nextWaterAtMs: number | null = null;
+    if (typeof plot.nextWaterAtMs === 'number' && Number.isFinite(plot.nextWaterAtMs) && plot.nextWaterAtMs > 0) {
+        nextWaterAtMs = plot.nextWaterAtMs;
+    } else if (plot.lastWateredAt) {
+        const lastWaterMs = new Date(plot.lastWateredAt).getTime();
+        if (!Number.isNaN(lastWaterMs)) {
+            nextWaterAtMs = lastWaterMs + GARDEN_WATER_COOLDOWN_MS;
+        }
+    }
+
+    if (nextWaterAtMs === null) {
         return {
             isPlanted: true,
             isHarvestReady: false,
@@ -847,20 +1033,6 @@ export function getGardenPlotWaterStatus(
         };
     }
 
-    const lastWaterMs = new Date(plot.lastWateredAt).getTime();
-    if (Number.isNaN(lastWaterMs)) {
-        return {
-            isPlanted: true,
-            isHarvestReady: false,
-            canWater: true,
-            nextWaterAtMs: nowMs,
-            remainingMs: 0,
-            remainingLabel: '지금 물주기 가능',
-            shortRemainingLabel: '물주기!',
-        };
-    }
-
-    const nextWaterAtMs = lastWaterMs + GARDEN_WATER_COOLDOWN_MS;
     const remainingMs = Math.max(0, nextWaterAtMs - nowMs);
     if (remainingMs <= 0) {
         return {
@@ -900,59 +1072,145 @@ export function getGardenPlotWaterStatus(
 }
 
 export function ensureGardenState(garden?: MinihomeGardenState): MinihomeGardenState {
+    const toNonNegInt = (v: unknown, fallback = 0): number => {
+        const n = Number(v);
+        return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : fallback;
+    };
+
     if (!garden || !Array.isArray(garden.plots) || garden.plots.length === 0) {
         return {
             plots: DEFAULT_GARDEN_STATE.plots.map((p) => ({ ...p })),
             seedCounts: { ...DEFAULT_GARDEN_STATE.seedCounts },
             harvestCounts: { ...DEFAULT_GARDEN_STATE.harvestCounts },
+            fertilizerCounts: { ...(DEFAULT_GARDEN_STATE.fertilizerCounts || { 'fert-basic': 0, 'fert-rapid': 0 }) },
             totalHarvested: 0,
+            unlockedPlotCount: STARTER_GARDEN_PLOTS,
+            maxPlotCount: MAX_GARDEN_PLOTS,
         };
     }
-    const normalizedPlots = Array.from({ length: 6 }).map((_, idx) => {
-        const found = garden.plots.find((p) => p.plotIndex === idx) || garden.plots[idx];
+
+    const validRawPlots = garden.plots.filter((p): p is GardenPlotItem => Boolean(p && typeof p === 'object'));
+
+    const plotCount = Math.min(
+        MAX_GARDEN_PLOTS,
+        Math.max(
+            MAX_GARDEN_PLOTS,
+            toNonNegInt(garden.maxPlotCount, 0),
+            validRawPlots.reduce((max, p) => Math.max(max, toNonNegInt(p.plotIndex, 0) + 1), 0),
+            validRawPlots.length
+        )
+    );
+
+    const plotByIndex = new Map<number, GardenPlotItem>();
+    validRawPlots.forEach((p, i) => {
+        const key =
+            typeof p.plotIndex === 'number' && Number.isFinite(p.plotIndex) && p.plotIndex >= 0
+                ? Math.floor(p.plotIndex)
+                : i;
+        if (!plotByIndex.has(key)) {
+            plotByIndex.set(key, p);
+        }
+    });
+
+    const normalizedPlots: GardenPlotItem[] = Array.from({ length: plotCount }).map((_, idx) => {
+        const sched = getScheduleEntry(idx);
+        const found = plotByIndex.get(idx);
         if (!found) {
             return {
                 plotIndex: idx,
+                isUnlocked: idx < STARTER_GARDEN_PLOTS,
+                unlockLevel: sched.unlockLevel,
+                unlockCost: sched.unlockCost,
+                soilLevel: 0,
                 cropId: null,
                 stage: 0 as const,
                 waterCount: 0,
                 plantedAt: null,
                 lastWateredAt: null,
+                nextWaterAtMs: null,
+                fertilizerUsedCount: 0,
                 waterNotifiedAt: null,
             };
         }
+        const rawSoil = Number(found.soilLevel ?? 0);
+        const soilLevel = Number.isFinite(rawSoil)
+            ? Math.max(0, Math.min(MAX_SOIL_LEVEL, Math.floor(rawSoil)))
+            : 0;
+        const rawFert = Number(found.fertilizerUsedCount ?? 0);
+        const fertilizerUsedCount = Number.isFinite(rawFert) ? Math.max(0, Math.floor(rawFert)) : 0;
+        const nextWaterAtMs =
+            typeof found.nextWaterAtMs === 'number' &&
+            Number.isFinite(found.nextWaterAtMs) &&
+            found.nextWaterAtMs > 0
+                ? found.nextWaterAtMs
+                : null;
+        const safeCropId =
+            typeof found.cropId === 'string' && found.cropId.trim().length > 0
+                ? found.cropId.trim()
+                : null;
+
         return {
             plotIndex: idx,
-            cropId: found.cropId || null,
-            stage: (found.cropId ? Math.max(1, Math.min(3, found.stage || 1)) : 0) as 0 | 1 | 2 | 3,
-            waterCount: Number(found.waterCount || 0),
-            plantedAt: found.plantedAt || null,
-            lastWateredAt: found.lastWateredAt || null,
-            waterNotifiedAt: found.waterNotifiedAt || null,
+            isUnlocked: typeof found.isUnlocked === 'boolean' ? found.isUnlocked : idx < STARTER_GARDEN_PLOTS,
+            unlockLevel:
+                typeof found.unlockLevel === 'number' && Number.isFinite(found.unlockLevel) && found.unlockLevel >= 1
+                    ? Math.floor(found.unlockLevel)
+                    : sched.unlockLevel,
+            unlockCost:
+                typeof found.unlockCost === 'number' && Number.isFinite(found.unlockCost) && found.unlockCost >= 0
+                    ? Math.floor(found.unlockCost)
+                    : sched.unlockCost,
+            soilLevel,
+            cropId: safeCropId,
+            stage: (safeCropId ? Math.max(1, Math.min(3, toNonNegInt(found.stage, 1))) : 0) as 0 | 1 | 2 | 3,
+            waterCount: toNonNegInt(found.waterCount, 0),
+            plantedAt: typeof found.plantedAt === 'string' && found.plantedAt.trim() ? found.plantedAt : null,
+            lastWateredAt:
+                typeof found.lastWateredAt === 'string' && found.lastWateredAt.trim() ? found.lastWateredAt : null,
+            nextWaterAtMs,
+            fertilizerUsedCount,
+            waterNotifiedAt:
+                typeof found.waterNotifiedAt === 'string' && found.waterNotifiedAt.trim()
+                    ? found.waterNotifiedAt
+                    : null,
         };
     });
-    const seedCounts: Record<GardenCropId, number> = {
-        'crop-carrot': Math.max(0, Number(garden.seedCounts?.['crop-carrot'] || 0)),
-        'crop-pepper': Math.max(0, Number(garden.seedCounts?.['crop-pepper'] || 0)),
-        'crop-tomato': Math.max(0, Number(garden.seedCounts?.['crop-tomato'] || 0)),
-        'crop-lettuce': Math.max(0, Number(garden.seedCounts?.['crop-lettuce'] || 0)),
-        'crop-strawberry': Math.max(0, Number(garden.seedCounts?.['crop-strawberry'] || 0)),
-        'crop-potato': Math.max(0, Number(garden.seedCounts?.['crop-potato'] || 0)),
+
+    const seedCounts: Record<GardenCropId, number> = createEmptyCropCountMap();
+    if (garden.seedCounts && typeof garden.seedCounts === 'object') {
+        for (const [k, v] of Object.entries(garden.seedCounts)) {
+            seedCounts[k] = toNonNegInt(v, 0);
+        }
+    }
+
+    const harvestCounts: Record<GardenCropId, number> = createEmptyCropCountMap();
+    if (garden.harvestCounts && typeof garden.harvestCounts === 'object') {
+        for (const [k, v] of Object.entries(garden.harvestCounts)) {
+            harvestCounts[k] = toNonNegInt(v, 0);
+        }
+    }
+
+    const fertilizerCounts: Record<string, number> = {
+        'fert-basic': 0,
+        'fert-rapid': 0,
     };
-    const harvestCounts: Record<GardenCropId, number> = {
-        'crop-carrot': Math.max(0, Number(garden.harvestCounts?.['crop-carrot'] || 0)),
-        'crop-pepper': Math.max(0, Number(garden.harvestCounts?.['crop-pepper'] || 0)),
-        'crop-tomato': Math.max(0, Number(garden.harvestCounts?.['crop-tomato'] || 0)),
-        'crop-lettuce': Math.max(0, Number(garden.harvestCounts?.['crop-lettuce'] || 0)),
-        'crop-strawberry': Math.max(0, Number(garden.harvestCounts?.['crop-strawberry'] || 0)),
-        'crop-potato': Math.max(0, Number(garden.harvestCounts?.['crop-potato'] || 0)),
-    };
+    if (garden.fertilizerCounts && typeof garden.fertilizerCounts === 'object') {
+        for (const [k, v] of Object.entries(garden.fertilizerCounts)) {
+            fertilizerCounts[k] = toNonNegInt(v, 0);
+        }
+    }
+
     const totalHarvested = Object.values(harvestCounts).reduce((acc, v) => acc + v, 0);
+    const unlockedPlotCount = normalizedPlots.filter((p) => p.isUnlocked !== false).length;
+
     return {
         plots: normalizedPlots,
         seedCounts,
         harvestCounts,
+        fertilizerCounts,
         totalHarvested,
+        unlockedPlotCount,
+        maxPlotCount: normalizedPlots.length,
     };
 }
 

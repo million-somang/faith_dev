@@ -6,6 +6,7 @@ import type { AzitFullGameState } from '@/types/azit-game.types';
 interface AzitLevelHeaderBadgeProps {
     gameState: AzitFullGameState;
     onOpenMarketModal: () => void;
+    onOpenFarmerModal?: () => void;
     onOpenChefModal?: () => void;
     onOpenMercModal?: () => void;
     onOpenWarehouseModal?: () => void;
@@ -15,13 +16,18 @@ interface AzitLevelHeaderBadgeProps {
 export const AzitLevelHeaderBadge: React.FC<AzitLevelHeaderBadgeProps> = ({
     gameState,
     onOpenMarketModal,
+    onOpenFarmerModal,
     onOpenChefModal,
     onOpenMercModal,
     onOpenWarehouseModal,
     onOpenShopModal,
 }) => {
-    const { profile, veraPoints, chefs, mercenaries } = gameState;
-    const clampedPct = Math.max(0, Math.min(100, profile.progressPct));
+    const { profile, veraPoints, chefs, mercenaries, farmers } = gameState;
+    const isFarmerUnlocked = profile.azitLevel >= 20;
+    const safeAzitXp = Number.isFinite(profile.azitXp) ? Math.max(0, Math.floor(profile.azitXp)) : 0;
+    const clampedPct = Number.isFinite(profile.progressPct)
+        ? Math.max(0, Math.min(100, profile.progressPct))
+        : 0;
 
     const neutralBtnClass =
         'px-2.5 py-1 rounded-xl bg-[#f0f4f8] hover:bg-white text-[#1e293b] border border-white/90 shadow-[3px_3px_6px_rgba(163,177,198,0.35),-3px_-3px_6px_rgba(255,255,255,0.85)] active:shadow-[inset_2px_2px_4px_rgba(163,177,198,0.4),inset_-2px_-2px_4px_rgba(255,255,255,0.8)] text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0';
@@ -51,8 +57,8 @@ export const AzitLevelHeaderBadge: React.FC<AzitLevelHeaderBadgeProps> = ({
                         </svg>
                         <span className="text-[10px] font-mono font-bold text-[#64748b] shrink-0">
                             {profile.nextLevelXp !== null
-                                ? `${profile.azitXp}/${profile.nextLevelXp} XP`
-                                : `${profile.azitXp} XP (MAX)`}
+                                ? `${safeAzitXp}/${profile.nextLevelXp} XP`
+                                : `${safeAzitXp} XP (MAX)`}
                         </span>
                     </div>
                 </div>
@@ -67,11 +73,32 @@ export const AzitLevelHeaderBadge: React.FC<AzitLevelHeaderBadgeProps> = ({
 
             {/* 아랫줄: 운영 퀵독 (인력 | 거래·보관) */}
             <div className="w-full flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/80">
-                {(onOpenChefModal || onOpenMercModal) && (
+                {(onOpenFarmerModal || onOpenChefModal || onOpenMercModal) && (
                     <div className="flex flex-wrap items-center gap-1.5">
                         <span className="hidden sm:inline text-[10px] font-extrabold text-[#94a3b8] shrink-0">
                             인력
                         </span>
+                        {onOpenFarmerModal && (
+                            <button
+                                type="button"
+                                onClick={onOpenFarmerModal}
+                                className={neutralBtnClass}
+                                title={
+                                    isFarmerUnlocked
+                                        ? '농부 길드 & 자동화 관리'
+                                        : '아지트 Lv.20 달성 시 농부 고용 해금'
+                                }
+                            >
+                                <span>👨‍🌾 농부</span>
+                                {isFarmerUnlocked ? (
+                                    <span className="font-mono text-[#64748b]">
+                                        {farmers.length}/{profile.limits.maxFarmers}
+                                    </span>
+                                ) : (
+                                    <span className="font-mono text-amber-700">🔒 Lv.20</span>
+                                )}
+                            </button>
+                        )}
                         {onOpenChefModal && (
                             <button
                                 type="button"
