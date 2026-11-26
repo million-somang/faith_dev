@@ -44,8 +44,8 @@ interface DurationCardProps {
 
 const MINUTES_PER_REVOLUTION = 60;
 const DIAL_CENTER = 120;
-const DIAL_RADIUS = 90;
-const OUTER_LAP_RADIUS = 99.5;
+const DIAL_RADIUS = 94;
+const OUTER_LAP_RADIUS = 102.5;
 const DIAL_CIRCUMFERENCE = 2 * Math.PI * DIAL_RADIUS;
 
 interface DialTick {
@@ -66,8 +66,8 @@ interface DialQuarterLabel {
 const DIAL_TICKS: readonly DialTick[] = Array.from({ length: 12 }, (_, index) => {
   const rad = ((index * 30 - 90) * Math.PI) / 180;
   const isMajor = index % 3 === 0;
-  const innerRadius = isMajor ? 73 : 77;
-  const outerRadius = 81;
+  const innerRadius = isMajor ? 80 : 83;
+  const outerRadius = 87;
   return {
     key: index,
     x1: DIAL_CENTER + innerRadius * Math.cos(rad),
@@ -85,7 +85,7 @@ const DIAL_QUARTER_LABELS: readonly DialQuarterLabel[] = [
   { label: '45', angleDeg: 270 },
 ].map(({ label, angleDeg }) => {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
-  const labelRadius = 109;
+  const labelRadius = 111.5;
   return {
     label,
     x: DIAL_CENTER + labelRadius * Math.cos(rad),
@@ -160,7 +160,7 @@ function DurationCard({
 
   return (
     <div className={`rounded-2xl border p-3 transition-colors ${cardSurface}`}>
-      <div className="flex items-center justify-between gap-2 mb-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 mb-2 sm:mb-2.5">
         <div className="flex items-center gap-2">
           <span
             className={`w-6 h-6 rounded-lg border flex items-center justify-center text-[11px] ${iconBadgeClass}`}
@@ -208,7 +208,7 @@ function DurationCard({
         </button>
 
         <div
-          className={`flex-1 h-8 rounded-xl border px-2.5 flex items-center justify-center gap-1 ${insetSurface}`}
+          className={`flex-1 h-8 rounded-xl border px-2.5 flex items-center justify-center gap-0.5 ${insetSurface}`}
         >
           <input
             type="number"
@@ -237,10 +237,10 @@ function DurationCard({
                 (e.currentTarget as HTMLInputElement).blur();
               }
             }}
-            className="w-14 bg-transparent text-center font-mono text-sm font-black tabular-nums outline-none disabled:opacity-60"
+            className="w-9 sm:w-11 bg-transparent text-right pr-0.5 font-mono text-sm font-black tabular-nums outline-none disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           <span
-            className={`text-[11px] font-bold ${
+            className={`text-[11px] font-bold shrink-0 ${
               isDark ? 'text-slate-400' : 'text-[#64748B]'
             }`}
           >
@@ -324,6 +324,7 @@ export default function TodoFocusTimerPanel({
     : isFocus
       ? '집중 준비'
       : '휴식 준비';
+  const isLongFormattedTime = formattedTime.length >= 6;
 
   const rootThemeClass = isDark
     ? 'bg-[#0B1120] text-[#F1F5F9]'
@@ -370,13 +371,13 @@ export default function TodoFocusTimerPanel({
       className={`fixed inset-0 z-50 flex flex-col overflow-y-auto select-none transition-colors duration-300 ${rootThemeClass}`}
     >
       {/* 상단 컨트롤 바 */}
-      <header className="w-full max-w-4xl mx-auto px-3 sm:px-6 pt-3 sm:pt-4 pb-1.5 flex items-center justify-between gap-1.5 sm:gap-2 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
+      <header className="w-full max-w-4xl mx-auto px-3 sm:px-6 pt-3 sm:pt-4 pb-1.5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <button
             type="button"
             onClick={onExitTimer}
             data-timer-exit="true"
-            className={`h-9 px-2.5 sm:px-3 rounded-xl border text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shrink-0 ${controlPillClass}`}
+            className={`h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl border text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shrink-0 ${controlPillClass}`}
           >
             <i className="fas fa-arrow-left text-[11px]"></i>
             <span>투두로 돌아가기</span>
@@ -400,13 +401,13 @@ export default function TodoFocusTimerPanel({
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* 화면 꺼짐 방지(Screen Wake Lock) 상태 표시 */}
           {isRunning && wakeLock.isLocked && (
             <span
               data-wakelock-status="active"
               title="타이머 실행 중 화면 꺼짐 방지 활성화됨"
-              className={`h-9 px-2 sm:px-3 rounded-xl border text-[10.5px] sm:text-[11px] font-bold inline-flex items-center gap-1 sm:gap-1.5 ${
+              className={`h-8 sm:h-9 px-2 sm:px-3 rounded-xl border text-[10.5px] sm:text-[11px] font-bold inline-flex items-center gap-1 sm:gap-1.5 shrink-0 ${
                 isDark
                   ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
                   : 'bg-emerald-50 border-emerald-200/80 text-emerald-700'
@@ -422,14 +423,14 @@ export default function TodoFocusTimerPanel({
           <div
             role="group"
             aria-label="집중 타이머 배경 테마 선택"
-            className={`p-1 rounded-xl border inline-flex items-center gap-0.5 sm:gap-1 ${insetTrackClass}`}
+            className={`p-0.5 sm:p-1 rounded-xl border inline-flex items-center gap-0.5 sm:gap-1 ${insetTrackClass}`}
           >
             <button
               type="button"
               data-theme-option="light"
               aria-pressed={!isDark}
               onClick={() => handleSelectTheme('light')}
-              className={`h-7 px-2 sm:px-2.5 rounded-lg text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer transition-all ${
+              className={`h-7 px-1.5 sm:px-2.5 rounded-lg text-[10.5px] sm:text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer transition-all ${
                 !isDark
                   ? 'bg-white text-[#1E293B] shadow-xs'
                   : 'text-slate-400 hover:text-slate-200'
@@ -443,7 +444,7 @@ export default function TodoFocusTimerPanel({
               data-theme-option="dark"
               aria-pressed={isDark}
               onClick={() => handleSelectTheme('dark')}
-              className={`h-7 px-2 sm:px-2.5 rounded-lg text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer transition-all ${
+              className={`h-7 px-1.5 sm:px-2.5 rounded-lg text-[10.5px] sm:text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer transition-all ${
                 isDark
                   ? 'bg-[#1E293B] text-slate-100 shadow-xs'
                   : 'text-[#64748B] hover:text-[#1E293B]'
@@ -461,7 +462,7 @@ export default function TodoFocusTimerPanel({
               onClick={onToggleFullscreen}
               aria-label={isFullscreen ? '브라우저 전체화면 해제' : '브라우저 전체화면 확대'}
               title={isFullscreen ? '전체화면 해제' : '전체화면 확대'}
-              className={`w-9 h-9 rounded-xl border flex items-center justify-center text-xs cursor-pointer transition-all active:scale-95 ${controlPillClass}`}
+              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border flex items-center justify-center text-xs cursor-pointer transition-all active:scale-95 ${controlPillClass}`}
             >
               <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
             </button>
@@ -470,7 +471,7 @@ export default function TodoFocusTimerPanel({
       </header>
 
       {/* 중앙 몰입형 타이머 & 설정 스테이지 */}
-      <main className="flex-1 w-full max-w-xl mx-auto px-4 py-2 sm:py-3 flex flex-col items-center justify-center gap-3.5 sm:gap-5">
+      <main className="flex-1 w-full max-w-xl mx-auto px-3 sm:px-4 pt-3 pb-6 sm:py-3 flex flex-col items-center justify-start sm:justify-center gap-3 sm:gap-5">
         {/* 집중 / 휴식 모드 전환 세그먼트 */}
         <div
           role="group"
@@ -511,7 +512,7 @@ export default function TodoFocusTimerPanel({
 
         {/* 뉴모피즘 대형 원형 시계 다이얼 + 회전하는 베라 로고 */}
         <div
-          className={`relative w-60 h-60 sm:w-72 sm:h-72 rounded-full border flex items-center justify-center transition-all duration-300 ${dialShellClass}`}
+          className={`relative w-[272px] h-[272px] max-w-[calc(100vw-2rem)] aspect-square sm:w-72 sm:h-72 rounded-full border flex items-center justify-center transition-all duration-300 shrink-0 ${dialShellClass}`}
         >
           <svg
             ref={dial.svgRef}
@@ -531,7 +532,7 @@ export default function TodoFocusTimerPanel({
             onPointerCancel={dial.handlePointerUp}
             onWheel={dial.handleWheel}
             onKeyDown={dial.handleKeyDown}
-            className={`w-56 h-56 sm:w-68 sm:h-68 touch-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 ${
+            className={`w-[260px] h-[260px] max-w-full max-h-full sm:w-[276px] sm:h-[276px] touch-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 ${
               dial.isDragging ? 'cursor-grabbing' : 'cursor-grab'
             }`}
           >
@@ -577,7 +578,7 @@ export default function TodoFocusTimerPanel({
                 x={item.x}
                 y={item.y}
                 fill={isDark ? '#94A3B8' : '#64748B'}
-                fontSize="9.5"
+                fontSize="9"
                 fontWeight="700"
                 textAnchor="middle"
                 dominantBaseline="central"
@@ -593,7 +594,7 @@ export default function TodoFocusTimerPanel({
               r={DIAL_RADIUS}
               fill="none"
               stroke={strokeTrackColor}
-              strokeWidth="9"
+              strokeWidth="8"
             />
 
             {/* 설정/남은 시간 진행 호 */}
@@ -603,7 +604,7 @@ export default function TodoFocusTimerPanel({
               r={DIAL_RADIUS}
               fill="none"
               stroke={strokeProgressColor}
-              strokeWidth="9"
+              strokeWidth="8"
               strokeLinecap="round"
               strokeDasharray={DIAL_CIRCUMFERENCE}
               strokeDashoffset={dashOffset}
@@ -616,31 +617,31 @@ export default function TodoFocusTimerPanel({
               <circle
                 cx={knobX}
                 cy={knobY}
-                r={dial.isDragging ? 15 : 13}
+                r={dial.isDragging ? 13 : 11.5}
                 fill={strokeProgressColor}
                 fillOpacity={dial.isDragging ? 0.25 : 0.14}
               />
               <circle
                 cx={knobX}
                 cy={knobY}
-                r={dial.isDragging ? 10.5 : 9.5}
+                r={dial.isDragging ? 9.5 : 8.5}
                 fill={isDark ? '#1E293B' : '#FFFFFF'}
                 stroke={strokeProgressColor}
-                strokeWidth="3"
+                strokeWidth="2.8"
               />
               <circle
                 cx={knobX}
                 cy={knobY}
-                r={dial.isDragging ? 3.5 : 3}
+                r={dial.isDragging ? 3 : 2.5}
                 fill={strokeProgressColor}
               />
             </g>
           </svg>
 
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-8">
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-7 sm:px-8">
             {/* 회전하는 베라(VeraNex) 로고 배지 */}
             <div
-              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border p-1 overflow-hidden flex items-center justify-center mb-1.5 ${logoBadgeClass}`}
+              className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full border p-1 overflow-hidden flex items-center justify-center mb-1 sm:mb-1.5 ${logoBadgeClass}`}
             >
               {!logoError ? (
                 <img
@@ -682,7 +683,7 @@ export default function TodoFocusTimerPanel({
 
             <div className="flex items-center justify-center gap-1.5 mb-0.5">
               <span
-                className={`text-[11px] font-black tracking-wider uppercase ${
+                className={`text-[10.5px] sm:text-[11px] font-black tracking-wider uppercase ${
                   isRunning
                     ? isFocus
                       ? isDark
@@ -718,7 +719,9 @@ export default function TodoFocusTimerPanel({
 
             <span
               data-timer-display="true"
-              className={`text-4xl sm:text-5xl font-mono font-black tabular-nums tracking-tight leading-none ${
+              className={`${
+                isLongFormattedTime ? 'text-[28px] sm:text-4xl' : 'text-[34px] sm:text-5xl'
+              } font-mono font-black tabular-nums tracking-tight leading-none ${
                 isDark ? 'text-white' : 'text-[#1E293B]'
               }`}
             >
@@ -726,7 +729,7 @@ export default function TodoFocusTimerPanel({
             </span>
 
             <span
-              className={`text-[11px] font-semibold mt-1.5 ${
+              className={`text-[10.5px] sm:text-[11px] font-semibold mt-1 sm:mt-1.5 ${
                 isDark ? 'text-slate-400' : 'text-[#64748B]'
               }`}
             >
