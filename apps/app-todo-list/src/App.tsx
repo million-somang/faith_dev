@@ -759,6 +759,7 @@ export function App() {
                 {workspaceView === 'timer' && (
                   <TodoFocusTimerPanel
                     mode={pomodoro.mode}
+                    secondsLeft={pomodoro.secondsLeft}
                     formattedTime={pomodoro.formattedTime}
                     elapsedPercent={pomodoro.elapsedPercent}
                     isRunning={pomodoro.isRunning}

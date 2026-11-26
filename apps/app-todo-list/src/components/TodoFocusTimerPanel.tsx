@@ -6,12 +6,14 @@ import {
   POMODORO_MIN_MINUTES,
   TODO_POMODORO_THEME_KEY,
 } from '../constants/todoMeta';
+import { useCircularDial } from '../hooks/useCircularDial';
 import type { PomodoroMode, PomodoroTheme } from '../hooks/usePomodoroTimer';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { safeStorage } from '../utils/safeStorage';
 
 interface TodoFocusTimerPanelProps {
   readonly mode: PomodoroMode;
+  readonly secondsLeft: number;
   readonly formattedTime: string;
   readonly elapsedPercent: number;
   readonly isRunning: boolean;
@@ -40,8 +42,56 @@ interface DurationCardProps {
   readonly onChangeMinutes: (minutes: number) => void;
 }
 
-const DIAL_RADIUS = 96;
+const MINUTES_PER_REVOLUTION = 60;
+const DIAL_CENTER = 120;
+const DIAL_RADIUS = 90;
+const OUTER_LAP_RADIUS = 99.5;
 const DIAL_CIRCUMFERENCE = 2 * Math.PI * DIAL_RADIUS;
+
+interface DialTick {
+  readonly key: number;
+  readonly x1: number;
+  readonly y1: number;
+  readonly x2: number;
+  readonly y2: number;
+  readonly isMajor: boolean;
+}
+
+interface DialQuarterLabel {
+  readonly label: string;
+  readonly x: number;
+  readonly y: number;
+}
+
+const DIAL_TICKS: readonly DialTick[] = Array.from({ length: 12 }, (_, index) => {
+  const rad = ((index * 30 - 90) * Math.PI) / 180;
+  const isMajor = index % 3 === 0;
+  const innerRadius = isMajor ? 73 : 77;
+  const outerRadius = 81;
+  return {
+    key: index,
+    x1: DIAL_CENTER + innerRadius * Math.cos(rad),
+    y1: DIAL_CENTER + innerRadius * Math.sin(rad),
+    x2: DIAL_CENTER + outerRadius * Math.cos(rad),
+    y2: DIAL_CENTER + outerRadius * Math.sin(rad),
+    isMajor,
+  };
+});
+
+const DIAL_QUARTER_LABELS: readonly DialQuarterLabel[] = [
+  { label: '60', angleDeg: 0 },
+  { label: '15', angleDeg: 90 },
+  { label: '30', angleDeg: 180 },
+  { label: '45', angleDeg: 270 },
+].map(({ label, angleDeg }) => {
+  const rad = ((angleDeg - 90) * Math.PI) / 180;
+  const labelRadius = 109;
+  return {
+    label,
+    x: DIAL_CENTER + labelRadius * Math.cos(rad),
+    y: DIAL_CENTER + labelRadius * Math.sin(rad),
+  };
+});
 
 function loadStoredTheme(): PomodoroTheme {
   const stored = safeStorage.get<string>(TODO_POMODORO_THEME_KEY, 'light');
@@ -214,8 +264,8 @@ function DurationCard({
 
 export default function TodoFocusTimerPanel({
   mode,
+  secondsLeft,
   formattedTime,
-  elapsedPercent,
   isRunning,
   completedSessions,
   focusMinutes,
@@ -236,7 +286,31 @@ export default function TodoFocusTimerPanel({
 
   const isDark = theme === 'dark';
   const isFocus = mode === 'focus';
-  const dashOffset = DIAL_CIRCUMFERENCE - (DIAL_CIRCUMFERENCE * elapsedPercent) / 100;
+  const activeMinutes = isFocus ? focusMinutes : breakMinutes;
+  const handleActiveMinutesChange = isFocus ? onUpdateFocusMinutes : onUpdateBreakMinutes;
+
+  const dial = useCircularDial({
+    valueMinutes: activeMinutes,
+    minMinutes: POMODORO_MIN_MINUTES,
+    maxMinutes: POMODORO_MAX_MINUTES,
+    minutesPerRevolution: MINUTES_PER_REVOLUTION,
+    onChangeMinutes: handleActiveMinutesChange,
+  });
+
+  const displayMinutesExact = Math.max(0, secondsLeft / 60);
+  const completedLaps =
+    displayMinutesExact > MINUTES_PER_REVOLUTION
+      ? Math.floor((displayMinutesExact - 0.0001) / MINUTES_PER_REVOLUTION)
+      : 0;
+  const lapMinutes =
+    displayMinutesExact <= 0
+      ? 0
+      : displayMinutesExact - completedLaps * MINUTES_PER_REVOLUTION;
+  const sweepRatio = Math.min(1, Math.max(0, lapMinutes / MINUTES_PER_REVOLUTION));
+  const dashOffset = DIAL_CIRCUMFERENCE * (1 - sweepRatio);
+  const knobAngleRad = ((sweepRatio * 360 - 90) * Math.PI) / 180;
+  const knobX = DIAL_CENTER + DIAL_RADIUS * Math.cos(knobAngleRad);
+  const knobY = DIAL_CENTER + DIAL_RADIUS * Math.sin(knobAngleRad);
 
   const handleSelectTheme = (nextTheme: PomodoroTheme) => {
     setTheme(nextTheme);
@@ -435,26 +509,97 @@ export default function TodoFocusTimerPanel({
           </button>
         </div>
 
-        {/* 뉴모피즘 대형 원형 다이얼 + 회전하는 베라 로고 */}
+        {/* 뉴모피즘 대형 원형 시계 다이얼 + 회전하는 베라 로고 */}
         <div
-          className={`relative w-56 h-56 sm:w-68 sm:h-68 rounded-full border flex items-center justify-center transition-all duration-300 ${dialShellClass}`}
+          className={`relative w-60 h-60 sm:w-72 sm:h-72 rounded-full border flex items-center justify-center transition-all duration-300 ${dialShellClass}`}
         >
           <svg
-            viewBox="0 0 220 220"
-            className="w-52 h-52 sm:w-64 sm:h-64 -rotate-90"
-            aria-hidden="true"
+            ref={dial.svgRef}
+            viewBox="0 0 240 240"
+            role="slider"
+            tabIndex={0}
+            aria-label={`${isFocus ? '집중' : '휴식'} 시간 원형 다이얼`}
+            aria-valuemin={POMODORO_MIN_MINUTES}
+            aria-valuemax={POMODORO_MAX_MINUTES}
+            aria-valuenow={activeMinutes}
+            aria-valuetext={`${activeMinutes}분`}
+            data-dial-minutes={activeMinutes}
+            data-dial-laps={completedLaps}
+            onPointerDown={dial.handlePointerDown}
+            onPointerMove={dial.handlePointerMove}
+            onPointerUp={dial.handlePointerUp}
+            onPointerCancel={dial.handlePointerUp}
+            onWheel={dial.handleWheel}
+            onKeyDown={dial.handleKeyDown}
+            className={`w-56 h-56 sm:w-68 sm:h-68 touch-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 ${
+              dial.isDragging ? 'cursor-grabbing' : 'cursor-grab'
+            }`}
           >
+            {/* 60분 초과 바퀴(+1h / +2h) 외곽 보조 링 */}
+            {completedLaps >= 1 && (
+              <circle
+                cx={DIAL_CENTER}
+                cy={DIAL_CENTER}
+                r={OUTER_LAP_RADIUS}
+                fill="none"
+                stroke={strokeProgressColor}
+                strokeOpacity={completedLaps >= 2 ? 0.55 : 0.28}
+                strokeWidth={completedLaps >= 2 ? 3.5 : 2.25}
+              />
+            )}
+
+            {/* 5분 단위 시계 눈금 (15분 단위 강조) */}
+            {DIAL_TICKS.map((tick) => (
+              <line
+                key={tick.key}
+                x1={tick.x1}
+                y1={tick.y1}
+                x2={tick.x2}
+                y2={tick.y2}
+                stroke={
+                  tick.isMajor
+                    ? isDark
+                      ? '#64748B'
+                      : '#94A3B8'
+                    : isDark
+                      ? '#334155'
+                      : '#CBD5E1'
+                }
+                strokeWidth={tick.isMajor ? 2 : 1.25}
+                strokeLinecap="round"
+              />
+            ))}
+
+            {/* 15 / 30 / 45 / 60 숫자 라벨 */}
+            {DIAL_QUARTER_LABELS.map((item) => (
+              <text
+                key={item.label}
+                x={item.x}
+                y={item.y}
+                fill={isDark ? '#94A3B8' : '#64748B'}
+                fontSize="9.5"
+                fontWeight="700"
+                textAnchor="middle"
+                dominantBaseline="central"
+              >
+                {item.label}
+              </text>
+            ))}
+
+            {/* 기본 트랙 링 */}
             <circle
-              cx="110"
-              cy="110"
+              cx={DIAL_CENTER}
+              cy={DIAL_CENTER}
               r={DIAL_RADIUS}
               fill="none"
               stroke={strokeTrackColor}
               strokeWidth="9"
             />
+
+            {/* 설정/남은 시간 진행 호 */}
             <circle
-              cx="110"
-              cy="110"
+              cx={DIAL_CENTER}
+              cy={DIAL_CENTER}
               r={DIAL_RADIUS}
               fill="none"
               stroke={strokeProgressColor}
@@ -462,11 +607,37 @@ export default function TodoFocusTimerPanel({
               strokeLinecap="round"
               strokeDasharray={DIAL_CIRCUMFERENCE}
               strokeDashoffset={dashOffset}
-              className="transition-all duration-500"
+              transform={`rotate(-90 ${DIAL_CENTER} ${DIAL_CENTER})`}
+              className={dial.isDragging ? 'transition-none' : 'transition-all duration-300'}
             />
+
+            {/* 뉴모피즘 드래그 노브 핸들 */}
+            <g className={dial.isDragging ? 'transition-none' : 'transition-all duration-300'}>
+              <circle
+                cx={knobX}
+                cy={knobY}
+                r={dial.isDragging ? 15 : 13}
+                fill={strokeProgressColor}
+                fillOpacity={dial.isDragging ? 0.25 : 0.14}
+              />
+              <circle
+                cx={knobX}
+                cy={knobY}
+                r={dial.isDragging ? 10.5 : 9.5}
+                fill={isDark ? '#1E293B' : '#FFFFFF'}
+                stroke={strokeProgressColor}
+                strokeWidth="3"
+              />
+              <circle
+                cx={knobX}
+                cy={knobY}
+                r={dial.isDragging ? 3.5 : 3}
+                fill={strokeProgressColor}
+              />
+            </g>
           </svg>
 
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-8">
             {/* 회전하는 베라(VeraNex) 로고 배지 */}
             <div
               className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border p-1 overflow-hidden flex items-center justify-center mb-1.5 ${logoBadgeClass}`}
@@ -509,23 +680,41 @@ export default function TodoFocusTimerPanel({
               )}
             </div>
 
-            <span
-              className={`text-[11px] font-black tracking-wider uppercase mb-0.5 ${
-                isRunning
-                  ? isFocus
-                    ? isDark
-                      ? 'text-indigo-300'
-                      : 'text-[#6366F1]'
+            <div className="flex items-center justify-center gap-1.5 mb-0.5">
+              <span
+                className={`text-[11px] font-black tracking-wider uppercase ${
+                  isRunning
+                    ? isFocus
+                      ? isDark
+                        ? 'text-indigo-300'
+                        : 'text-[#6366F1]'
+                      : isDark
+                        ? 'text-emerald-300'
+                        : 'text-[#10B981]'
                     : isDark
-                      ? 'text-emerald-300'
-                      : 'text-[#10B981]'
-                  : isDark
-                    ? 'text-slate-400'
-                    : 'text-[#64748B]'
-              }`}
-            >
-              {statusLabel}
-            </span>
+                      ? 'text-slate-400'
+                      : 'text-[#64748B]'
+                }`}
+              >
+                {statusLabel}
+              </span>
+              {completedLaps >= 1 && (
+                <span
+                  data-dial-lap-badge={completedLaps}
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-black leading-none border ${
+                    isFocus
+                      ? isDark
+                        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-400/40'
+                        : 'bg-indigo-50 text-[#6366F1] border-indigo-200'
+                      : isDark
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                        : 'bg-emerald-50 text-[#059669] border-emerald-200'
+                  }`}
+                >
+                  +{completedLaps}h
+                </span>
+              )}
+            </div>
 
             <span
               data-timer-display="true"
@@ -579,7 +768,7 @@ export default function TodoFocusTimerPanel({
               presets={POMODORO_FOCUS_PRESETS}
               accent="indigo"
               isDark={isDark}
-              isDisabled={isRunning}
+              isDisabled={false}
               onChangeMinutes={onUpdateFocusMinutes}
             />
             <DurationCard
@@ -589,19 +778,17 @@ export default function TodoFocusTimerPanel({
               presets={POMODORO_BREAK_PRESETS}
               accent="emerald"
               isDark={isDark}
-              isDisabled={isRunning}
+              isDisabled={false}
               onChangeMinutes={onUpdateBreakMinutes}
             />
           </div>
 
           <p
-            className={`text-center text-[11px] font-medium h-4 ${
+            className={`text-center text-[11px] font-medium min-h-4 ${
               isDark ? 'text-slate-400' : 'text-[#64748B]'
             }`}
           >
-            {isRunning
-              ? '타이머 실행 중에는 일시정지 후 시간을 변경할 수 있습니다.'
-              : `설정값은 자동 저장되며 ${POMODORO_MIN_MINUTES}~${POMODORO_MAX_MINUTES}분까지 자유롭게 입력할 수 있습니다.`}
+            {`다이얼을 돌리거나 숫자를 입력해 ${POMODORO_MIN_MINUTES}~${POMODORO_MAX_MINUTES}분까지 자유롭게 설정할 수 있습니다. (실행 중 즉시 조절 · 자동 저장)`}
           </p>
         </div>
       </main>

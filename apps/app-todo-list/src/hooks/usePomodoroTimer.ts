@@ -129,7 +129,6 @@ export function usePomodoroTimer(options: PomodoroHookOptions = {}) {
 
   const updateFocusMinutes = useCallback(
     (minutes: number) => {
-      if (isRunning) return;
       const clamped = clampMinutes(minutes, settingsRef.current.focusMinutes);
       const next: PomodoroSettings = {
         ...settingsRef.current,
@@ -142,12 +141,11 @@ export function usePomodoroTimer(options: PomodoroHookOptions = {}) {
         setSecondsLeft(clamped * 60);
       }
     },
-    [isRunning, mode]
+    [mode]
   );
 
   const updateBreakMinutes = useCallback(
     (minutes: number) => {
-      if (isRunning) return;
       const clamped = clampMinutes(minutes, settingsRef.current.breakMinutes);
       const next: PomodoroSettings = {
         ...settingsRef.current,
@@ -160,7 +158,7 @@ export function usePomodoroTimer(options: PomodoroHookOptions = {}) {
         setSecondsLeft(clamped * 60);
       }
     },
-    [isRunning, mode]
+    [mode]
   );
 
   const togglePinTodo = useCallback((todoId: string) => {
