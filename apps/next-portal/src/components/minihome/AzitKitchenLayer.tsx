@@ -9,7 +9,11 @@ import type {
     AzitRecipeCatalogItem,
     AzitRecipeId,
 } from '@/types/azit-game.types';
-import { formatCountdownLabel, formatDurationCompact } from '@/types/azit-game.types';
+import {
+    formatCountdownLabel,
+    formatDurationCompact,
+    getEffectiveCookDurationSec,
+} from '@/types/azit-game.types';
 import { getChefSpriteMeta } from '@/data/azitCharacterAssets';
 import { getCatalogItemById } from '@/data/minihomeCatalogData';
 
@@ -1175,10 +1179,13 @@ export const KitchenStoveActionBubble: React.FC<KitchenStoveActionBubbleProps> =
                     <div className="space-y-1 max-h-[210px] overflow-y-auto pr-0.5">
                         {gameState.catalog.recipes.map((recipe) => {
                             const check = canCookRecipe(recipe);
-                            const effSec = Math.max(
-                                15,
-                                Math.round(recipe.cookDurationSec * (1 - speedBonusPct / 100))
+                            const effSec = getEffectiveCookDurationSec(
+                                recipe.cookDurationSec,
+                                speedBonusPct
                             );
+                            const rewardPct = recipe.rewardBonusPct ?? 0;
+                            const mercXpPct = recipe.mercXpBonusPct ?? 0;
+                            const expSpeedPct = recipe.expeditionSpeedBonusPct ?? 0;
                             return (
                                 <button
                                     key={`bubble-recipe-${recipe.recipeId}`}
@@ -1221,6 +1228,12 @@ export const KitchenStoveActionBubble: React.FC<KitchenStoveActionBubbleProps> =
                                                     return `${m?.emoji || ''}${m?.name || ing.id}×${ing.qty}`;
                                                 })
                                                 .join(' + ')}
+                                        </div>
+                                        <div className="text-[9.5px] font-bold text-sky-300 truncate mt-0.5">
+                                            ⚔️+{recipe.powerBonusPct}% · 🎯+{recipe.winRateBonusPct}%
+                                            {rewardPct > 0 ? ` · 💰+${rewardPct}%` : ''}
+                                            {mercXpPct > 0 ? ` · ⭐+${mercXpPct}%` : ''}
+                                            {expSpeedPct > 0 ? ` · ⚡-${expSpeedPct}%` : ''}
                                         </div>
                                     </div>
                                     <div className="text-right shrink-0">
@@ -1280,7 +1293,10 @@ export const AzitKitchenControlPanel: React.FC<AzitKitchenControlPanelProps> = (
     const readySlots = gameState.kitchenSlots.filter(
         (s) => s.status === 'cooking' && s.endsAtMs !== null && s.endsAtMs <= nowMs
     );
-    const totalDishes = Object.values(gameState.dishes).reduce((acc, v) => acc + v, 0);
+    const specialDishes = gameState.specialDishes ?? ({} as Record<AzitRecipeId, number>);
+    const totalNormalDishes = Object.values(gameState.dishes).reduce((acc, v) => acc + v, 0);
+    const totalSpecialDishes = Object.values(specialDishes).reduce((acc, v) => acc + v, 0);
+    const totalDishes = totalNormalDishes + totalSpecialDishes;
     const totalMaterials = Object.values(gameState.materials).reduce((acc, v) => acc + v, 0);
 
     const sortedMaterials = [...gameState.catalog.materials].sort((a, b) => {
@@ -1293,12 +1309,14 @@ export const AzitKitchenControlPanel: React.FC<AzitKitchenControlPanelProps> = (
         : sortedMaterials;
 
     const sortedRecipes = [...gameState.catalog.recipes].sort((a, b) => {
-        const qa = gameState.dishes[a.recipeId] || 0;
-        const qb = gameState.dishes[b.recipeId] || 0;
+        const qa = (gameState.dishes[a.recipeId] || 0) + (specialDishes[a.recipeId] || 0);
+        const qb = (gameState.dishes[b.recipeId] || 0) + (specialDishes[b.recipeId] || 0);
         return (qb > 0 ? 1 : 0) - (qa > 0 ? 1 : 0) || qb - qa;
     });
     const visibleRecipes = hideEmptyItems
-        ? sortedRecipes.filter((r) => (gameState.dishes[r.recipeId] || 0) > 0)
+        ? sortedRecipes.filter(
+              (r) => (gameState.dishes[r.recipeId] || 0) + (specialDishes[r.recipeId] || 0) > 0
+          )
         : sortedRecipes;
 
     return (
@@ -1319,7 +1337,8 @@ export const AzitKitchenControlPanel: React.FC<AzitKitchenControlPanelProps> = (
 
                 <div className="flex flex-wrap items-center gap-1.5 ml-auto">
                     <span className="px-2 py-0.5 rounded-full bg-white/90 border border-white text-[#1e293b] text-[10px] font-black font-mono shadow-sm">
-                        🍱 요리 {totalDishes} · 🧪 재료 {totalMaterials}
+                        🍱 요리 {totalDishes}
+                        {totalSpecialDishes > 0 ? ` (★${totalSpecialDishes})` : ''} · 🧪 재료 {totalMaterials}
                     </span>
                     <button
                         type="button"
@@ -1413,7 +1432,7 @@ export const AzitKitchenControlPanel: React.FC<AzitKitchenControlPanelProps> = (
                         <span className="text-[10px] font-bold text-[#64748b]">(판매·원정용)</span>
                     </span>
                     <span className="text-[10px] font-mono font-black text-orange-700">
-                        총 {totalDishes}개
+                        총 {totalDishes}개{totalSpecialDishes > 0 ? ` · ★특제 ${totalSpecialDishes}` : ''}
                     </span>
                 </div>
 
@@ -1425,26 +1444,32 @@ export const AzitKitchenControlPanel: React.FC<AzitKitchenControlPanelProps> = (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                         {visibleRecipes.map((recipe) => {
                             const qty = gameState.dishes[recipe.recipeId] || 0;
-                            const hasStock = qty > 0;
+                            const specialQty = specialDishes[recipe.recipeId] || 0;
+                            const hasStock = qty + specialQty > 0;
                             return (
                                 <div
                                     key={`dish-chip-${recipe.recipeId}`}
                                     className={`px-2.5 py-1.5 rounded-xl border flex items-center justify-between gap-1.5 text-[11px] transition-all ${
-                                        hasStock
-                                            ? 'bg-white/95 border-white text-[#1e293b] shadow-[2px_2px_5px_rgba(163,177,198,0.3),-2px_-2px_5px_rgba(255,255,255,0.9)] font-extrabold'
-                                            : 'bg-[#e8edf2]/60 border-slate-200/70 text-[#94a3b8] font-semibold'
+                                        specialQty > 0
+                                            ? 'bg-amber-50/95 border-amber-300 text-[#1e293b] shadow-[2px_2px_5px_rgba(163,177,198,0.3),-2px_-2px_5px_rgba(255,255,255,0.9)] font-extrabold'
+                                            : hasStock
+                                              ? 'bg-white/95 border-white text-[#1e293b] shadow-[2px_2px_5px_rgba(163,177,198,0.3),-2px_-2px_5px_rgba(255,255,255,0.9)] font-extrabold'
+                                              : 'bg-[#e8edf2]/60 border-slate-200/70 text-[#94a3b8] font-semibold'
                                     }`}
                                 >
                                     <span className="truncate flex items-center gap-1 min-w-0">
                                         <span>{recipe.emoji}</span>
                                         <span className="truncate">{recipe.name}</span>
                                     </span>
-                                    <span
-                                        className={`font-mono shrink-0 ${
-                                            hasStock ? 'text-orange-600 font-black' : 'text-[#94a3b8]'
-                                        }`}
-                                    >
-                                        ×{qty}
+                                    <span className="font-mono shrink-0 flex items-center gap-1">
+                                        {specialQty > 0 && (
+                                            <span className="px-1 py-0.2 rounded bg-amber-400/90 text-slate-950 text-[9.5px] font-black">
+                                                ★{specialQty}
+                                            </span>
+                                        )}
+                                        <span className={qty > 0 ? 'text-orange-600 font-black' : 'text-[#94a3b8]'}>
+                                            ×{qty}
+                                        </span>
                                     </span>
                                 </div>
                             );

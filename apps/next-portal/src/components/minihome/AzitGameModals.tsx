@@ -5,14 +5,21 @@ import type {
     AzitBattleReport,
     AzitChefCode,
     AzitCropId,
+    AzitDishEffectiveBuffs,
+    AzitDishQuality,
     AzitFarmerRole,
     AzitFullGameState,
     AzitMercCode,
+    AzitRecipeCatalogItem,
     AzitRecipeId,
     AzitZoneId,
     UseAzitGameController,
 } from '@/types/azit-game.types';
-import { formatDurationCompact } from '@/types/azit-game.types';
+import {
+    formatDurationCompact,
+    getDishEffectiveBuffs,
+    getDishSellPrice,
+} from '@/types/azit-game.types';
 import {
     getChefSpriteMeta,
     getFarmerGradeBadge,
@@ -32,17 +39,41 @@ interface AzitGameModalsProps {
     onOpenMercModal: () => void;
 }
 
+interface EligibleDishOption {
+    recipe: AzitRecipeCatalogItem;
+    quality: AzitDishQuality;
+    qty: number;
+    buffs: AzitDishEffectiveBuffs;
+}
+
 function previewWinRate(params: {
     gameState: AzitFullGameState;
     zoneId: AzitZoneId;
     partyCodes: AzitMercCode[];
     dishRecipeId: AzitRecipeId | null;
-}): { rawPower: number; effectivePower: number; winRatePct: number } {
-    const { gameState, zoneId, partyCodes, dishRecipeId } = params;
+    dishQuality: AzitDishQuality;
+}): {
+    rawPower: number;
+    effectivePower: number;
+    winRatePct: number;
+    maxWinRateCap: number;
+    effectiveDurationSec: number;
+    buffs: AzitDishEffectiveBuffs | null;
+} {
+    const { gameState, zoneId, partyCodes, dishRecipeId, dishQuality } = params;
     const zone = gameState.catalog.zones.find((z) => z.zoneId === zoneId);
-    const recipe = dishRecipeId ? gameState.catalog.recipes.find((r) => r.recipeId === dishRecipeId) : undefined;
+    const recipe = dishRecipeId
+        ? gameState.catalog.recipes.find((r) => r.recipeId === dishRecipeId)
+        : undefined;
     if (!zone || partyCodes.length === 0) {
-        return { rawPower: 0, effectivePower: 0, winRatePct: 25 };
+        return {
+            rawPower: 0,
+            effectivePower: 0,
+            winRatePct: 25,
+            maxWinRateCap: 92,
+            effectiveDurationSec: zone?.durationSec ?? 0,
+            buffs: null,
+        };
     }
 
     let rawPower = 0;
@@ -59,15 +90,33 @@ function previewWinRate(params: {
         return {
             rawPower,
             effectivePower: rawPower,
-            winRatePct: Math.max(25, Math.min(95, ratio + partyWinBonus)),
+            winRatePct: Math.max(25, Math.min(92, ratio + partyWinBonus)),
+            maxWinRateCap: 92,
+            effectiveDurationSec: zone.durationSec,
+            buffs: null,
         };
     }
 
-    const effectivePower = Math.round(rawPower * (1 + recipe.powerBonusPct / 100));
+    const buffs = getDishEffectiveBuffs(recipe, dishQuality);
+    const effectivePower = Math.round(rawPower * (1 + buffs.powerBonusPct / 100));
     const ratioScore = Math.round((effectivePower / Math.max(1, zone.recommendedPower)) * 72);
-    const clampedBase = Math.max(25, Math.min(95, ratioScore));
-    const totalRate = Math.max(25, Math.min(96, clampedBase + recipe.winRateBonusPct + partyWinBonus));
-    return { rawPower, effectivePower, winRatePct: totalRate };
+    const clampedBase = Math.max(25, Math.min(buffs.maxWinRateCap, ratioScore));
+    const totalRate = Math.max(
+        25,
+        Math.min(buffs.maxWinRateCap, clampedBase + buffs.winRateBonusPct + partyWinBonus)
+    );
+    const effectiveDurationSec = Math.max(
+        60,
+        Math.round(zone.durationSec * (1 - buffs.expeditionSpeedBonusPct / 100))
+    );
+    return {
+        rawPower,
+        effectivePower,
+        winRatePct: totalRate,
+        maxWinRateCap: buffs.maxWinRateCap,
+        effectiveDurationSec,
+        buffs,
+    };
 }
 
 export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
@@ -82,7 +131,10 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
     const [hideEmptyMarket, setHideEmptyMarket] = useState<boolean>(false);
     const [selectedZoneId, setSelectedZoneId] = useState<AzitZoneId>('zone-slime');
     const [selectedParty, setSelectedParty] = useState<AzitMercCode[]>([]);
-    const [selectedDishId, setSelectedDishId] = useState<AzitRecipeId | null>(null);
+    const [selectedDish, setSelectedDish] = useState<{
+        recipeId: AzitRecipeId;
+        quality: AzitDishQuality;
+    } | null>(null);
 
     const idleMercs = useMemo(
         () => gameState.mercenaries.filter((m) => m.status === 'idle'),
@@ -94,12 +146,33 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
         [gameState.catalog.zones, selectedZoneId]
     );
 
-    const eligibleDishes = useMemo(() => {
+    const eligibleDishes = useMemo<EligibleDishOption[]>(() => {
         if (!selectedZone) return [];
-        return gameState.catalog.recipes.filter(
-            (r) => r.tier >= selectedZone.minDishTier && (gameState.dishes[r.recipeId] || 0) > 0
-        );
-    }, [gameState.catalog.recipes, gameState.dishes, selectedZone]);
+        const options: EligibleDishOption[] = [];
+        const specialDishes = gameState.specialDishes ?? ({} as Record<AzitRecipeId, number>);
+        for (const recipe of gameState.catalog.recipes) {
+            if (recipe.tier < selectedZone.minDishTier) continue;
+            const specialQty = specialDishes[recipe.recipeId] || 0;
+            if (specialQty > 0) {
+                options.push({
+                    recipe,
+                    quality: 'special',
+                    qty: specialQty,
+                    buffs: getDishEffectiveBuffs(recipe, 'special'),
+                });
+            }
+            const normalQty = gameState.dishes[recipe.recipeId] || 0;
+            if (normalQty > 0) {
+                options.push({
+                    recipe,
+                    quality: 'normal',
+                    qty: normalQty,
+                    buffs: getDishEffectiveBuffs(recipe, 'normal'),
+                });
+            }
+        }
+        return options;
+    }, [gameState.catalog.recipes, gameState.dishes, gameState.specialDishes, selectedZone]);
 
     useEffect(() => {
         if (activeModal !== 'expedition') return;
@@ -111,13 +184,23 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
     useEffect(() => {
         if (activeModal !== 'expedition') return;
         if (eligibleDishes.length > 0) {
-            if (!selectedDishId || !eligibleDishes.some((d) => d.recipeId === selectedDishId)) {
-                setSelectedDishId(eligibleDishes[0].recipeId);
+            if (
+                !selectedDish ||
+                !eligibleDishes.some(
+                    (d) =>
+                        d.recipe.recipeId === selectedDish.recipeId &&
+                        d.quality === selectedDish.quality
+                )
+            ) {
+                setSelectedDish({
+                    recipeId: eligibleDishes[0].recipe.recipeId,
+                    quality: eligibleDishes[0].quality,
+                });
             }
         } else {
-            setSelectedDishId(null);
+            setSelectedDish(null);
         }
-    }, [activeModal, eligibleDishes, selectedDishId]);
+    }, [activeModal, eligibleDishes, selectedDish]);
 
     const report: AzitBattleReport | null = azitGame.lastBattleReport;
 
@@ -127,9 +210,10 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                 gameState,
                 zoneId: selectedZone.zoneId,
                 partyCodes: selectedParty,
-                dishRecipeId: selectedDishId,
+                dishRecipeId: selectedDish?.recipeId ?? null,
+                dishQuality: selectedDish?.quality ?? 'normal',
             }),
-        [gameState, selectedZone.zoneId, selectedParty, selectedDishId]
+        [gameState, selectedZone.zoneId, selectedParty, selectedDish]
     );
 
     const togglePartyMember = (code: AzitMercCode) => {
@@ -145,8 +229,13 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
     };
 
     const handleDispatchSubmit = async () => {
-        if (!selectedDishId || selectedParty.length === 0) return;
-        const ok = await azitGame.startExpedition(selectedZone.zoneId, selectedParty, selectedDishId);
+        if (!selectedDish || selectedParty.length === 0) return;
+        const ok = await azitGame.startExpedition(
+            selectedZone.zoneId,
+            selectedParty,
+            selectedDish.recipeId,
+            selectedDish.quality
+        );
         if (ok) {
             onCloseModal();
         }
@@ -307,12 +396,24 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
 
                             {marketTab === 'dishes' &&
                                 (() => {
-                                    const visibleRecipes = hideEmptyMarket
-                                        ? gameState.catalog.recipes.filter(
-                                              (r) => (gameState.dishes[r.recipeId] || 0) > 0
-                                          )
-                                        : gameState.catalog.recipes;
-                                    if (visibleRecipes.length === 0) {
+                                    const specialDishes =
+                                        gameState.specialDishes ?? ({} as Record<AzitRecipeId, number>);
+                                    const dishEntries: Array<{
+                                        recipe: AzitRecipeCatalogItem;
+                                        quality: AzitDishQuality;
+                                        qty: number;
+                                    }> = [];
+                                    for (const recipe of gameState.catalog.recipes) {
+                                        const spQty = specialDishes[recipe.recipeId] || 0;
+                                        if (spQty > 0) {
+                                            dishEntries.push({ recipe, quality: 'special', qty: spQty });
+                                        }
+                                        const normQty = gameState.dishes[recipe.recipeId] || 0;
+                                        if (!hideEmptyMarket || normQty > 0) {
+                                            dishEntries.push({ recipe, quality: 'normal', qty: normQty });
+                                        }
+                                    }
+                                    if (dishEntries.length === 0) {
                                         return (
                                             <div className="py-10 text-center text-xs font-bold text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
                                                 보유 중인 완성 요리가 없습니다.
@@ -321,23 +422,35 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                     }
                                     return (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            {visibleRecipes.map((recipe) => {
-                                                const qty = gameState.dishes[recipe.recipeId] || 0;
+                                            {dishEntries.map(({ recipe, quality, qty }) => {
+                                                const isSpecial = quality === 'special';
+                                                const unitPrice = getDishSellPrice(recipe, quality);
                                                 return (
                                                     <div
-                                                        key={`market-dish-${recipe.recipeId}`}
+                                                        key={`market-dish-${quality}-${recipe.recipeId}`}
                                                         className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
-                                                            qty > 0
-                                                                ? 'bg-orange-50/70 border-orange-300'
-                                                                : 'bg-slate-50 border-slate-200 opacity-75'
+                                                            isSpecial
+                                                                ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-400 shadow-xs'
+                                                                : qty > 0
+                                                                  ? 'bg-orange-50/70 border-orange-300'
+                                                                  : 'bg-slate-50 border-slate-200 opacity-75'
                                                         }`}
                                                     >
                                                         <div className="flex items-center gap-2.5 min-w-0">
-                                                            <span className="w-10 h-10 rounded-xl bg-white border border-orange-200 flex items-center justify-center text-xl shrink-0">
+                                                            <span
+                                                                className={`w-10 h-10 rounded-xl bg-white border flex items-center justify-center text-xl shrink-0 ${
+                                                                    isSpecial ? 'border-amber-300' : 'border-orange-200'
+                                                                }`}
+                                                            >
                                                                 {recipe.emoji}
                                                             </span>
                                                             <div className="min-w-0">
                                                                 <div className="flex items-center gap-1.5 min-w-0">
+                                                                    {isSpecial && (
+                                                                        <span className="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[9px] font-black shrink-0">
+                                                                            ★특제
+                                                                        </span>
+                                                                    )}
                                                                     <span className="text-xs font-black text-slate-900 truncate">
                                                                         {recipe.name} ({qty}개)
                                                                     </span>
@@ -348,7 +461,8 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                                                     )}
                                                                 </div>
                                                                 <div className="text-[11px] font-extrabold text-amber-700">
-                                                                    판매 +{recipe.sellPrice.toLocaleString()}P · 티어{recipe.tier}
+                                                                    판매 +{unitPrice.toLocaleString()}P
+                                                                    {isSpecial ? ' (1.5배)' : ''} · 티어{recipe.tier}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -356,15 +470,21 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                                             <button
                                                                 type="button"
                                                                 disabled={qty < 1 || azitGame.isActing}
-                                                                onClick={() => azitGame.sellDish(recipe.recipeId, 1)}
-                                                                className="px-2.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                onClick={() => azitGame.sellDish(recipe.recipeId, 1, quality)}
+                                                                className={`px-2.5 py-1.5 rounded-xl text-white text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                                                                    isSpecial
+                                                                        ? 'bg-amber-600 hover:bg-amber-700'
+                                                                        : 'bg-orange-500 hover:bg-orange-600'
+                                                                }`}
                                                             >
                                                                 1개
                                                             </button>
                                                             <button
                                                                 type="button"
                                                                 disabled={qty < 1 || azitGame.isActing}
-                                                                onClick={() => azitGame.sellDish(recipe.recipeId, qty)}
+                                                                onClick={() =>
+                                                                    azitGame.sellDish(recipe.recipeId, qty, quality)
+                                                                }
                                                                 className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                                             >
                                                                 모두
@@ -861,7 +981,7 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                                     조리 단축 -{owned ? owned.speedBonusPct : chef.baseSpeedBonusPct}%
                                                 </span>
                                                 <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
-                                                    2배 대성공 {owned ? owned.greatChancePct : chef.baseGreatChancePct}%
+                                                    ★특제 대성공 {owned ? owned.greatChancePct : chef.baseGreatChancePct}% (버프+20%·판매1.5배)
                                                 </span>
                                             </div>
                                         </div>
@@ -1237,30 +1357,55 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        {eligibleDishes.map((dish) => {
-                                            const qty = gameState.dishes[dish.recipeId] || 0;
-                                            const picked = selectedDishId === dish.recipeId;
+                                        {eligibleDishes.map(({ recipe, quality, qty, buffs }) => {
+                                            const isSpecial = quality === 'special';
+                                            const picked =
+                                                selectedDish?.recipeId === recipe.recipeId &&
+                                                selectedDish?.quality === quality;
                                             return (
                                                 <button
-                                                    key={`pick-dish-${dish.recipeId}`}
+                                                    key={`pick-dish-${quality}-${recipe.recipeId}`}
                                                     type="button"
-                                                    onClick={() => setSelectedDishId(dish.recipeId)}
+                                                    onClick={() =>
+                                                        setSelectedDish({
+                                                            recipeId: recipe.recipeId,
+                                                            quality,
+                                                        })
+                                                    }
                                                     className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
                                                         picked
-                                                            ? 'bg-orange-50 border-orange-500 ring-2 ring-orange-200'
-                                                            : 'bg-white border-slate-200 hover:border-orange-300'
+                                                            ? isSpecial
+                                                                ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-200'
+                                                                : 'bg-orange-50 border-orange-500 ring-2 ring-orange-200'
+                                                            : isSpecial
+                                                              ? 'bg-amber-50/40 border-amber-300 hover:border-amber-400'
+                                                              : 'bg-white border-slate-200 hover:border-orange-300'
                                                     }`}
                                                 >
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-black text-slate-900 truncate">
-                                                            {dish.emoji} {dish.name} (보유 {qty}개)
+                                                    <div className="min-w-0 space-y-0.5">
+                                                        <div className="text-xs font-black text-slate-900 truncate flex items-center gap-1">
+                                                            {isSpecial && (
+                                                                <span className="px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 text-[9px] font-black shrink-0">
+                                                                    ★특제 +20%
+                                                                </span>
+                                                            )}
+                                                            <span>{recipe.emoji}</span>
+                                                            <span className="truncate">
+                                                                {recipe.name} ({qty}개)
+                                                            </span>
                                                         </div>
                                                         <div className="text-[10px] font-bold text-emerald-700">
-                                                            전투력 +{dish.powerBonusPct}% · 승률 +{dish.winRateBonusPct}%
+                                                            ⚔️전투력 +{buffs.powerBonusPct}% · 🎯승률 +{buffs.winRateBonusPct}% (상한 {buffs.maxWinRateCap}%)
+                                                        </div>
+                                                        <div className="text-[10px] font-bold text-indigo-700">
+                                                            💰전리품 +{buffs.rewardBonusPct}% · ⭐용병EXP +{buffs.mercXpBonusPct}%
+                                                            {buffs.expeditionSpeedBonusPct > 0
+                                                                ? ` · ⚡시간 -${buffs.expeditionSpeedBonusPct}%`
+                                                                : ''}
                                                         </div>
                                                     </div>
                                                     <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 text-[10px] font-black shrink-0">
-                                                        티어{dish.tier}
+                                                        티어{recipe.tier}
                                                     </span>
                                                 </button>
                                             );
@@ -1276,7 +1421,21 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                     파티 유효 전투력{' '}
                                     <span className="text-indigo-600">{previewStats.effectivePower.toLocaleString()}</span> /
                                     권장 {selectedZone.recommendedPower.toLocaleString()} ·{' '}
-                                    <span className="text-emerald-600">예상 승률 {previewStats.winRatePct}%</span>
+                                    <span className="text-emerald-600">
+                                        예상 승률 {previewStats.winRatePct}% (상한 {previewStats.maxWinRateCap}%)
+                                    </span>
+                                </div>
+                                <div className="text-[11px] font-bold text-slate-600">
+                                    ⏱ 예상 소요{' '}
+                                    <span className="text-indigo-700 font-black">
+                                        {formatDurationCompact(previewStats.effectiveDurationSec)}
+                                    </span>
+                                    {previewStats.buffs && (
+                                        <>
+                                            {' '}· 💰전리품 +{previewStats.buffs.rewardBonusPct}% · ⭐용병EXP +
+                                            {previewStats.buffs.mercXpBonusPct}%
+                                        </>
+                                    )}
                                 </div>
                                 <div className="text-[11px] font-bold text-rose-600">
                                     ⚠️ 출정비 {selectedZone.entryCost}P · 도시락 1개 소모 (패배 시 복구 불가)
@@ -1287,7 +1446,7 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                                 type="button"
                                 disabled={
                                     selectedParty.length === 0 ||
-                                    !selectedDishId ||
+                                    !selectedDish ||
                                     gameState.veraPoints < selectedZone.entryCost ||
                                     azitGame.isActing
                                 }
@@ -1337,32 +1496,48 @@ export const AzitGameModals: React.FC<AzitGameModalsProps> = ({
                             </div>
 
                             {report.won ? (
-                                <div className="grid grid-cols-3 gap-2 text-center">
-                                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200">
-                                        <div className="text-[10px] font-bold text-amber-700">전리품 포인트</div>
-                                        <div className="text-sm font-black text-amber-900 font-mono">
-                                            +{report.rewardPoints.toLocaleString()}P
+                                <div className="space-y-2.5">
+                                    <div className="grid grid-cols-3 gap-2 text-center">
+                                        <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200">
+                                            <div className="text-[10px] font-bold text-amber-700">전리품 포인트</div>
+                                            <div className="text-sm font-black text-amber-900 font-mono">
+                                                +{report.rewardPoints.toLocaleString()}P
+                                            </div>
+                                        </div>
+                                        <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
+                                            <div className="text-[10px] font-bold text-emerald-700">아지트 EXP</div>
+                                            <div className="text-sm font-black text-emerald-900 font-mono">
+                                                +{report.rewardXp}
+                                            </div>
+                                        </div>
+                                        <div className="p-2.5 rounded-xl bg-violet-50 border border-violet-200">
+                                            <div className="text-[10px] font-bold text-violet-700">희귀 재료</div>
+                                            <div className="text-xs font-black text-violet-900">
+                                                {Object.entries(report.rewardMaterials)
+                                                    .map(([matId, q]) => {
+                                                        const mDef = gameState.catalog.materials.find(
+                                                            (m) => m.materialId === matId
+                                                        );
+                                                        return `${mDef?.emoji || '🎁'} ×${q ?? 0}`;
+                                                    })
+                                                    .join(', ')}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
-                                        <div className="text-[10px] font-bold text-emerald-700">아지트 EXP</div>
-                                        <div className="text-sm font-black text-emerald-900 font-mono">
-                                            +{report.rewardXp}
+                                    {(report.rewardMercXp || report.appliedBuffs) && (
+                                        <div className="px-3 py-2 rounded-xl bg-indigo-50 border border-indigo-200 text-[11px] font-bold text-indigo-900 flex flex-wrap items-center justify-between gap-2">
+                                            <span>
+                                                {report.dishQuality === 'special' ? '★특제 도시락 버프: ' : '도시락 버프: '}
+                                                전투력 +{report.appliedBuffs?.powerBonusPct ?? 0}% · 전리품 +
+                                                {report.appliedBuffs?.rewardBonusPct ?? 0}%
+                                            </span>
+                                            {typeof report.rewardMercXp === 'number' && report.rewardMercXp > 0 && (
+                                                <span className="font-black text-indigo-700">
+                                                    ⭐ 용병 EXP +{report.rewardMercXp}
+                                                </span>
+                                            )}
                                         </div>
-                                    </div>
-                                    <div className="p-2.5 rounded-xl bg-violet-50 border border-violet-200">
-                                        <div className="text-[10px] font-bold text-violet-700">희귀 재료</div>
-                                        <div className="text-xs font-black text-violet-900">
-                                            {Object.entries(report.rewardMaterials)
-                                                .map(([matId, q]) => {
-                                                    const mDef = gameState.catalog.materials.find(
-                                                        (m) => m.materialId === matId
-                                                    );
-                                                    return `${mDef?.emoji || '🎁'} ×${q ?? 0}`;
-                                                })
-                                                .join(', ')}
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-800">

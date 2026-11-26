@@ -130,6 +130,17 @@ export interface AzitRecipeIngredient {
     qty: number;
 }
 
+export type AzitDishQuality = 'normal' | 'special';
+
+export interface AzitDishEffectiveBuffs {
+    powerBonusPct: number;
+    winRateBonusPct: number;
+    rewardBonusPct: number;
+    mercXpBonusPct: number;
+    expeditionSpeedBonusPct: number;
+    maxWinRateCap: number;
+}
+
 export interface AzitRecipeCatalogItem {
     recipeId: AzitRecipeId;
     name: string;
@@ -139,6 +150,9 @@ export interface AzitRecipeCatalogItem {
     sellPrice: number;
     powerBonusPct: number;
     winRateBonusPct: number;
+    rewardBonusPct?: number;
+    mercXpBonusPct?: number;
+    expeditionSpeedBonusPct?: number;
     azitXpReward: number;
     requiredAzitLevel: number;
     description: string;
@@ -296,6 +310,7 @@ export interface AzitExpeditionRecord {
     zoneId: AzitZoneId;
     partyMercCodes: AzitMercCode[];
     dishRecipeId: AzitRecipeId;
+    dishQuality?: AzitDishQuality;
     entryCost: number;
     predictedWinRate: number;
     status: 'running' | 'won' | 'lost';
@@ -327,6 +342,9 @@ export interface AzitBattleReport {
     predictedWinRate: number;
     rewardPoints: number;
     rewardXp: number;
+    rewardMercXp?: number;
+    dishQuality?: AzitDishQuality;
+    appliedBuffs?: AzitDishEffectiveBuffs;
     rewardMaterials: Partial<Record<AzitMaterialId, number>>;
     entryCostLost: number;
     lostDishId: AzitRecipeId;
@@ -361,6 +379,7 @@ export interface AzitFullGameState {
     garden: ServerGardenState;
     materials: Record<AzitMaterialId, number>;
     dishes: Record<AzitRecipeId, number>;
+    specialDishes: Record<AzitRecipeId, number>;
     chefs: AzitChefRecord[];
     kitchenSlots: AzitKitchenSlotState[];
     mercenaries: AzitMercenaryRecord[];
@@ -412,11 +431,74 @@ export interface UseAzitGameController {
     upgradeChef: (chefCode: AzitChefCode) => Promise<boolean>;
     startCooking: (slotIndex: number, recipeId: AzitRecipeId, chefCode?: AzitChefCode | null) => Promise<boolean>;
     claimCooking: (slotIndex: number) => Promise<boolean>;
-    sellDish: (recipeId: AzitRecipeId, quantity?: number) => Promise<boolean>;
+    sellDish: (recipeId: AzitRecipeId, quantity?: number, quality?: AzitDishQuality) => Promise<boolean>;
     hireMercenary: (mercCode: AzitMercCode) => Promise<boolean>;
     upgradeMercenary: (mercCode: AzitMercCode) => Promise<boolean>;
-    startExpedition: (zoneId: AzitZoneId, partyMercCodes: AzitMercCode[], dishRecipeId: AzitRecipeId) => Promise<boolean>;
+    startExpedition: (
+        zoneId: AzitZoneId,
+        partyMercCodes: AzitMercCode[],
+        dishRecipeId: AzitRecipeId,
+        dishQuality?: AzitDishQuality
+    ) => Promise<boolean>;
     claimExpedition: (expeditionId: number) => Promise<boolean>;
+}
+
+export const MIN_COOK_DURATION_SEC = 60;
+export const MAX_CHEF_SPEED_BONUS_PCT = 40;
+export const SPECIAL_DISH_BUFF_MULTIPLIER = 1.2;
+export const SPECIAL_DISH_SELL_MULTIPLIER = 1.5;
+export const DISH_TIER_MAX_WIN_RATE: Record<1 | 2 | 3 | 4, number> = {
+    1: 92,
+    2: 95,
+    3: 97,
+    4: 99,
+};
+
+export function getEffectiveCookDurationSec(baseDurationSec: number, speedBonusPct: number): number {
+    const clampedSpeed = Math.max(0, Math.min(MAX_CHEF_SPEED_BONUS_PCT, speedBonusPct));
+    return Math.max(MIN_COOK_DURATION_SEC, Math.round(baseDurationSec * (1 - clampedSpeed / 100)));
+}
+
+export function getDishSellPrice(recipe: AzitRecipeCatalogItem, quality: AzitDishQuality = 'normal'): number {
+    return quality === 'special'
+        ? Math.round(recipe.sellPrice * SPECIAL_DISH_SELL_MULTIPLIER)
+        : recipe.sellPrice;
+}
+
+export function getDishMaxWinRateCap(tier: 1 | 2 | 3 | 4, quality: AzitDishQuality = 'normal'): number {
+    const baseCap = DISH_TIER_MAX_WIN_RATE[tier] ?? 95;
+    return Math.min(99, baseCap + (quality === 'special' ? 1 : 0));
+}
+
+export function getDishEffectiveBuffs(
+    recipe: AzitRecipeCatalogItem,
+    quality: AzitDishQuality = 'normal'
+): AzitDishEffectiveBuffs {
+    const baseReward = recipe.rewardBonusPct ?? 0;
+    const baseMercXp = recipe.mercXpBonusPct ?? 0;
+    const baseSpeed = recipe.expeditionSpeedBonusPct ?? 0;
+    const maxWinRateCap = getDishMaxWinRateCap(recipe.tier, quality);
+    if (quality !== 'special') {
+        return {
+            powerBonusPct: recipe.powerBonusPct,
+            winRateBonusPct: recipe.winRateBonusPct,
+            rewardBonusPct: baseReward,
+            mercXpBonusPct: baseMercXp,
+            expeditionSpeedBonusPct: baseSpeed,
+            maxWinRateCap,
+        };
+    }
+    return {
+        powerBonusPct: Math.round(recipe.powerBonusPct * SPECIAL_DISH_BUFF_MULTIPLIER),
+        winRateBonusPct: Math.round(recipe.winRateBonusPct * SPECIAL_DISH_BUFF_MULTIPLIER),
+        rewardBonusPct: baseReward > 0 ? Math.round(baseReward * SPECIAL_DISH_BUFF_MULTIPLIER) : 2,
+        mercXpBonusPct: Math.round(baseMercXp * SPECIAL_DISH_BUFF_MULTIPLIER),
+        expeditionSpeedBonusPct: Math.min(
+            30,
+            baseSpeed > 0 ? Math.round(baseSpeed * SPECIAL_DISH_BUFF_MULTIPLIER) : 2
+        ),
+        maxWinRateCap,
+    };
 }
 
 export function formatDurationCompact(totalSec: number): string {

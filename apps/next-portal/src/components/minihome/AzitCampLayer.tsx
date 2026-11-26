@@ -957,7 +957,9 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
     onOpenExpeditionModal,
 }) => {
     const totalPower = gameState.mercenaries.reduce((sum, m) => sum + m.power, 0);
-    const totalDishes = Object.values(gameState.dishes).reduce((sum, v) => sum + v, 0);
+    const totalDishes =
+        Object.values(gameState.dishes).reduce((sum, v) => sum + v, 0) +
+        Object.values(gameState.specialDishes ?? {}).reduce((sum, v) => sum + v, 0);
 
     const calcProgressPct = (exp: AzitExpeditionRecord): number => {
         const total = Math.max(1, exp.endsAtMs - exp.startedAtMs);
@@ -1031,7 +1033,13 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
                                             {zone?.emoji} {zone?.name || exp.zoneId}
                                         </div>
                                         <div className="text-[10px] text-[#64748b] font-bold truncate">
-                                            도시락: {recipe?.emoji} {recipe?.name} · 예상 승률{' '}
+                                            도시락:{' '}
+                                            {exp.dishQuality === 'special' && (
+                                                <span className="px-1 py-0.2 mr-1 rounded bg-amber-200 text-amber-900 font-black">
+                                                    ★특제
+                                                </span>
+                                            )}
+                                            {recipe?.emoji} {recipe?.name} · 예상 승률{' '}
                                             <span className="text-emerald-700 font-black">
                                                 {exp.predictedWinRate}%
                                             </span>

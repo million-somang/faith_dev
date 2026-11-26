@@ -506,13 +506,23 @@ export class AzitGameController {
             if (!userId) {
                 return c.json({ success: false, error: { code: 401, message: '로그인이 필요합니다.' } }, 401);
             }
-            const body = await readJsonBody<{ recipeId?: unknown; quantity?: unknown }>(c);
+            const body = await readJsonBody<{ recipeId?: unknown; quantity?: unknown; quality?: unknown }>(c);
             const recipeId = typeof body.recipeId === 'string' ? body.recipeId.trim() : '';
             const quantity = body.quantity === undefined ? 1 : parseIntegerField(body.quantity);
+            let quality: 'normal' | 'special' = 'normal';
+            if (body.quality !== undefined) {
+                if (body.quality !== 'normal' && body.quality !== 'special') {
+                    return c.json(
+                        { success: false, error: { code: 400, message: '올바른 요리 등급(normal 또는 special)이 아닙니다.' } },
+                        400
+                    );
+                }
+                quality = body.quality;
+            }
             if (!recipeId || !Number.isInteger(quantity) || quantity < 1 || quantity > 999) {
                 return c.json({ success: false, error: { code: 400, message: '판매할 요리와 수량(1~999)을 확인해 주세요.' } }, 400);
             }
-            const result = await AzitGameService.sellDish(userId, recipeId, quantity);
+            const result = await AzitGameService.sellDish(userId, recipeId, quantity, quality);
             return c.json({ success: true, data: result });
         } catch (err) {
             return handleControllerError(c, err, '요리 판매에 실패했습니다.');
@@ -565,9 +575,23 @@ export class AzitGameController {
                 zoneId?: unknown;
                 partyMercCodes?: unknown;
                 dishRecipeId?: unknown;
+                dishQuality?: unknown;
             }>(c);
             const zoneId = typeof body.zoneId === 'string' ? body.zoneId.trim() : '';
             const dishRecipeId = typeof body.dishRecipeId === 'string' ? body.dishRecipeId.trim() : '';
+            let dishQuality: 'normal' | 'special' = 'normal';
+            if (body.dishQuality !== undefined) {
+                if (body.dishQuality !== 'normal' && body.dishQuality !== 'special') {
+                    return c.json(
+                        {
+                            success: false,
+                            error: { code: 400, message: '올바른 도시락 등급(normal 또는 special)이 아닙니다.' },
+                        },
+                        400
+                    );
+                }
+                dishQuality = body.dishQuality;
+            }
             const partyMercCodes = Array.isArray(body.partyMercCodes)
                 ? body.partyMercCodes.filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
                 : [];
@@ -585,6 +609,7 @@ export class AzitGameController {
                 zoneId,
                 partyMercCodes,
                 dishRecipeId,
+                dishQuality,
             });
             return c.json({ success: true, data: result });
         } catch (err) {

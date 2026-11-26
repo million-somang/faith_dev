@@ -6,6 +6,7 @@ import type {
     AzitBattleReport,
     AzitChefCode,
     AzitCropId,
+    AzitDishQuality,
     AzitFarmerCode,
     AzitFarmerConfigurePayload,
     AzitFertilizerId,
@@ -55,6 +56,7 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
     const applyState = useCallback((nextState: AzitFullGameState) => {
         const normalizedState: AzitFullGameState = {
             ...nextState,
+            specialDishes: nextState.specialDishes ?? ({} as Record<AzitRecipeId, number>),
             farmers: Array.isArray(nextState.farmers) ? nextState.farmers : [],
             farmerLogs: Array.isArray(nextState.farmerLogs) ? nextState.farmerLogs : [],
             catalog: {
@@ -275,7 +277,8 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
     );
 
     const sellDish = useCallback(
-        (recipeId: AzitRecipeId, quantity = 1) => runAction('/api/azit-game/dishes/sell', { recipeId, quantity }),
+        (recipeId: AzitRecipeId, quantity = 1, quality: AzitDishQuality = 'normal') =>
+            runAction('/api/azit-game/dishes/sell', { recipeId, quantity, quality }),
         [runAction]
     );
 
@@ -290,8 +293,18 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
     );
 
     const startExpedition = useCallback(
-        (zoneId: AzitZoneId, partyMercCodes: AzitMercCode[], dishRecipeId: AzitRecipeId) =>
-            runAction('/api/azit-game/expeditions/start', { zoneId, partyMercCodes, dishRecipeId }),
+        (
+            zoneId: AzitZoneId,
+            partyMercCodes: AzitMercCode[],
+            dishRecipeId: AzitRecipeId,
+            dishQuality: AzitDishQuality = 'normal'
+        ) =>
+            runAction('/api/azit-game/expeditions/start', {
+                zoneId,
+                partyMercCodes,
+                dishRecipeId,
+                dishQuality,
+            }),
         [runAction]
     );
 

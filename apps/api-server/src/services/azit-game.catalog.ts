@@ -122,6 +122,17 @@ export interface AzitRecipeIngredient {
     qty: number;
 }
 
+export type AzitDishQuality = 'normal' | 'special';
+
+export interface AzitDishEffectiveBuffs {
+    powerBonusPct: number;
+    winRateBonusPct: number;
+    rewardBonusPct: number;
+    mercXpBonusPct: number;
+    expeditionSpeedBonusPct: number;
+    maxWinRateCap: number;
+}
+
 export interface AzitRecipeDef {
     recipeId: AzitRecipeId;
     name: string;
@@ -131,6 +142,9 @@ export interface AzitRecipeDef {
     sellPrice: number;
     powerBonusPct: number;
     winRateBonusPct: number;
+    rewardBonusPct: number;
+    mercXpBonusPct: number;
+    expeditionSpeedBonusPct: number;
     azitXpReward: number;
     requiredAzitLevel: number;
     description: string;
@@ -227,6 +241,16 @@ export const GARDEN_WATER_COOLDOWN_MS = 8 * 60 * 60 * 1000;
 export const GARDEN_HARVEST_AZIT_XP = 8;
 export const MAX_FARMER_LEVEL = 20;
 export const FARMER_TASK_XP = 5;
+export const MIN_COOK_DURATION_SEC = 60;
+export const MAX_CHEF_SPEED_BONUS_PCT = 40;
+export const SPECIAL_DISH_BUFF_MULTIPLIER = 1.2;
+export const SPECIAL_DISH_SELL_MULTIPLIER = 1.5;
+export const DISH_TIER_MAX_WIN_RATE: Record<1 | 2 | 3 | 4, number> = {
+    1: 92,
+    2: 95,
+    3: 97,
+    4: 99,
+};
 
 export const AZIT_CROPS: AzitCropDef[] = [
     {
@@ -503,10 +527,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '따뜻한 당근 수프',
         emoji: '🥣',
         tier: 1,
-        cookDurationSec: 120,
+        cookDurationSec: 300,
         sellPrice: 30,
         powerBonusPct: 15,
-        winRateBonusPct: 5,
+        winRateBonusPct: 4,
+        rewardBonusPct: 0,
+        mercXpBonusPct: 5,
+        expeditionSpeedBonusPct: 0,
         azitXpReward: 12,
         requiredAzitLevel: 1,
         description: '무료 당근만으로 손쉽게 끓여내는 든든한 기초 원정 도시락입니다.',
@@ -517,10 +544,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '불향 고추 볶음밥',
         emoji: '🍛',
         tier: 1,
-        cookDurationSec: 300,
+        cookDurationSec: 720,
         sellPrice: 75,
         powerBonusPct: 25,
-        winRateBonusPct: 8,
+        winRateBonusPct: 7,
+        rewardBonusPct: 3,
+        mercXpBonusPct: 10,
+        expeditionSpeedBonusPct: 2,
         azitXpReward: 18,
         requiredAzitLevel: 1,
         description: '매콤한 청양고추로 용병들의 사기를 돋우는 인기 메뉴입니다.',
@@ -534,10 +564,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '진한 토마토 스튜',
         emoji: '🍲',
         tier: 2,
-        cookDurationSec: 600,
+        cookDurationSec: 1200,
         sellPrice: 130,
-        powerBonusPct: 35,
+        powerBonusPct: 40,
         winRateBonusPct: 10,
+        rewardBonusPct: 6,
+        mercXpBonusPct: 14,
+        expeditionSpeedBonusPct: 4,
         azitXpReward: 26,
         requiredAzitLevel: 1,
         description: '방울토마토와 햇감자를 푹 끓여낸 2티어 정통 보양 스튜입니다.',
@@ -551,10 +584,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '아삭 청상추 쌈 도시락',
         emoji: '🥗',
         tier: 2,
-        cookDurationSec: 900,
+        cookDurationSec: 1800,
         sellPrice: 185,
-        powerBonusPct: 45,
+        powerBonusPct: 50,
         winRateBonusPct: 12,
+        rewardBonusPct: 8,
+        mercXpBonusPct: 16,
+        expeditionSpeedBonusPct: 6,
         azitXpReward: 32,
         requiredAzitLevel: 2,
         description: '슬라임 젤리 특제 소스를 곁들인 산뜻한 2티어 원정 도시락입니다.',
@@ -569,10 +605,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '황금 감자 그라탕',
         emoji: '🧀',
         tier: 2,
-        cookDurationSec: 1800,
+        cookDurationSec: 3000,
         sellPrice: 260,
-        powerBonusPct: 60,
+        powerBonusPct: 65,
         winRateBonusPct: 15,
+        rewardBonusPct: 10,
+        mercXpBonusPct: 20,
+        expeditionSpeedBonusPct: 8,
         azitXpReward: 40,
         requiredAzitLevel: 3,
         description: '고블린 향신료로 구워낸 고열량 프리미엄 그라탕입니다.',
@@ -587,10 +626,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '로열 딸기 타르트',
         emoji: '🍰',
         tier: 3,
-        cookDurationSec: 2700,
+        cookDurationSec: 5400,
         sellPrice: 420,
-        powerBonusPct: 80,
+        powerBonusPct: 85,
         winRateBonusPct: 18,
+        rewardBonusPct: 14,
+        mercXpBonusPct: 24,
+        expeditionSpeedBonusPct: 10,
         azitXpReward: 50,
         requiredAzitLevel: 4,
         description: '숲의 정령꿀과 설향 딸기가 어우러진 3티어 보스 공략 디저트입니다.',
@@ -605,10 +647,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '기사단 원정 만찬',
         emoji: '🍖',
         tier: 3,
-        cookDurationSec: 3600,
+        cookDurationSec: 7200,
         sellPrice: 680,
-        powerBonusPct: 110,
+        powerBonusPct: 115,
         winRateBonusPct: 22,
+        rewardBonusPct: 18,
+        mercXpBonusPct: 30,
+        expeditionSpeedBonusPct: 12,
         azitXpReward: 58,
         requiredAzitLevel: 5,
         description: '와이번 육포가 통째로 들어간 기사단 전용 스태미나 만찬입니다.',
@@ -623,10 +668,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '전설의 드래곤 정식',
         emoji: '👑',
         tier: 4,
-        cookDurationSec: 5400,
+        cookDurationSec: 10800,
         sellPrice: 1200,
-        powerBonusPct: 160,
-        winRateBonusPct: 28,
+        powerBonusPct: 175,
+        winRateBonusPct: 29,
+        rewardBonusPct: 25,
+        mercXpBonusPct: 40,
+        expeditionSpeedBonusPct: 16,
         azitXpReward: 75,
         requiredAzitLevel: 7,
         description: '드래곤 비늘 가루로 완성하는 최강 4티어 궁극 보스 공략 정식입니다.',
@@ -641,10 +689,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '서리 블루베리 파르페',
         emoji: '🍨',
         tier: 3,
-        cookDurationSec: 3000,
+        cookDurationSec: 6000,
         sellPrice: 520,
-        powerBonusPct: 95,
+        powerBonusPct: 100,
         winRateBonusPct: 20,
+        rewardBonusPct: 16,
+        mercXpBonusPct: 27,
+        expeditionSpeedBonusPct: 11,
         azitXpReward: 95,
         requiredAzitLevel: 20,
         description: '서리 빛 블루베리와 숲의 정령꿀을 겹겹이 쌓은 시원한 3티어 디저트입니다.',
@@ -659,10 +710,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '황금 호박 리조또',
         emoji: '🥘',
         tier: 3,
-        cookDurationSec: 3900,
+        cookDurationSec: 7800,
         sellPrice: 620,
-        powerBonusPct: 120,
-        winRateBonusPct: 23,
+        powerBonusPct: 130,
+        winRateBonusPct: 24,
+        rewardBonusPct: 20,
+        mercXpBonusPct: 33,
+        expeditionSpeedBonusPct: 13,
         azitXpReward: 115,
         requiredAzitLevel: 25,
         description: '황금 호박과 고블린 향신료의 깊은 풍미가 살아있는 든든한 고급 요리입니다.',
@@ -677,10 +731,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '왕실 멜론 샤베트',
         emoji: '🍧',
         tier: 3,
-        cookDurationSec: 4500,
+        cookDurationSec: 9000,
         sellPrice: 820,
-        powerBonusPct: 140,
-        winRateBonusPct: 25,
+        powerBonusPct: 150,
+        winRateBonusPct: 26,
+        rewardBonusPct: 22,
+        mercXpBonusPct: 36,
+        expeditionSpeedBonusPct: 14,
         azitXpReward: 140,
         requiredAzitLevel: 30,
         description: '왕실 머스크멜론의 과즙을 그대로 얼려낸 청량한 궁중 샤베트입니다.',
@@ -695,10 +752,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '천년 산삼 원기탕',
         emoji: '🫖',
         tier: 4,
-        cookDurationSec: 5400,
+        cookDurationSec: 11700,
         sellPrice: 1250,
-        powerBonusPct: 175,
-        winRateBonusPct: 30,
+        powerBonusPct: 195,
+        winRateBonusPct: 32,
+        rewardBonusPct: 28,
+        mercXpBonusPct: 43,
+        expeditionSpeedBonusPct: 17,
         azitXpReward: 175,
         requiredAzitLevel: 36,
         description: '천년 산삼과 와이번 육포를 오랜 시간 달여낸 4티어 최고급 보양 영약입니다.',
@@ -713,10 +773,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '심연 트러플 스테이크',
         emoji: '🥩',
         tier: 4,
-        cookDurationSec: 6300,
+        cookDurationSec: 12600,
         sellPrice: 1500,
-        powerBonusPct: 200,
-        winRateBonusPct: 33,
+        powerBonusPct: 225,
+        winRateBonusPct: 35,
+        rewardBonusPct: 31,
+        mercXpBonusPct: 46,
+        expeditionSpeedBonusPct: 18,
         azitXpReward: 210,
         requiredAzitLevel: 42,
         description: '블랙 트러플 향이 배어든 최상급 육포 스테이크로 파티 전투력을 극대화합니다.',
@@ -731,10 +794,13 @@ export const AZIT_RECIPES: AzitRecipeDef[] = [
         name: '영원의 달빛 만찬',
         emoji: '🌌',
         tier: 4,
-        cookDurationSec: 7200,
+        cookDurationSec: 14400,
         sellPrice: 2200,
-        powerBonusPct: 240,
-        winRateBonusPct: 36,
+        powerBonusPct: 260,
+        winRateBonusPct: 38,
+        rewardBonusPct: 35,
+        mercXpBonusPct: 50,
+        expeditionSpeedBonusPct: 20,
         azitXpReward: 280,
         requiredAzitLevel: 50,
         description: '달빛 열매와 트러플, 드래곤 비늘 가루가 어우러진 Lv.50 궁극의 만찬입니다.',
@@ -754,10 +820,10 @@ export const AZIT_CHEFS: AzitChefDef[] = [
         emoji: '👩‍🍳',
         hireCost: 80,
         requiredAzitLevel: 1,
-        baseSpeedBonusPct: 15,
+        baseSpeedBonusPct: 8,
         baseGreatChancePct: 10,
         maxLevel: 10,
-        description: '따뜻한 손맛으로 조리 시간을 줄여주는 성실한 수습 셰프입니다.',
+        description: '정성 어린 손맛으로 조리 시간을 줄이고 특제 요리를 빚어내는 수습 셰프입니다.',
     },
     {
         chefCode: 'chef-bulta',
@@ -766,10 +832,10 @@ export const AZIT_CHEFS: AzitChefDef[] = [
         emoji: '🔥',
         hireCost: 250,
         requiredAzitLevel: 2,
-        baseSpeedBonusPct: 25,
+        baseSpeedBonusPct: 14,
         baseGreatChancePct: 18,
         maxLevel: 10,
-        description: '강렬한 불 조절로 요리를 빠르게 완성하고 대성공을 노립니다.',
+        description: '섬세한 불 조절로 요리를 안정적으로 완성하며 특제 대성공을 노립니다.',
     },
     {
         chefCode: 'chef-claire',
@@ -778,10 +844,10 @@ export const AZIT_CHEFS: AzitChefDef[] = [
         emoji: '🧁',
         hireCost: 600,
         requiredAzitLevel: 4,
-        baseSpeedBonusPct: 35,
+        baseSpeedBonusPct: 20,
         baseGreatChancePct: 25,
         maxLevel: 10,
-        description: '정교한 레시피 계량으로 고급 요리 대성공 확률을 크게 높입니다.',
+        description: '정교한 레시피 계량으로 특제 요리 대성공 확률을 크게 높입니다.',
     },
     {
         chefCode: 'chef-dragon',
@@ -790,10 +856,10 @@ export const AZIT_CHEFS: AzitChefDef[] = [
         emoji: '🐲',
         hireCost: 1400,
         requiredAzitLevel: 6,
-        baseSpeedBonusPct: 45,
+        baseSpeedBonusPct: 28,
         baseGreatChancePct: 35,
         maxLevel: 10,
-        description: '궁중 비법으로 전설급 요리를 순식간에 빚어내는 최고봉 셰프입니다.',
+        description: '궁중 비법으로 전설급 특제 요리를 완성해 내는 최고봉 셰프입니다.',
     },
 ];
 
@@ -1253,8 +1319,57 @@ export function getChefEffectiveStats(
     }
     const bonusLv = Math.max(0, level - 1);
     return {
-        speedBonusPct: Math.min(75, def.baseSpeedBonusPct + bonusLv * 2),
+        speedBonusPct: Math.min(MAX_CHEF_SPEED_BONUS_PCT, def.baseSpeedBonusPct + bonusLv * 1),
         greatChancePct: Math.min(70, def.baseGreatChancePct + bonusLv * 2),
+    };
+}
+
+export function getEffectiveCookDurationSec(baseDurationSec: number, speedBonusPct: number): number {
+    const clampedSpeed = Math.max(0, Math.min(MAX_CHEF_SPEED_BONUS_PCT, speedBonusPct));
+    return Math.max(MIN_COOK_DURATION_SEC, Math.round(baseDurationSec * (1 - clampedSpeed / 100)));
+}
+
+export function getDishSellPrice(recipe: AzitRecipeDef, quality: AzitDishQuality = 'normal'): number {
+    return quality === 'special'
+        ? Math.round(recipe.sellPrice * SPECIAL_DISH_SELL_MULTIPLIER)
+        : recipe.sellPrice;
+}
+
+export function getDishMaxWinRateCap(tier: 1 | 2 | 3 | 4, quality: AzitDishQuality = 'normal'): number {
+    const baseCap = DISH_TIER_MAX_WIN_RATE[tier] ?? 95;
+    return Math.min(99, baseCap + (quality === 'special' ? 1 : 0));
+}
+
+export function getDishEffectiveBuffs(
+    recipe: AzitRecipeDef,
+    quality: AzitDishQuality = 'normal'
+): AzitDishEffectiveBuffs {
+    const maxWinRateCap = getDishMaxWinRateCap(recipe.tier, quality);
+    if (quality !== 'special') {
+        return {
+            powerBonusPct: recipe.powerBonusPct,
+            winRateBonusPct: recipe.winRateBonusPct,
+            rewardBonusPct: recipe.rewardBonusPct,
+            mercXpBonusPct: recipe.mercXpBonusPct,
+            expeditionSpeedBonusPct: recipe.expeditionSpeedBonusPct,
+            maxWinRateCap,
+        };
+    }
+    return {
+        powerBonusPct: Math.round(recipe.powerBonusPct * SPECIAL_DISH_BUFF_MULTIPLIER),
+        winRateBonusPct: Math.round(recipe.winRateBonusPct * SPECIAL_DISH_BUFF_MULTIPLIER),
+        rewardBonusPct:
+            recipe.rewardBonusPct > 0
+                ? Math.round(recipe.rewardBonusPct * SPECIAL_DISH_BUFF_MULTIPLIER)
+                : 2,
+        mercXpBonusPct: Math.round(recipe.mercXpBonusPct * SPECIAL_DISH_BUFF_MULTIPLIER),
+        expeditionSpeedBonusPct: Math.min(
+            30,
+            recipe.expeditionSpeedBonusPct > 0
+                ? Math.round(recipe.expeditionSpeedBonusPct * SPECIAL_DISH_BUFF_MULTIPLIER)
+                : 2
+        ),
+        maxWinRateCap,
     };
 }
 
@@ -1277,17 +1392,36 @@ export function calculateExpeditionWinRate(params: {
     mercenaries: Array<{ mercCode: string; level: number }>;
     recipeId: AzitRecipeId;
     zoneId: AzitZoneId;
+    dishQuality?: AzitDishQuality;
 }): {
     rawPower: number;
     effectivePower: number;
     winRatePct: number;
+    maxWinRateCap: number;
+    buffs: AzitDishEffectiveBuffs;
 } {
     const recipe = getRecipeDef(params.recipeId);
     const zone = getZoneDef(params.zoneId);
+    const dishQuality: AzitDishQuality = params.dishQuality === 'special' ? 'special' : 'normal';
+    const emptyBuffs: AzitDishEffectiveBuffs = {
+        powerBonusPct: 0,
+        winRateBonusPct: 0,
+        rewardBonusPct: 0,
+        mercXpBonusPct: 0,
+        expeditionSpeedBonusPct: 0,
+        maxWinRateCap: 92,
+    };
     if (!recipe || !zone || params.mercenaries.length === 0) {
-        return { rawPower: 0, effectivePower: 0, winRatePct: 25 };
+        return {
+            rawPower: 0,
+            effectivePower: 0,
+            winRatePct: 25,
+            maxWinRateCap: recipe ? getDishMaxWinRateCap(recipe.tier, dishQuality) : 92,
+            buffs: recipe ? getDishEffectiveBuffs(recipe, dishQuality) : emptyBuffs,
+        };
     }
 
+    const buffs = getDishEffectiveBuffs(recipe, dishQuality);
     let rawPower = 0;
     let partyWinBonus = 0;
     for (const m of params.mercenaries) {
@@ -1298,18 +1432,20 @@ export function calculateExpeditionWinRate(params: {
         }
     }
 
-    const effectivePower = Math.round(rawPower * (1 + recipe.powerBonusPct / 100));
+    const effectivePower = Math.round(rawPower * (1 + buffs.powerBonusPct / 100));
     const ratioScore = Math.round((effectivePower / Math.max(1, zone.recommendedPower)) * 72);
-    const clampedBase = Math.max(25, Math.min(95, ratioScore));
+    const clampedBase = Math.max(25, Math.min(buffs.maxWinRateCap, ratioScore));
     const totalRate = Math.max(
         25,
-        Math.min(96, clampedBase + recipe.winRateBonusPct + partyWinBonus)
+        Math.min(buffs.maxWinRateCap, clampedBase + buffs.winRateBonusPct + partyWinBonus)
     );
 
     return {
         rawPower,
         effectivePower,
         winRatePct: totalRate,
+        maxWinRateCap: buffs.maxWinRateCap,
+        buffs,
     };
 }
 
@@ -1319,6 +1455,8 @@ export function generateBattleLog(params: {
     mercenaryNames: string[];
     dishName: string;
     dishEmoji: string;
+    dishQuality?: AzitDishQuality;
+    buffs?: AzitDishEffectiveBuffs;
     rewardPoints: number;
     materialName: string;
     materialEmoji: string;
@@ -1326,16 +1464,27 @@ export function generateBattleLog(params: {
 }): string[] {
     const partyLabel = params.mercenaryNames.join(', ');
     const leadMerc = params.mercenaryNames[0] || '용병대';
+    const dishLabel = params.dishQuality === 'special' ? `★특제 ${params.dishName}` : params.dishName;
+    const buffParts: string[] = [];
+    if (params.buffs) {
+        if (params.buffs.powerBonusPct > 0) buffParts.push(`전투력 +${params.buffs.powerBonusPct}%`);
+        if (params.buffs.rewardBonusPct > 0) buffParts.push(`전리품 +${params.buffs.rewardBonusPct}%`);
+        if (params.buffs.mercXpBonusPct > 0) buffParts.push(`용병EXP +${params.buffs.mercXpBonusPct}%`);
+        if (params.buffs.expeditionSpeedBonusPct > 0) {
+            buffParts.push(`시간 -${params.buffs.expeditionSpeedBonusPct}%`);
+        }
+    }
+    const buffNote = buffParts.length > 0 ? ` (${buffParts.join(' · ')})` : '';
     if (params.won) {
         return [
-            `${params.dishEmoji} 출정 전 [${params.dishName}] 도시락으로 파티 사기가 크게 상승했습니다!`,
+            `${params.dishEmoji} 출정 전 [${dishLabel}] 도시락으로 파티 사기가 크게 상승했습니다!${buffNote}`,
             `⚔️ [${partyLabel}] 용병단이 ${params.zone.name}에 돌입해 ${params.zone.monsterName}의 약점을 포착했습니다.`,
             `💥 ${leadMerc}의 결정적인 일격으로 ${params.zone.monsterName} 토벌에 성공했습니다!`,
             `🏆 전리품으로 🪙 ${params.rewardPoints.toLocaleString()}P 및 ${params.materialEmoji} ${params.materialName} ×${params.dropQty}을 회수해 아지트로 귀환했습니다.`,
         ];
     }
     return [
-        `${params.dishEmoji} [${params.dishName}] 도시락을 나누어 먹고 ${params.zone.name}에 진입했습니다.`,
+        `${params.dishEmoji} [${dishLabel}] 도시락을 나누어 먹고 ${params.zone.name}에 진입했습니다.`,
         `⚔️ [${partyLabel}] 용병단이 ${params.zone.monsterName}와 격렬한 교전을 벌였습니다.`,
         `⚠️ ${params.zone.monsterName}의 맹공에 부대가 밀리며 전열이 무너져 전략적 후퇴를 감행했습니다.`,
         `💔 토벌에 실패해 출정비와 보급 도시락이 소실되었습니다. 용병 강화 또는 상위 도시락 준비 후 재도전하세요!`,

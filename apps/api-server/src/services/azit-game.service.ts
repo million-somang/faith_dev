@@ -16,6 +16,7 @@ import {
     AzitChefCode,
     AzitCropDef,
     AzitCropId,
+    AzitDishQuality,
     AzitFarmerCode,
     AzitFarmerRole,
     AzitFertilizerId,
@@ -41,6 +42,9 @@ import {
     getChefEffectiveStats,
     getChefUpgradeCost,
     getCropDef,
+    getDishEffectiveBuffs,
+    getDishSellPrice,
+    getEffectiveCookDurationSec,
     getFarmerDef,
     getFarmerLevelStats,
     getFarmerNextLevelXp,
@@ -129,6 +133,7 @@ export interface AzitExpeditionRecord {
     zoneId: AzitZoneId;
     partyMercCodes: AzitMercCode[];
     dishRecipeId: AzitRecipeId;
+    dishQuality: AzitDishQuality;
     entryCost: number;
     predictedWinRate: number;
     status: 'running' | 'won' | 'lost';
@@ -212,6 +217,7 @@ export interface AzitFullGameState {
     garden: ServerGardenState;
     materials: Record<AzitMaterialId, number>;
     dishes: Record<AzitRecipeId, number>;
+    specialDishes: Record<AzitRecipeId, number>;
     chefs: AzitChefRecord[];
     kitchenSlots: AzitKitchenSlotRecord[];
     mercenaries: AzitMercenaryRecord[];
@@ -562,6 +568,14 @@ export class AzitGameService {
             ['soil_level', 'ALTER TABLE azit_garden_plots ADD COLUMN soil_level INTEGER NOT NULL DEFAULT 0;'],
             ['next_water_at_ms', 'ALTER TABLE azit_garden_plots ADD COLUMN next_water_at_ms INTEGER;'],
             ['fertilizer_used_count', 'ALTER TABLE azit_garden_plots ADD COLUMN fertilizer_used_count INTEGER NOT NULL DEFAULT 0;'],
+        ]);
+
+        await this.ensureColumns('azit_dish_inventory', [
+            ['special_qty', 'ALTER TABLE azit_dish_inventory ADD COLUMN special_qty INTEGER NOT NULL DEFAULT 0;'],
+        ]);
+
+        await this.ensureColumns('azit_expeditions', [
+            ['dish_quality', "ALTER TABLE azit_expeditions ADD COLUMN dish_quality TEXT NOT NULL DEFAULT 'normal';"],
         ]);
     }
 
@@ -1062,14 +1076,16 @@ export class AzitGameService {
         }
 
         const dishes = createEmptyDishMap();
+        const specialDishes = createEmptyDishMap();
         const dishRes = await pool.query(
-            `SELECT recipe_id, qty FROM azit_dish_inventory WHERE user_id = $1 AND is_deleted = 0`,
+            `SELECT recipe_id, qty, special_qty FROM azit_dish_inventory WHERE user_id = $1 AND is_deleted = 0`,
             [userId]
         );
         for (const r of dishRes.rows) {
             const recId = String(r.recipe_id) as AzitRecipeId;
             if (VALID_RECIPE_IDS.has(recId)) {
                 dishes[recId] = Number(r.qty ?? 0);
+                specialDishes[recId] = Number(r.special_qty ?? 0);
             }
         }
 
@@ -1178,6 +1194,7 @@ export class AzitGameService {
                 zoneId: String(row.zone_id) as AzitZoneId,
                 partyMercCodes,
                 dishRecipeId: String(row.dish_recipe_id) as AzitRecipeId,
+                dishQuality: row.dish_quality === 'special' ? 'special' : 'normal',
                 entryCost: Number(row.entry_cost ?? 0),
                 predictedWinRate: Number(row.predicted_win_rate ?? 25),
                 status: normalizedStatus,
@@ -1308,6 +1325,7 @@ export class AzitGameService {
             garden,
             materials,
             dishes,
+            specialDishes,
             chefs,
             kitchenSlots,
             mercenaries,
@@ -3354,7 +3372,7 @@ export class AzitGameService {
                 }
 
                 const nowMs = Date.now();
-                const effectiveSec = Math.max(15, Math.round(recipe.cookDurationSec * (1 - speedBonusPct / 100)));
+                const effectiveSec = getEffectiveCookDurationSec(recipe.cookDurationSec, speedBonusPct);
                 endsAtMs = nowMs + effectiveSec * 1000;
 
                 const updSlot = await pool.query(
@@ -3470,17 +3488,31 @@ export class AzitGameService {
                 }
             }
 
-            const producedQty = greatSuccess ? 2 : 1;
-            await pool.query(
-                `INSERT INTO azit_dish_inventory (user_id, recipe_id, qty)
-                 VALUES ($1, $2, $3)
-                 ON CONFLICT (user_id, recipe_id) DO UPDATE SET
-                    qty = azit_dish_inventory.qty + $4,
-                    is_deleted = 0,
-                    deleted_at = NULL,
-                    updated_at = CURRENT_TIMESTAMP`,
-                [userId, recipe.recipeId, producedQty, producedQty]
-            );
+            const producedQty = 1;
+            const dishQuality: AzitDishQuality = greatSuccess ? 'special' : 'normal';
+            if (greatSuccess) {
+                await pool.query(
+                    `INSERT INTO azit_dish_inventory (user_id, recipe_id, qty, special_qty)
+                     VALUES ($1, $2, 0, $3)
+                     ON CONFLICT (user_id, recipe_id) DO UPDATE SET
+                        special_qty = azit_dish_inventory.special_qty + $4,
+                        is_deleted = 0,
+                        deleted_at = NULL,
+                        updated_at = CURRENT_TIMESTAMP`,
+                    [userId, recipe.recipeId, producedQty, producedQty]
+                );
+            } else {
+                await pool.query(
+                    `INSERT INTO azit_dish_inventory (user_id, recipe_id, qty, special_qty)
+                     VALUES ($1, $2, $3, 0)
+                     ON CONFLICT (user_id, recipe_id) DO UPDATE SET
+                        qty = azit_dish_inventory.qty + $4,
+                        is_deleted = 0,
+                        deleted_at = NULL,
+                        updated_at = CURRENT_TIMESTAMP`,
+                    [userId, recipe.recipeId, producedQty, producedQty]
+                );
+            }
 
             await pool.query(
                 `UPDATE azit_profiles
@@ -3495,16 +3527,22 @@ export class AzitGameService {
             const state = await this.getStateInternal(userId, { skipFarmerAutomation: true });
             return {
                 message: greatSuccess
-                    ? `🌟 대성공! [${recipe.emoji} ${recipe.name}] 2개를 완성했습니다! (+${recipe.azitXpReward} 아지트 EXP)`
+                    ? `🌟 대성공! [★ 특제 ${recipe.emoji} ${recipe.name}] 요리를 완성했습니다! (용병 버프 +20% · 판매가 1.5배 · +${recipe.azitXpReward} 아지트 EXP)`
                     : `🍱 [${recipe.emoji} ${recipe.name}] 요리를 완성해 보관함에 넣었습니다! (+${recipe.azitXpReward} 아지트 EXP)`,
                 greatSuccess,
+                dishQuality,
                 producedQty,
                 state,
             };
         });
     }
 
-    static async sellDish(userId: number, recipeId: string, rawQuantity = 1) {
+    static async sellDish(
+        userId: number,
+        recipeId: string,
+        rawQuantity = 1,
+        rawQuality: AzitDishQuality = 'normal'
+    ) {
         return this.runWithUserLock(userId, async () => {
             await this.ensureUserInitialized(userId);
             await this.processFarmerAutomationInternal(userId, Date.now());
@@ -3513,30 +3551,41 @@ export class AzitGameService {
                 throw new AzitGameError('존재하지 않는 요리입니다.', 400);
             }
             const qty = Math.max(1, Math.min(999, Math.floor(rawQuantity)));
+            const quality: AzitDishQuality = rawQuality === 'special' ? 'special' : 'normal';
+            const qualityLabel = quality === 'special' ? '★특제 ' : '';
 
-            const deductRes = await pool.query(
-                `UPDATE azit_dish_inventory
-                 SET qty = qty - $1,
-                     updated_at = CURRENT_TIMESTAMP
-                 WHERE user_id = $2 AND recipe_id = $3 AND qty >= $4 AND is_deleted = 0`,
-                [qty, userId, recipe.recipeId, qty]
-            );
+            const deductSql =
+                quality === 'special'
+                    ? `UPDATE azit_dish_inventory
+                       SET special_qty = special_qty - $1,
+                           updated_at = CURRENT_TIMESTAMP
+                       WHERE user_id = $2 AND recipe_id = $3 AND special_qty >= $4 AND is_deleted = 0`
+                    : `UPDATE azit_dish_inventory
+                       SET qty = qty - $1,
+                           updated_at = CURRENT_TIMESTAMP
+                       WHERE user_id = $2 AND recipe_id = $3 AND qty >= $4 AND is_deleted = 0`;
+
+            const deductRes = await pool.query(deductSql, [qty, userId, recipe.recipeId, qty]);
             if (deductRes.rowCount === 0) {
-                throw new AzitGameError(`판매할 [${recipe.emoji} ${recipe.name}] 요리가 부족합니다.`, 400);
+                throw new AzitGameError(
+                    `판매할 [${qualityLabel}${recipe.emoji} ${recipe.name}] 요리가 부족합니다.`,
+                    400
+                );
             }
 
-            const revenue = recipe.sellPrice * qty;
+            const unitPrice = getDishSellPrice(recipe, quality);
+            const revenue = unitPrice * qty;
             await this.creditVeraPoints({
                 userId,
                 amount: revenue,
                 txType: 'dish_sell',
-                refId: recipe.recipeId,
-                description: `${recipe.emoji} ${recipe.name} ×${qty} 판매`,
+                refId: quality === 'special' ? `${recipe.recipeId}:special` : recipe.recipeId,
+                description: `${qualityLabel}${recipe.emoji} ${recipe.name} ×${qty} 판매`,
             });
 
             const state = await this.getStateInternal(userId, { skipFarmerAutomation: true });
             return {
-                message: `💰 [${recipe.emoji} ${recipe.name}] ×${qty} 판매 완료! (+${revenue.toLocaleString()}P)`,
+                message: `💰 [${qualityLabel}${recipe.emoji} ${recipe.name}] ×${qty} 판매 완료! (+${revenue.toLocaleString()}P)`,
                 state,
             };
         });
@@ -3673,8 +3722,11 @@ export class AzitGameService {
         zoneId: string;
         partyMercCodes: string[];
         dishRecipeId: string;
+        dishQuality?: AzitDishQuality;
     }) {
         const { userId, zoneId, partyMercCodes, dishRecipeId } = params;
+        const dishQuality: AzitDishQuality = params.dishQuality === 'special' ? 'special' : 'normal';
+        const dishLabelPrefix = dishQuality === 'special' ? '★특제 ' : '';
         return this.runWithUserLock(userId, async () => {
             await this.ensureUserInitialized(userId);
             await this.processFarmerAutomationInternal(userId, Date.now());
@@ -3745,23 +3797,33 @@ export class AzitGameService {
                 partyMercDetails.push({ mercCode: code, level: Number(row.level ?? 1) });
             }
 
-            const { winRatePct } = calculateExpeditionWinRate({
+            const { winRatePct, buffs } = calculateExpeditionWinRate({
                 mercenaries: partyMercDetails,
                 recipeId: recipe.recipeId,
                 zoneId: zone.zoneId,
+                dishQuality,
             });
 
             // 1) 필수 도시락 1개 원자적 차감
-            const dishDeduct = await pool.query(
-                `UPDATE azit_dish_inventory
-                 SET qty = qty - 1,
-                     updated_at = CURRENT_TIMESTAMP
-                 WHERE user_id = $1 AND recipe_id = $2 AND qty >= 1 AND is_deleted = 0`,
-                [userId, recipe.recipeId]
-            );
+            const dishDeductSql =
+                dishQuality === 'special'
+                    ? `UPDATE azit_dish_inventory
+                       SET special_qty = special_qty - 1,
+                           updated_at = CURRENT_TIMESTAMP
+                       WHERE user_id = $1 AND recipe_id = $2 AND special_qty >= 1 AND is_deleted = 0`
+                    : `UPDATE azit_dish_inventory
+                       SET qty = qty - 1,
+                           updated_at = CURRENT_TIMESTAMP
+                       WHERE user_id = $1 AND recipe_id = $2 AND qty >= 1 AND is_deleted = 0`;
+            const dishRefundSql =
+                dishQuality === 'special'
+                    ? `UPDATE azit_dish_inventory SET special_qty = special_qty + 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND recipe_id = $2`
+                    : `UPDATE azit_dish_inventory SET qty = qty + 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND recipe_id = $2`;
+
+            const dishDeduct = await pool.query(dishDeductSql, [userId, recipe.recipeId]);
             if (dishDeduct.rowCount === 0) {
                 throw new AzitGameError(
-                    `보유 중인 [${recipe.emoji} ${recipe.name}] 도시락이 없습니다. 주방에서 먼저 조리해 주세요!`,
+                    `보유 중인 [${dishLabelPrefix}${recipe.emoji} ${recipe.name}] 도시락이 없습니다. 주방에서 먼저 조리해 주세요!`,
                     400
                 );
             }
@@ -3776,17 +3838,18 @@ export class AzitGameService {
                     description: `${zone.emoji} ${zone.name} 출정비`,
                 });
             } catch (err) {
-                await pool.query(
-                    `UPDATE azit_dish_inventory SET qty = qty + 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND recipe_id = $2`,
-                    [userId, recipe.recipeId]
-                );
+                await pool.query(dishRefundSql, [userId, recipe.recipeId]);
                 throw err;
             }
 
             // 3) 용병 출정 상태 잠금 (실패 시 도시락 + 출정비 모두 복구)
             const lockedMercs: string[] = [];
             const nowMs = Date.now();
-            const endsAtMs = nowMs + zone.durationSec * 1000;
+            const effectiveDurationSec = Math.max(
+                60,
+                Math.round(zone.durationSec * (1 - buffs.expeditionSpeedBonusPct / 100))
+            );
+            const endsAtMs = nowMs + effectiveDurationSec * 1000;
             let createdExpeditionId = 0;
             try {
                 for (const code of uniqueParty) {
@@ -3805,15 +3868,16 @@ export class AzitGameService {
 
                 const expInsertRes = await pool.query(
                     `INSERT INTO azit_expeditions (
-                        user_id, zone_id, party_merc_codes_json, dish_recipe_id,
+                        user_id, zone_id, party_merc_codes_json, dish_recipe_id, dish_quality,
                         entry_cost, predicted_win_rate, status, started_at_ms, ends_at_ms
                      )
-                     VALUES ($1, $2, $3, $4, $5, $6, 'running', $7, $8)`,
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, 'running', $8, $9)`,
                     [
                         userId,
                         zone.zoneId,
                         JSON.stringify(uniqueParty),
                         recipe.recipeId,
+                        dishQuality,
                         zone.entryCost,
                         winRatePct,
                         nowMs,
@@ -3828,10 +3892,7 @@ export class AzitGameService {
                         [userId, code]
                     );
                 }
-                await pool.query(
-                    `UPDATE azit_dish_inventory SET qty = qty + 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND recipe_id = $2`,
-                    [userId, recipe.recipeId]
-                );
+                await pool.query(dishRefundSql, [userId, recipe.recipeId]);
                 await this.creditVeraPoints({
                     userId,
                     amount: zone.entryCost,
@@ -3858,8 +3919,10 @@ export class AzitGameService {
             }
 
             const state = await this.getStateInternal(userId, { skipFarmerAutomation: true });
+            const speedNote =
+                buffs.expeditionSpeedBonusPct > 0 ? ` · 시간 -${buffs.expeditionSpeedBonusPct}%` : '';
             return {
-                message: `⚔️ [${zone.emoji} ${zone.name}] 원정 출정 완료! (예상 승률 ${winRatePct}% · 도시락 1개 장착)`,
+                message: `⚔️ [${zone.emoji} ${zone.name}] 원정 출정 완료! (예상 승률 ${winRatePct}% · ${dishLabelPrefix}${recipe.name}${speedNote})`,
                 state,
             };
         });
@@ -3913,12 +3976,17 @@ export class AzitGameService {
                     throw new AzitGameError('원정 메타데이터가 올바르지 않습니다.', 400);
                 }
 
+                const dishQuality: AzitDishQuality =
+                    expRow.dish_quality === 'special' ? 'special' : 'normal';
+                const dishBuffs = getDishEffectiveBuffs(recipe, dishQuality);
+
                 const winRate = Number(expRow.predicted_win_rate ?? 50);
                 const roll = crypto.randomInt(1, 101);
                 const won = roll <= winRate;
 
                 let rewardPoints = 0;
                 let rewardAzitXp = 0;
+                let rewardMercXp = 0;
                 let dropQty = 0;
                 const rewardMaterials: Partial<Record<AzitMaterialId, number>> = {};
                 const matDef = getMaterialDef(zone.dropMaterialId);
@@ -3934,8 +4002,11 @@ export class AzitGameService {
                             }
                         }
                     }
-                    rewardPoints = Math.round(zone.rewardPoints * (1 + bossBonusPct / 100));
+                    rewardPoints = Math.round(
+                        zone.rewardPoints * (1 + (bossBonusPct + dishBuffs.rewardBonusPct) / 100)
+                    );
                     rewardAzitXp = zone.rewardAzitXp;
+                    rewardMercXp = Math.round(zone.rewardMercXp * (1 + dishBuffs.mercXpBonusPct / 100));
                     dropQty =
                         zone.dropMinQty === zone.dropMaxQty
                             ? zone.dropMinQty
@@ -3961,7 +4032,7 @@ export class AzitGameService {
                         [userId, zone.dropMaterialId, dropQty, dropQty]
                     );
 
-                    // 용병 경험치 적립 & 자동 레벨업
+                    // 용병 경험치 적립 & 자동 레벨업 (요리 용병 EXP 버프 반영)
                     for (const code of partyCodes) {
                         const mDef = getMercDef(code);
                         const mRes = await pool.query(
@@ -3970,7 +4041,7 @@ export class AzitGameService {
                         );
                         if (mRes.rows.length > 0 && mDef) {
                             let lv = Number(mRes.rows[0].level ?? 1);
-                            let xp = Number(mRes.rows[0].xp ?? 0) + zone.rewardMercXp;
+                            let xp = Number(mRes.rows[0].xp ?? 0) + rewardMercXp;
                             while (lv < mDef.maxLevel && xp >= getMercNextXp(lv)) {
                                 xp -= getMercNextXp(lv);
                                 lv += 1;
@@ -4024,6 +4095,8 @@ export class AzitGameService {
                     mercenaryNames: mercNames,
                     dishName: recipe.name,
                     dishEmoji: recipe.emoji,
+                    dishQuality,
+                    buffs: dishBuffs,
                     rewardPoints,
                     materialName: matDef?.name || zone.dropMaterialId,
                     materialEmoji: matDef?.emoji || '🎁',
@@ -4068,6 +4141,9 @@ export class AzitGameService {
                         predictedWinRate: winRate,
                         rewardPoints,
                         rewardXp: rewardAzitXp,
+                        rewardMercXp,
+                        dishQuality,
+                        appliedBuffs: dishBuffs,
                         rewardMaterials,
                         entryCostLost: Number(expRow.entry_cost ?? zone.entryCost),
                         lostDishId: recipe.recipeId,
