@@ -540,16 +540,18 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         | { kind: 'minimi'; depth: number };
 
     const sortedGardenEntities: GardenRenderEntity[] = [
-        ...gardenState.plots.map((plot) => {
-            const coord = getGardenPlotCoord(plot.plotIndex);
-            return {
-                kind: 'plot' as const,
-                depth: coord.gridX + coord.gridY,
-                plot,
-                gridX: coord.gridX,
-                gridY: coord.gridY,
-            };
-        }),
+        ...gardenState.plots
+            .filter((plot) => plot.isUnlocked !== false)
+            .map((plot) => {
+                const coord = getGardenPlotCoord(plot.plotIndex);
+                return {
+                    kind: 'plot' as const,
+                    depth: coord.gridX + coord.gridY,
+                    plot,
+                    gridX: coord.gridX,
+                    gridY: coord.gridY,
+                };
+            }),
         {
             kind: 'bench' as const,
             depth: 0 + 4,
@@ -1559,33 +1561,35 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             })}
 
                             {/* ==================== [앞마당 텃밭 모드] 4. 최상단 상태·원클릭 수확/물주기 배지 오버레이 ==================== */}
-                            {gardenState.plots.map((plot) => {
-                                const coord = getGardenPlotCoord(plot.plotIndex);
-                                const pos = getTileCenter(coord.gridX, coord.gridY);
-                                return (
-                                    <GardenPlotBadgeOverlay
-                                        key={`garden-plot-badge-${plot.plotIndex}`}
-                                        plot={plot}
-                                        pos={pos}
-                                        isOwner={isOwner}
-                                        isSelected={openBubblePlotIndex === plot.plotIndex}
-                                        isBubbleOpen={openBubblePlotIndex === plot.plotIndex}
-                                        onSelectPlot={(idx) =>
-                                            setOpenBubblePlotIndex((prev) => (prev === idx ? null : idx))
-                                        }
-                                        onQuickWater={(idx) => {
-                                            handleGardenWaterPlot(idx);
-                                            setOpenBubblePlotIndex(null);
-                                        }}
-                                        onQuickHarvest={(idx) => {
-                                            handleGardenHarvestPlot(idx);
-                                            setOpenBubblePlotIndex(null);
-                                        }}
-                                        nowMs={activeGameNowMs}
-                                        azitLevel={ownerAzitLevel}
-                                    />
-                                );
-                            })}
+                            {gardenState.plots
+                                .filter((plot) => plot.isUnlocked !== false)
+                                .map((plot) => {
+                                    const coord = getGardenPlotCoord(plot.plotIndex);
+                                    const pos = getTileCenter(coord.gridX, coord.gridY);
+                                    return (
+                                        <GardenPlotBadgeOverlay
+                                            key={`garden-plot-badge-${plot.plotIndex}`}
+                                            plot={plot}
+                                            pos={pos}
+                                            isOwner={isOwner}
+                                            isSelected={openBubblePlotIndex === plot.plotIndex}
+                                            isBubbleOpen={openBubblePlotIndex === plot.plotIndex}
+                                            onSelectPlot={(idx) =>
+                                                setOpenBubblePlotIndex((prev) => (prev === idx ? null : idx))
+                                            }
+                                            onQuickWater={(idx) => {
+                                                handleGardenWaterPlot(idx);
+                                                setOpenBubblePlotIndex(null);
+                                            }}
+                                            onQuickHarvest={(idx) => {
+                                                handleGardenHarvestPlot(idx);
+                                                setOpenBubblePlotIndex(null);
+                                            }}
+                                            nowMs={activeGameNowMs}
+                                            azitLevel={ownerAzitLevel}
+                                        />
+                                    );
+                                })}
                         </>
                     ) : activeZone === 'kitchen' && isOwner && azitGame?.state ? (
                         <AzitKitchenIsoScene
@@ -2002,6 +2006,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         isRainWeather={isRainWeather}
                         nowMs={activeGameNowMs}
                         azitLevel={ownerAzitLevel}
+                        veraPoints={azitGame?.state?.veraPoints}
                         isActing={azitGame?.isActing}
                         cropCatalog={azitGame?.state?.catalog.crops}
                         fertilizerCatalog={azitGame?.state?.catalog.fertilizers}
@@ -2019,6 +2024,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         onWaterAll={isOwner ? azitGame?.waterAll : undefined}
                         onHarvestAll={isOwner ? azitGame?.harvestAll : undefined}
                         onPlantAll={isOwner ? azitGame?.plantAll : undefined}
+                        onUnlockPlot={isOwner ? azitGame?.unlockPlot : undefined}
                     />
                 )}
 

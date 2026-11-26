@@ -5,22 +5,26 @@ import { MinihomeRoomLayout, PlacedRoomItem } from '@/types/minihome.types';
 import { ensureGardenState, getGardenCropById } from '@/data/minihomeCatalogData';
 
 export const GARDEN_PLOT_COORDS: Array<{ plotIndex: number; gridX: number; gridY: number }> = [
-    { plotIndex: 0, gridX: 2, gridY: 2 },
-    { plotIndex: 1, gridX: 4, gridY: 2 },
-    { plotIndex: 2, gridX: 6, gridY: 2 },
-    { plotIndex: 3, gridX: 2, gridY: 5 },
-    { plotIndex: 4, gridX: 4, gridY: 5 },
-    { plotIndex: 5, gridX: 6, gridY: 5 },
-    { plotIndex: 6, gridX: 2, gridY: 3.5 },
-    { plotIndex: 7, gridX: 4, gridY: 3.5 },
-    { plotIndex: 8, gridX: 6, gridY: 3.5 },
-    { plotIndex: 9, gridX: 2, gridY: 6.5 },
-    { plotIndex: 10, gridX: 4, gridY: 6.5 },
-    { plotIndex: 11, gridX: 6, gridY: 6.5 },
-    { plotIndex: 12, gridX: 2.0, gridY: 0.6 },
-    { plotIndex: 13, gridX: 3.8, gridY: 0.6 },
-    { plotIndex: 14, gridX: 5.6, gridY: 0.6 },
-    { plotIndex: 15, gridX: 0.5, gridY: 6.4 },
+    // Lv.1 기본 6칸: 중앙 2×3
+    { plotIndex: 0, gridX: 1.5, gridY: 2.8 },
+    { plotIndex: 1, gridX: 3.15, gridY: 2.8 },
+    { plotIndex: 2, gridX: 4.8, gridY: 2.8 },
+    { plotIndex: 3, gridX: 1.5, gridY: 4.4 },
+    { plotIndex: 4, gridX: 3.15, gridY: 4.4 },
+    { plotIndex: 5, gridX: 4.8, gridY: 4.4 },
+    // Lv.5~10 (7~8칸): 중앙 우측 열 완성 → 2×4
+    { plotIndex: 6, gridX: 6.45, gridY: 2.8 },
+    { plotIndex: 7, gridX: 6.45, gridY: 4.4 },
+    // Lv.15~30 (9~12칸): 상단 1행 추가 → 3×4
+    { plotIndex: 8, gridX: 1.5, gridY: 1.2 },
+    { plotIndex: 9, gridX: 3.15, gridY: 1.2 },
+    { plotIndex: 10, gridX: 4.8, gridY: 1.2 },
+    { plotIndex: 11, gridX: 6.45, gridY: 1.2 },
+    // Lv.35~50 (13~16칸): 하단 4행 추가 → 4×4 완성
+    { plotIndex: 12, gridX: 1.5, gridY: 6.0 },
+    { plotIndex: 13, gridX: 3.15, gridY: 6.0 },
+    { plotIndex: 14, gridX: 4.8, gridY: 6.0 },
+    { plotIndex: 15, gridX: 6.45, gridY: 6.0 },
 ];
 
 export function getGardenPlotCoord(plotIndex: number): { plotIndex: number; gridX: number; gridY: number } {

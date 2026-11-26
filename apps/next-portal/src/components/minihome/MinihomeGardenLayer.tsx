@@ -2192,6 +2192,7 @@ interface GardenControlPanelProps {
     isRainWeather: boolean;
     nowMs?: number;
     azitLevel?: number;
+    veraPoints?: number;
     isActing?: boolean;
     cropCatalog?: AzitCropCatalogItem[];
     fertilizerCatalog?: AzitFertilizerCatalogItem[];
@@ -2209,6 +2210,7 @@ interface GardenControlPanelProps {
     onWaterAll?: () => Promise<boolean> | void;
     onHarvestAll?: () => Promise<boolean> | void;
     onPlantAll?: (cropId: GardenCropId) => Promise<boolean> | void;
+    onUnlockPlot?: (plotIndex: number) => Promise<boolean> | void;
 }
 
 /**
@@ -2220,6 +2222,7 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
     isRainWeather,
     nowMs: nowMsProp,
     azitLevel = 1,
+    veraPoints,
     isActing = false,
     cropCatalog,
     fertilizerCatalog,
@@ -2233,8 +2236,10 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
     onWaterAll,
     onHarvestAll,
     onPlantAll,
+    onUnlockPlot,
 }) => {
     const [localNowMs, setLocalNowMs] = useState<number>(() => Date.now());
+    const [showLockedCrops, setShowLockedCrops] = useState<boolean>(false);
     const nowMs = nowMsProp ?? localNowMs;
     const localNotifiedKeysRef = useRef<Set<string>>(new Set());
 
@@ -2329,6 +2334,27 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
     const unlockedPlotCount = gardenState.unlockedPlotCount ?? unlockedPlots.length;
     const maxPlotCount = gardenState.maxPlotCount ?? gardenState.plots.length;
 
+    const unlockablePlots = gardenState.plots.filter(
+        (p) => p.isUnlocked === false && azitLevel >= (p.unlockLevel ?? 1)
+    );
+    const nextUnlockablePlot = unlockablePlots[0] ?? null;
+    const nextFuturePlot =
+        gardenState.plots.find(
+            (p) => p.isUnlocked === false && azitLevel < (p.unlockLevel ?? 1)
+        ) ?? null;
+
+    const availableWarehouseCrops = effectiveCrops.filter((crop) => {
+        const reqLv = crop.requiredAzitLevel ?? 1;
+        const seedCount = gardenState.seedCounts?.[crop.cropId] || 0;
+        const harvestCount = gardenState.harvestCounts?.[crop.cropId] || 0;
+        return reqLv <= azitLevel || seedCount > 0 || harvestCount > 0;
+    });
+    const hiddenLockedCropCount = effectiveCrops.length - availableWarehouseCrops.length;
+    const visibleWarehouseCrops = showLockedCrops ? effectiveCrops : availableWarehouseCrops;
+
+    const nextUnlockCost = nextUnlockablePlot?.unlockCost ?? 0;
+    const canAffordUnlock = veraPoints === undefined || veraPoints >= nextUnlockCost;
+
     return (
         <div className="w-full mt-2 rounded-2xl bg-[#f0f4f8] border border-white/85 shadow-[4px_4px_10px_rgba(163,177,198,0.35),-4px_-4px_10px_rgba(255,255,255,0.85)] p-3.5 sm:p-4 space-y-3 shrink-0">
             {/* 상단 요약 1줄 */}
@@ -2337,6 +2363,11 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[11px] shadow-sm">
                         🌿 마당 텃밭 {unlockedPlotCount}/{maxPlotCount}칸
                     </span>
+                    {!nextUnlockablePlot && nextFuturePlot && (
+                        <span className="px-2 py-0.5 rounded-full bg-[#e8edf2] border border-white/80 text-[#64748b] text-[10px] font-extrabold font-mono">
+                            다음 추가 Lv.{nextFuturePlot.unlockLevel}
+                        </span>
+                    )}
                     <span className="px-2.5 py-0.5 rounded-full bg-[#e8edf2] border border-white/80 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.35),inset_-1px_-1px_3px_rgba(255,255,255,0.8)] text-sky-700 text-[10px] font-extrabold">
                         💧 하루 3번 · 8시간 간격
                     </span>
@@ -2354,6 +2385,23 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                     <span className="px-2 py-0.5 rounded-full bg-white/90 border border-white text-[#1e293b] text-[10px] font-black font-mono shadow-sm">
                         🌱 씨앗 {totalSeeds} · 🧺 수확 {gardenState.totalHarvested}
                     </span>
+                    {isOwner && nextUnlockablePlot && onUnlockPlot && (
+                        <button
+                            type="button"
+                            disabled={isActing || !canAffordUnlock}
+                            onClick={() => onUnlockPlot(nextUnlockablePlot.plotIndex)}
+                            title={
+                                canAffordUnlock
+                                    ? `#${nextUnlockablePlot.plotIndex + 1}번 텃밭 개간 (${nextUnlockCost}P)`
+                                    : `포인트가 부족합니다 (필요 ${nextUnlockCost}P)`
+                            }
+                            className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black transition-all cursor-pointer inline-flex items-center gap-1 shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <span>
+                                + #{nextUnlockablePlot.plotIndex + 1} 텃밭 추가 ({nextUnlockCost}P)
+                            </span>
+                        </button>
+                    )}
                     {isOwner && onOpenSeedShop && (
                         <button
                             type="button"
@@ -2530,19 +2578,36 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                 </div>
             )}
 
-            {/* 내 농장 창고 현황 (12종 전체 작물 컴팩트 미니 카드 그리드) */}
+            {/* 내 농장 창고 현황 (해금·보유 작물 기본 표시 + 미해금 작물 토글) */}
             <div className="rounded-xl bg-[#e8edf2]/80 border border-white/75 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.85)] p-2.5 sm:p-3 space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[11px] font-black text-[#1e293b]">
                         🏚️ 내 농장 창고 현황
                     </span>
-                    <span className="text-[10px] font-mono font-bold text-[#64748b]">
-                        씨앗 {totalSeeds}봉지 · 수확 작물 {gardenState.totalHarvested}개
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-mono font-bold text-[#64748b]">
+                            씨앗 {totalSeeds}봉지 · 수확 작물 {gardenState.totalHarvested}개
+                        </span>
+                        {hiddenLockedCropCount > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setShowLockedCrops((prev) => !prev)}
+                                className={`px-2 py-0.5 rounded-lg border text-[10px] font-extrabold transition-all cursor-pointer ${
+                                    showLockedCrops
+                                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                                        : 'bg-[#f0f4f8] hover:bg-white text-[#64748b] hover:text-[#1e293b] border-white/80 shadow-[2px_2px_4px_rgba(163,177,198,0.3),-2px_-2px_4px_rgba(255,255,255,0.9)]'
+                                }`}
+                            >
+                                {showLockedCrops
+                                    ? '미해금 숨기기'
+                                    : `미해금 작물 ${hiddenLockedCropCount}종 보기`}
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
-                    {effectiveCrops.map((crop) => {
+                    {visibleWarehouseCrops.map((crop) => {
                         const seedCount = gardenState.seedCounts?.[crop.cropId] || 0;
                         const harvestCount = gardenState.harvestCounts?.[crop.cropId] || 0;
                         const reqLv = crop.requiredAzitLevel ?? 1;
