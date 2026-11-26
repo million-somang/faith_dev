@@ -45,72 +45,111 @@ function grade(value: number | null, good: number, normal: number, bad: number) 
   return { label: '매우나쁨', color: 'text-red-500' };
 }
 
-export const WeatherWidget: React.FC = () => {
-  const [data, setData] = useState<WeatherData | null>(null);
+const WEATHER_CACHE_TTL_MS = 60_000;
+let cachedWeatherData: WeatherData | null = null;
+let cachedWeatherTimestamp = 0;
+let inFlightWeatherPromise: Promise<WeatherData> | null = null;
+
+async function fetchWeatherByCoords(lat: number, lon: number, fallbackName: string): Promise<WeatherData> {
+  const wxUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=2`;
+  const aqUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=pm10,pm2_5&timezone=auto`;
+  const [wx, aq] = await Promise.all([
+    fetch(wxUrl).then((r) => r.json()),
+    fetch(aqUrl)
+      .then((r) => r.json())
+      .catch(() => null),
+  ]);
+
+  const times: string[] = wx.hourly?.time || [];
+  const nowTime: string = wx.current?.time;
+  let startIdx = times.indexOf(nowTime);
+  if (startIdx < 0) {
+    const now = Date.now();
+    startIdx = Math.max(0, times.findIndex((t) => new Date(t).getTime() >= now));
+  }
+  const hourly: HourSlot[] = [];
+  for (let k = 0; k < 5; k++) {
+    const idx = startIdx + k * 2;
+    if (idx >= times.length) break;
+    hourly.push({
+      hour: new Date(times[idx]).getHours(),
+      temp: Math.round(wx.hourly.temperature_2m[idx]),
+      isDay: wx.hourly.is_day[idx] === 1,
+      code: wx.hourly.weather_code[idx],
+    });
+  }
+
+  return {
+    location: fallbackName,
+    temp: wx.current.temperature_2m,
+    code: wx.current.weather_code,
+    isDay: wx.current.is_day === 1,
+    min: Math.round(wx.daily.temperature_2m_min[0]),
+    max: Math.round(wx.daily.temperature_2m_max[0]),
+    pm10: aq?.current?.pm10 ?? null,
+    pm25: aq?.current?.pm2_5 ?? null,
+    hourly,
+  };
+}
+
+function getSharedWeather(): Promise<WeatherData> {
+  const now = Date.now();
+  if (cachedWeatherData && now - cachedWeatherTimestamp < WEATHER_CACHE_TTL_MS) {
+    return Promise.resolve(cachedWeatherData);
+  }
+  if (inFlightWeatherPromise) {
+    return inFlightWeatherPromise;
+  }
+
+  inFlightWeatherPromise = new Promise<WeatherData>((resolve, reject) => {
+    const resolveCoords = (lat: number, lon: number, name: string) => {
+      fetchWeatherByCoords(lat, lon, name)
+        .then((result) => {
+          cachedWeatherData = result;
+          cachedWeatherTimestamp = Date.now();
+          resolve(result);
+        })
+        .catch((err) => {
+          reject(err);
+        })
+        .finally(() => {
+          inFlightWeatherPromise = null;
+        });
+    };
+
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolveCoords(pos.coords.latitude, pos.coords.longitude, '현재 위치'),
+        () => resolveCoords(SEOUL.lat, SEOUL.lon, SEOUL.name),
+        { timeout: 8000, maximumAge: 600000 }
+      );
+    } else {
+      resolveCoords(SEOUL.lat, SEOUL.lon, SEOUL.name);
+    }
+  });
+
+  return inFlightWeatherPromise;
+}
+
+export interface WeatherWidgetProps {
+  displayMode?: 'mobile' | 'desktop' | 'both';
+}
+
+export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ displayMode = 'both' }) => {
+  const [data, setData] = useState<WeatherData | null>(() => cachedWeatherData);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let active = true;
 
-    const load = async (lat: number, lon: number, fallbackName: string) => {
-      try {
-        const wxUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=2`;
-        const aqUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=pm10,pm2_5&timezone=auto`;
-        const [wx, aq] = await Promise.all([
-          fetch(wxUrl).then((r) => r.json()),
-          fetch(aqUrl)
-            .then((r) => r.json())
-            .catch(() => null),
-        ]);
-        if (!active) return;
-
-        const location = fallbackName;
-
-        const times: string[] = wx.hourly?.time || [];
-        const nowTime: string = wx.current?.time;
-        let startIdx = times.indexOf(nowTime);
-        if (startIdx < 0) {
-          const now = Date.now();
-          startIdx = Math.max(0, times.findIndex((t) => new Date(t).getTime() >= now));
-        }
-        const hourly: HourSlot[] = [];
-        for (let k = 0; k < 5; k++) {
-          const idx = startIdx + k * 2;
-          if (idx >= times.length) break;
-          hourly.push({
-            hour: new Date(times[idx]).getHours(),
-            temp: Math.round(wx.hourly.temperature_2m[idx]),
-            isDay: wx.hourly.is_day[idx] === 1,
-            code: wx.hourly.weather_code[idx],
-          });
-        }
-
-        setData({
-          location,
-          temp: wx.current.temperature_2m,
-          code: wx.current.weather_code,
-          isDay: wx.current.is_day === 1,
-          min: Math.round(wx.daily.temperature_2m_min[0]),
-          max: Math.round(wx.daily.temperature_2m_max[0]),
-          pm10: aq?.current?.pm10 ?? null,
-          pm25: aq?.current?.pm2_5 ?? null,
-          hourly,
-        });
-      } catch (e) {
+    getSharedWeather()
+      .then((result) => {
+        if (active) setData(result);
+      })
+      .catch((e) => {
         console.error('[Weather] 로드 실패:', e);
         if (active) setError(true);
-      }
-    };
-
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => load(pos.coords.latitude, pos.coords.longitude, '현재 위치'),
-        () => load(SEOUL.lat, SEOUL.lon, SEOUL.name),
-        { timeout: 8000, maximumAge: 600000 }
-      );
-    } else {
-      load(SEOUL.lat, SEOUL.lon, SEOUL.name);
-    }
+      });
 
     return () => {
       active = false;
@@ -122,101 +161,107 @@ export const WeatherWidget: React.FC = () => {
   const ci = data ? codeInfo(data.code, data.isDay) : null;
   const pm25g = grade(data?.pm25 ?? null, 15, 35, 75);
   const pm10g = grade(data?.pm10 ?? null, 30, 80, 150);
+  const showMobile = displayMode === 'mobile' || displayMode === 'both';
+  const showDesktop = displayMode === 'desktop' || displayMode === 'both';
 
   return (
     <>
       {/* 모바일 1/5 크기 초소형 마이크로 위젯 (초슬림 원라인 칩) */}
-      <div className="lg:hidden flex-shrink-0 bg-white border border-slate-200/90 shadow-2xs rounded-xl px-2.5 py-1 flex items-center gap-1.5 text-xs text-gray-800">
-        {data && ci ? (
-          <>
-            <i className={`fas ${ci.icon} text-xs`}></i>
-            <span className="font-extrabold text-gray-900">{data.temp.toFixed(1)}°</span>
-            <span className="text-[11px] text-gray-600 font-medium">{ci.label}</span>
-            <span className="text-[10px] text-gray-400 truncate max-w-[42px]">({data.location})</span>
-          </>
-        ) : (
-          <span className="text-[11px] text-gray-400 flex items-center gap-1">
-            <i className="fas fa-cloud-sun text-blue-400"></i>
-            날씨 로딩
-          </span>
-        )}
-      </div>
+      {showMobile && (
+        <div className="lg:hidden flex-shrink-0 bg-white border border-slate-200/90 shadow-2xs rounded-xl px-2.5 py-1 flex items-center gap-1.5 text-xs text-gray-800">
+          {data && ci ? (
+            <>
+              <i className={`fas ${ci.icon} text-xs`}></i>
+              <span className="font-extrabold text-gray-900">{data.temp.toFixed(1)}°</span>
+              <span className="text-[11px] text-gray-600 font-medium">{ci.label}</span>
+              <span className="text-[10px] text-gray-400 truncate max-w-[42px]">({data.location})</span>
+            </>
+          ) : (
+            <span className="text-[11px] text-gray-400 flex items-center gap-1">
+              <i className="fas fa-cloud-sun text-blue-400"></i>
+              날씨 로딩
+            </span>
+          )}
+        </div>
+      )}
 
       {/* PC 카드 (데스크탑: 슬림하고 정돈된 카드) */}
-      <div className="hidden lg:block bg-white border border-slate-200/90 shadow-sm rounded-3xl p-5">
-        <div className="flex items-center justify-between mb-3.5">
-          <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
-            <i className="fas fa-cloud-sun text-blue-400"></i> 날씨
-          </h3>
-          <span
-            className="text-xs font-semibold text-gray-400 truncate max-w-[45%]"
-            title={data?.location || '서울'}
-          >
-            {data?.location || '서울'}
-          </span>
-        </div>
-
-        {data && ci ? (
-          <>
-            <div className="flex items-center gap-4">
-              <i className={`fas ${ci.icon} text-4xl`}></i>
-              <div className="flex-1">
-                <div className="flex items-end gap-2">
-                  <span className="text-3xl font-black text-gray-900 leading-none">
-                    {data.temp.toFixed(1)}°
-                  </span>
-                  <span className="text-sm font-bold text-gray-500 mb-0.5">{ci.label}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-1 text-xs font-bold">
-                  <span className="text-blue-500">{data.min}°</span>
-                  <span className="text-gray-300">/</span>
-                  <span className="text-red-500">{data.max}°</span>
-                </div>
-              </div>
-            </div>
-
-            {(pm25g || pm10g) && (
-              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs">
-                {pm10g && (
-                  <span className="text-gray-500">
-                    미세 <b className={pm10g.color}>{pm10g.label}</b>
-                  </span>
-                )}
-                {pm25g && (
-                  <span className="text-gray-500">
-                    초미세 <b className={pm25g.color}>{pm25g.label}</b>
-                  </span>
-                )}
-              </div>
-            )}
-
-            {data.hourly.length > 0 && (
-              <div className="flex justify-between mt-4 pt-3 border-t border-gray-100">
-                {data.hourly.map((h, i) => {
-                  const hci = codeInfo(h.code, h.isDay);
-                  return (
-                    <div key={i} className="flex flex-col items-center gap-1.5">
-                      <span className="text-xs font-bold text-gray-500">{h.temp}°</span>
-                      <i className={`fas ${hci.icon} text-base`}></i>
-                      <span
-                        className={`text-[11px] ${
-                          i === 0 ? 'font-extrabold text-gray-800' : 'text-gray-400'
-                        }`}
-                      >
-                        {h.hour}시
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="py-6 flex items-center justify-center text-gray-300">
-            <i className="fas fa-circle-notch fa-spin text-xl"></i>
+      {showDesktop && (
+        <div className="hidden lg:block bg-white border border-slate-200/90 shadow-sm rounded-3xl p-5">
+          <div className="flex items-center justify-between mb-3.5">
+            <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
+              <i className="fas fa-cloud-sun text-blue-400"></i> 날씨
+            </h3>
+            <span
+              className="text-xs font-semibold text-gray-400 truncate max-w-[45%]"
+              title={data?.location || '서울'}
+            >
+              {data?.location || '서울'}
+            </span>
           </div>
-        )}
-      </div>
+
+          {data && ci ? (
+            <>
+              <div className="flex items-center gap-4">
+                <i className={`fas ${ci.icon} text-4xl`}></i>
+                <div className="flex-1">
+                  <div className="flex items-end gap-2">
+                    <span className="text-3xl font-black text-gray-900 leading-none">
+                      {data.temp.toFixed(1)}°
+                    </span>
+                    <span className="text-sm font-bold text-gray-500 mb-0.5">{ci.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 text-xs font-bold">
+                    <span className="text-blue-500">{data.min}°</span>
+                    <span className="text-gray-300">/</span>
+                    <span className="text-red-500">{data.max}°</span>
+                  </div>
+                </div>
+              </div>
+
+              {(pm25g || pm10g) && (
+                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs">
+                  {pm10g && (
+                    <span className="text-gray-500">
+                      미세 <b className={pm10g.color}>{pm10g.label}</b>
+                    </span>
+                  )}
+                  {pm25g && (
+                    <span className="text-gray-500">
+                      초미세 <b className={pm25g.color}>{pm25g.label}</b>
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {data.hourly.length > 0 && (
+                <div className="flex justify-between mt-4 pt-3 border-t border-gray-100">
+                  {data.hourly.map((h, i) => {
+                    const hci = codeInfo(h.code, h.isDay);
+                    return (
+                      <div key={i} className="flex flex-col items-center gap-1.5">
+                        <span className="text-xs font-bold text-gray-500">{h.temp}°</span>
+                        <i className={`fas ${hci.icon} text-base`}></i>
+                        <span
+                          className={`text-[11px] ${
+                            i === 0 ? 'font-extrabold text-gray-800' : 'text-gray-400'
+                          }`}
+                        >
+                          {h.hour}시
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="py-6 flex items-center justify-center text-gray-300">
+              <i className="fas fa-circle-notch fa-spin text-xl"></i>
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 };

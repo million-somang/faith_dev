@@ -25,32 +25,106 @@ const CURATED_TOP_SLUGS = [
   'ai-news-curation-and-smart-current-affairs-literacy',
 ];
 
-export const GuidesShowcase: React.FC = () => {
+interface GuidesShowcaseProps {
+  compact?: boolean;
+}
+
+export const GuidesShowcase: React.FC<GuidesShowcaseProps> = ({ compact = false }) => {
   const [selectedGuideTab, setSelectedGuideTab] = useState<GuideTabKey>('all');
 
   const displayedGuides = useMemo(() => {
-    if (selectedGuideTab === 'all') {
+    const limit = compact ? 4 : 8;
+    if (selectedGuideTab === 'all' || compact) {
       const curated = CURATED_TOP_SLUGS
         .map((slug) => GUIDES_DATA.find((g) => g.slug === slug))
         .filter((g): g is GuideArticle => !!g);
-      if (curated.length >= 8) return curated.slice(0, 8);
+      if (curated.length >= limit) return curated.slice(0, limit);
       const remaining = GUIDES_DATA.filter((g) => !curated.some((c) => c.slug === g.slug));
-      return [...curated, ...remaining].slice(0, 8);
+      return [...curated, ...remaining].slice(0, limit);
     }
     if (selectedGuideTab === 'finance') {
-      return GUIDES_DATA.filter((g) => g.category === 'finance').slice(0, 8);
+      return GUIDES_DATA.filter((g) => g.category === 'finance').slice(0, limit);
     }
     if (selectedGuideTab === 'saju') {
-      return GUIDES_DATA.filter((g) => g.category === 'saju').slice(0, 8);
+      return GUIDES_DATA.filter((g) => g.category === 'saju').slice(0, limit);
     }
     if (selectedGuideTab === 'novel') {
-      return GUIDES_DATA.filter((g) => g.category === 'novel').slice(0, 8);
+      return GUIDES_DATA.filter((g) => g.category === 'novel').slice(0, limit);
     }
     if (selectedGuideTab === 'tech') {
-      return GUIDES_DATA.filter((g) => g.category === 'tech' || g.category === 'game').slice(0, 8);
+      return GUIDES_DATA.filter((g) => g.category === 'tech' || g.category === 'game').slice(0, limit);
     }
-    return GUIDES_DATA.slice(0, 8);
-  }, [selectedGuideTab]);
+    return GUIDES_DATA.slice(0, limit);
+  }, [selectedGuideTab, compact]);
+
+  if (compact) {
+    return (
+      <section
+        aria-label="지식 가이드 추천 칼럼"
+        className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm"
+      >
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 flex items-center justify-center text-white shadow-xs shrink-0">
+              <i className="fas fa-book-open text-sm"></i>
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">
+                  지식 가이드 &amp; 전문 칼럼
+                </h2>
+                <span className="text-[10px] bg-teal-600 text-white px-2 py-0.5 rounded-full font-bold shrink-0">
+                  25편 완비
+                </span>
+              </div>
+              <p className="hidden sm:block text-xs text-slate-500">
+                금융·명리·작법·IT 분야 VERA 편집팀 팩트체크 심층 아티클
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/guides"
+            className="text-xs sm:text-sm font-bold text-teal-700 hover:text-teal-900 flex items-center gap-1 shrink-0"
+          >
+            <span>25편 전체보기</span>
+            <i className="fas fa-chevron-right text-[10px]"></i>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {displayedGuides.map((guide) => (
+            <Link
+              key={guide.slug}
+              href={`/guides/${guide.slug}`}
+              className="p-4 rounded-2xl border border-slate-200/85 hover:border-teal-400 hover:bg-teal-50/20 transition-all group flex flex-col justify-between bg-white min-w-0"
+            >
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${guide.categoryColor}`}>
+                    {guide.categoryLabel}
+                  </span>
+                  <span className="text-slate-400 text-[11px] font-medium ml-auto">
+                    <i className="far fa-clock text-[10px] mr-1"></i>
+                    {guide.readTime}
+                  </span>
+                </div>
+                <h3 className="font-extrabold text-slate-900 group-hover:text-teal-700 transition-colors text-sm sm:text-[15px] line-clamp-2 leading-snug mb-1.5">
+                  {guide.title}
+                </h3>
+                <p className="text-slate-500 text-xs line-clamp-2 leading-relaxed">
+                  {guide.summary || guide.description}
+                </p>
+              </div>
+              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-600 truncate">{guide.author}</span>
+                <span className="text-teal-700 font-bold shrink-0">전문 읽기 →</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <div className="bg-white rounded-3xl p-6 sm:p-8 border border-teal-100 shadow-sm">

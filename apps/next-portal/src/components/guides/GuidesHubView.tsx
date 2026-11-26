@@ -1,8 +1,22 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { Suspense, useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { GUIDES_DATA, GUIDE_CATEGORIES } from '@/data/guidesData';
+
+function GuidesQuerySync({ onQueryChange }: { onQueryChange: (q: string) => void }) {
+  const searchParams = useSearchParams();
+  const qParam = searchParams.get('q');
+
+  useEffect(() => {
+    if (qParam !== null) {
+      onQueryChange(qParam);
+    }
+  }, [qParam, onQueryChange]);
+
+  return null;
+}
 
 export function GuidesHubView() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -25,6 +39,9 @@ export function GuidesHubView() {
 
   return (
     <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+      <Suspense fallback={null}>
+        <GuidesQuerySync onQueryChange={setSearchQuery} />
+      </Suspense>
       {/* Hero Header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white px-6 sm:px-12 py-10 sm:py-14 mb-10 shadow-xl">
         <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-blue-500/10 pointer-events-none blur-2xl"></div>

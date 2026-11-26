@@ -227,8 +227,8 @@ export const PortalFooter: React.FC = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/tools/loan-calc" className="hover:text-blue-600 transition-colors">
-                    대출 원리금 상환 계산기
+                  <Link href="/tools/finance-dsr" className="hover:text-blue-600 transition-colors">
+                    대출 DSR · 원리금 계산기
                   </Link>
                 </li>
                 <li>
