@@ -216,6 +216,12 @@ app.route('/', geoRoutes);
 import { shoppingRoutes } from './routes/shopping.routes.js';
 app.route('/', shoppingRoutes);
 
+import { shoppingAdminRoutes } from './routes/shopping-admin.routes.js';
+app.route('/', shoppingAdminRoutes);
+
+import { shoppingAdminUi } from './routes/shopping-admin-ui.js';
+app.route('/', shoppingAdminUi);
+
 import { travelRoutes } from './routes/travel.routes.js';
 app.route('/', travelRoutes);
 

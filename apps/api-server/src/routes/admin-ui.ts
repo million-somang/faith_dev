@@ -472,6 +472,7 @@ export function getAdminNavigation(currentPage: string): string {
         { path: '/admin/logs', label: '활동 로그', icon: 'fa-clipboard-list', shortLabel: '로그' },
         { path: '/admin/notifications', label: '알림 센터', icon: 'fa-bell', shortLabel: '알림' },
         { path: '/admin/mini-apps', label: '미니앱 관리', icon: 'fa-th-large', shortLabel: '미니앱' },
+        { path: '/admin/shopping', label: '쿠팡 쇼핑몰', icon: 'fa-shopping-bag', shortLabel: '쇼핑몰' },
         { path: '/admin/marketing', label: 'SNS 마케팅', icon: 'fa-paper-plane', shortLabel: '마케팅' },
         { path: '/admin/watchdog', label: '와치독', icon: 'fa-heartbeat', shortLabel: '와치독' },
     ]
