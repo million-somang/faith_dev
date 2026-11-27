@@ -6,6 +6,8 @@ export type TodoPriority = 'urgent' | 'important' | 'normal';
 
 export type TodoCategory = 'work' | 'personal' | 'shopping' | 'health' | 'study';
 
+export type RemindBeforeMinutes = 0 | 5 | 10 | 30 | 60;
+
 export type TodoStatusFilter = 'all' | 'active' | 'recurring' | 'today' | 'completed';
 
 export type TodoSortKey = 'manual' | 'priority' | 'dueDate' | 'createdAt';
@@ -131,6 +133,9 @@ export interface TodoItem {
   readonly priority: TodoPriority;
   readonly category: TodoCategory;
   readonly dueDate: string | null; // 'YYYY-MM-DD'
+  readonly dueTime: string | null; // 'HH:MM'
+  readonly reminderEnabled: boolean;
+  readonly remindBeforeMinutes: RemindBeforeMinutes;
   readonly completed: boolean;
   readonly completedAt: string | null;
   readonly subtasks: readonly TodoSubtask[];
@@ -151,6 +156,9 @@ export interface TodoDraftInput {
   readonly priority: TodoPriority;
   readonly category: TodoCategory;
   readonly dueDate: string | null;
+  readonly dueTime?: string | null;
+  readonly reminderEnabled?: boolean;
+  readonly remindBeforeMinutes?: RemindBeforeMinutes;
   readonly recurrence?: Partial<TodoRecurrenceRule> | null;
 }
 
@@ -160,6 +168,9 @@ export interface TodoPatchInput {
   readonly priority?: TodoPriority;
   readonly category?: TodoCategory;
   readonly dueDate?: string | null;
+  readonly dueTime?: string | null;
+  readonly reminderEnabled?: boolean;
+  readonly remindBeforeMinutes?: RemindBeforeMinutes;
   readonly subtasks?: readonly TodoSubtask[];
   readonly order?: number;
   readonly recurrence?: Partial<TodoRecurrenceRule> | null;

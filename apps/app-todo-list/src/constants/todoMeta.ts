@@ -14,6 +14,28 @@ export const POMODORO_FOCUS_PRESETS = [15, 25, 50] as const;
 export const POMODORO_BREAK_PRESETS = [5, 10, 15] as const;
 export const TODO_MAX_ITEMS = 500;
 export const TODO_MAX_SUBTASKS = 30;
+export const TODO_MEMO_MAX_LENGTH = 2000;
+export const TODO_LOCAL_FIRED_ALARMS_KEY = 'veranex_todo_local_alarms_v1';
+
+export const REMIND_BEFORE_OPTIONS: ReadonlyArray<{
+  readonly minutes: 0 | 5 | 10 | 30 | 60;
+  readonly label: string;
+  readonly shortLabel: string;
+}> = [
+  { minutes: 0, label: '지정 시간 정시', shortLabel: '정시' },
+  { minutes: 5, label: '5분 전 미리 알림', shortLabel: '5분 전' },
+  { minutes: 10, label: '10분 전 미리 알림', shortLabel: '10분 전' },
+  { minutes: 30, label: '30분 전 미리 알림', shortLabel: '30분 전' },
+  { minutes: 60, label: '1시간 전 미리 알림', shortLabel: '1시간 전' },
+];
+
+export const QUICK_TIME_PRESETS: readonly string[] = [
+  '09:00',
+  '12:00',
+  '14:00',
+  '18:00',
+  '21:00',
+];
 
 export interface PriorityMeta {
   readonly key: TodoPriority;

@@ -1,5 +1,12 @@
-import { TODO_MAX_ITEMS, TODO_MAX_SUBTASKS } from '../constants/todoMeta';
-import type { TodoCategory, TodoItem, TodoPriority, TodoRecurrenceRule, TodoSubtask } from '../types/todo';
+import { TODO_MAX_ITEMS, TODO_MAX_SUBTASKS, TODO_MEMO_MAX_LENGTH } from '../constants/todoMeta';
+import type {
+  RemindBeforeMinutes,
+  TodoCategory,
+  TodoItem,
+  TodoPriority,
+  TodoRecurrenceRule,
+  TodoSubtask,
+} from '../types/todo';
 import {
   evaluateTodoOccurrence,
   getLocalTodayDateStr,
@@ -9,6 +16,19 @@ import {
 
 const VALID_PRIORITIES = new Set<TodoPriority>(['urgent', 'important', 'normal']);
 const VALID_CATEGORIES = new Set<TodoCategory>(['work', 'personal', 'shopping', 'health', 'study']);
+const HHMM_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+const VALID_REMIND_MINUTES = new Set<RemindBeforeMinutes>([0, 5, 10, 30, 60]);
+
+export function normalizeDueTime(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return HHMM_REGEX.test(trimmed) ? trimmed : null;
+}
+
+export function normalizeRemindBeforeMinutes(value: unknown): RemindBeforeMinutes {
+  const num = Number(value);
+  return VALID_REMIND_MINUTES.has(num as RemindBeforeMinutes) ? (num as RemindBeforeMinutes) : 0;
+}
 
 /**
  * 제어문자를 제거하고 허용 길이를 제한하여 안전한 평문 문자열로 정제합니다.
@@ -77,8 +97,11 @@ export function sanitizeTodoRecord(raw: unknown, fallbackOrder: number): TodoIte
       ? (raw.category as TodoCategory)
       : 'personal';
 
-  const memo = typeof raw.memo === 'string' ? sanitizeText(raw.memo, 400) : '';
+  const memo = typeof raw.memo === 'string' ? sanitizeText(raw.memo, TODO_MEMO_MAX_LENGTH) : '';
   const dueDate = isValidDateString(raw.dueDate) ? raw.dueDate : null;
+  const dueTime = normalizeDueTime(raw.dueTime);
+  const reminderEnabled = Boolean(dueTime && raw.reminderEnabled);
+  const remindBeforeMinutes = normalizeRemindBeforeMinutes(raw.remindBeforeMinutes);
 
   const subtasks: TodoSubtask[] = [];
   if (Array.isArray(raw.subtasks)) {
@@ -142,6 +165,9 @@ export function sanitizeTodoRecord(raw: unknown, fallbackOrder: number): TodoIte
     priority,
     category,
     dueDate,
+    dueTime,
+    reminderEnabled,
+    remindBeforeMinutes,
     completed: effectiveCompleted,
     completedAt,
     subtasks,

@@ -25,6 +25,7 @@ const DEFAULT_CATEGORIES: Record<string, boolean> = {
     'azit.garden': true,
     'azit.camp': true,
     schedule: true,
+    todo: true,
     system: true,
 };
 
@@ -262,6 +263,16 @@ function buildCoalescedPayload(
         };
     }
 
+    if (category === 'todo') {
+        return {
+            title: `⏰ [스마트 투두] 할 일 ${count}건의 알림 시간이 되었어요!`,
+            body: `${first.body} (외 ${extraCount}건 — 클릭해서 바로 확인하세요!)`,
+            url: '/app/todo-list/',
+            icon: first.icon || '/logo-192.png',
+            tag: 'todo-reminder',
+        };
+    }
+
     return {
         title: `${first.title} 외 ${extraCount}건`,
         body: `${first.body} (외 ${extraCount}건의 알림이 도착했습니다.)`,
@@ -273,6 +284,14 @@ function buildCoalescedPayload(
 
 export class NotificationService {
     private static ensureTablesPromise: Promise<void> | null = null;
+    private static categorySentHandlers = new Map<string, (jobs: NotificationJobRecord[]) => Promise<void>>();
+
+    static registerCategorySentHandler(
+        category: string,
+        handler: (jobs: NotificationJobRecord[]) => Promise<void>
+    ): void {
+        this.categorySentHandlers.set(category, handler);
+    }
 
     static async ensureTables(): Promise<void> {
         if (!this.ensureTablesPromise) {
@@ -920,6 +939,15 @@ export class NotificationService {
                         [j.id]
                     );
                     sentJobs += 1;
+                }
+
+                const sentHandler = this.categorySentHandlers.get(category);
+                if (sentHandler && claimed.length > 0) {
+                    try {
+                        await sentHandler(claimed);
+                    } catch (handlerErr) {
+                        console.error(`[NotificationService] categorySentHandler(${category}) failed:`, handlerErr);
+                    }
                 }
             } catch (err) {
                 const errMsg = err instanceof Error ? err.message : String(err);

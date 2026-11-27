@@ -18,6 +18,31 @@ import {
 const VALID_PRIORITIES = new Set<TodoPriority>(['urgent', 'important', 'normal']);
 const VALID_CATEGORIES = new Set<TodoCategory>(['work', 'personal', 'shopping', 'health', 'study']);
 const VALID_RECURRENCE_TYPES = new Set<RecurrenceType>(['none', 'daily', 'workday', 'weekly', 'monthly', 'yearly']);
+const HHMM_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+const VALID_REMIND_BEFORE = new Set([0, 5, 10, 30, 60]);
+
+function parseDueTimeInput(raw: unknown): string | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null) return null;
+  if (typeof raw !== 'string') {
+    throw new TodoServiceError(400, '알림/마감 시각 형식이 올바르지 않습니다.');
+  }
+  const trimmed = raw.trim();
+  if (trimmed === '') return null;
+  if (!HHMM_REGEX.test(trimmed)) {
+    throw new TodoServiceError(400, '시각은 HH:MM (00:00~23:59) 형식이어야 합니다.');
+  }
+  return trimmed;
+}
+
+function parseRemindBeforeInput(raw: unknown): number | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  const num = Number(raw);
+  if (!Number.isInteger(num) || !VALID_REMIND_BEFORE.has(num)) {
+    throw new TodoServiceError(400, '알림 시점은 정시(0), 5분, 10분, 30분, 60분 전 중 하나여야 합니다.');
+  }
+  return num;
+}
 
 function getAuthUserId(c: Context): number | null {
   const user = c.get('user') as SessionUser | undefined;
@@ -187,6 +212,10 @@ export class TodoController {
         dueDate = body.dueDate.trim();
       }
 
+      const dueTime = parseDueTimeInput(body.dueTime) ?? null;
+      const reminderEnabled = dueTime ? Boolean(body.reminderEnabled) : false;
+      const remindBeforeMinutes = parseRemindBeforeInput(body.remindBeforeMinutes) ?? 0;
+
       const recurrence = parseRecurrenceInput(body.recurrence);
       const subtasks = parseSubtasksInput(body.subtasks);
 
@@ -198,6 +227,9 @@ export class TodoController {
           priority,
           category,
           dueDate,
+          dueTime,
+          reminderEnabled,
+          remindBeforeMinutes,
           subtasks,
           recurrence,
         },
@@ -249,6 +281,11 @@ export class TodoController {
         }
       }
 
+      const dueTimePatch = parseDueTimeInput(body.dueTime);
+      const reminderEnabledPatch =
+        body.reminderEnabled !== undefined ? Boolean(body.reminderEnabled) : undefined;
+      const remindBeforePatch = parseRemindBeforeInput(body.remindBeforeMinutes);
+
       const recurrence = parseRecurrenceInput(body.recurrence);
       const subtasks = parseSubtasksInput(body.subtasks);
 
@@ -261,6 +298,9 @@ export class TodoController {
           priority: typeof body.priority === 'string' ? (body.priority as TodoPriority) : undefined,
           category: typeof body.category === 'string' ? (body.category as TodoCategory) : undefined,
           dueDate: dueDatePatch,
+          dueTime: dueTimePatch,
+          reminderEnabled: reminderEnabledPatch,
+          remindBeforeMinutes: remindBeforePatch,
           subtasks,
           order: typeof body.order === 'number' ? body.order : undefined,
           recurrence,

@@ -29,9 +29,10 @@ import { getLocalDateString, getOffsetDateString } from '../utils/todoAnalytics'
 interface TodoQuickAddProps {
   readonly inputRef: RefObject<HTMLInputElement | null>;
   readonly onAdd: (draft: TodoDraftInput) => void;
+  readonly onOpenDetailModal: (initialTitle: string) => void;
 }
 
-export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
+export default function TodoQuickAdd({ inputRef, onAdd, onOpenDetailModal }: TodoQuickAddProps) {
   const now = new Date();
   const [title, setTitle] = useState<string>('');
   const [optionsOpen, setOptionsOpen] = useState<boolean>(false);
@@ -186,6 +187,25 @@ export default function TodoQuickAdd({ inputRef, onAdd }: TodoQuickAddProps) {
             data-screenshot-click="action"
             icon={<i className="fas fa-plus text-[10px]"></i>}
           />
+        </div>
+
+        {/* 1.5행: 상세 내용 + 지정 시간 + 푸시 알람 모달 실행 띠 */}
+        <div className="flex items-center justify-between gap-2 px-0.5">
+          <span className="text-[10.5px] font-medium text-[#78716C] truncate">
+            빠른 제목 등록 또는 상세 메모 · 시간 알람 설정
+          </span>
+          <button
+            type="button"
+            data-screenshot-point="action"
+            onClick={() => {
+              const current = (inputRef.current ? inputRef.current.value : title).trim();
+              onOpenDetailModal(current);
+            }}
+            className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/90 text-indigo-700 text-[11px] font-black transition-colors cursor-pointer"
+          >
+            <i className="far fa-clock text-[10px]"></i>
+            <span>상세 내용 · 시간 알람</span>
+          </button>
         </div>
 
         {optionsOpen && (

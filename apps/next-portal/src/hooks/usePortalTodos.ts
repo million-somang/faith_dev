@@ -37,6 +37,9 @@ export interface PortalTodoItem {
   readonly priority: LocalTodoPriority;
   readonly category: LocalTodoCategory;
   readonly dueDate: string | null;
+  readonly dueTime?: string | null;
+  readonly reminderEnabled?: boolean;
+  readonly remindBeforeMinutes?: number;
   readonly completed: boolean;
   readonly completedAt: string | null;
   readonly subtasks: readonly LocalTodoSubtask[];
@@ -539,13 +542,27 @@ function normalizeLocalRecord(raw: unknown, idx: number, todayStr: string): Port
     }
   }
 
+  const dueTime =
+    typeof raw.dueTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(raw.dueTime.trim())
+      ? raw.dueTime.trim()
+      : null;
+  const reminderEnabled = Boolean(dueTime && raw.reminderEnabled);
+  const remindBeforeRaw = Number(raw.remindBeforeMinutes);
+  const remindBeforeMinutes =
+    remindBeforeRaw === 5 || remindBeforeRaw === 10 || remindBeforeRaw === 30 || remindBeforeRaw === 60
+      ? remindBeforeRaw
+      : 0;
+
   return {
     id: typeof raw.id === 'string' && raw.id ? raw.id : `todo_${Date.now()}_${idx}`,
     title,
-    memo: typeof raw.memo === 'string' ? sanitizeText(raw.memo, 400) : '',
+    memo: typeof raw.memo === 'string' ? sanitizeText(raw.memo, 2000) : '',
     priority,
     category,
     dueDate: typeof raw.dueDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.dueDate) ? raw.dueDate : null,
+    dueTime,
+    reminderEnabled,
+    remindBeforeMinutes,
     completed,
     completedAt: completed && typeof raw.completedAt === 'string' ? raw.completedAt : null,
     subtasks,

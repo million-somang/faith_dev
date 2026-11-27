@@ -43,6 +43,12 @@ const CATEGORY_OPTIONS: Array<{
         description: '캘린더에 등록한 개인 일정 시작 1시간 전에 미리 알려드려요.',
     },
     {
+        key: 'todo',
+        emoji: '⏰',
+        label: '스마트 투두 시간 알람',
+        description: '스마트 투두에서 지정한 할 일 시각에 푸시 알림을 보내드려요.',
+    },
+    {
         key: 'system',
         emoji: '📢',
         label: '시스템 · 외부 API 알림',
@@ -60,6 +66,8 @@ function getCategoryBadge(category: string): { emoji: string; label: string; bad
             return { emoji: '⚔️', label: '용병 캠프', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' };
         case 'schedule':
             return { emoji: '📅', label: '일정', badgeClass: 'bg-sky-50 text-sky-700 border-sky-200' };
+        case 'todo':
+            return { emoji: '⏰', label: '스마트 투두', badgeClass: 'bg-amber-50 text-amber-800 border-amber-200' };
         default:
             return { emoji: '📢', label: '시스템', badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
     }

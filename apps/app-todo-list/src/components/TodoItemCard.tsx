@@ -7,10 +7,13 @@ import {
   CATEGORY_MAP,
   PRIORITY_LIST,
   RECURRENCE_LIST,
+  REMIND_BEFORE_OPTIONS,
+  TODO_MEMO_MAX_LENGTH,
   WEEKDAY_OPTIONS,
 } from '../constants/todoMeta';
 import type {
   RecurrenceType,
+  RemindBeforeMinutes,
   TodoCategory,
   TodoItem,
   TodoPatchInput,
@@ -63,6 +66,11 @@ export default function TodoItemCard({
   const [draftPriority, setDraftPriority] = useState<TodoPriority>(item.priority);
   const [draftCategory, setDraftCategory] = useState<TodoCategory>(item.category);
   const [draftDueDate, setDraftDueDate] = useState<string>(item.dueDate || '');
+  const [draftDueTime, setDraftDueTime] = useState<string>(item.dueTime || '');
+  const [draftReminderEnabled, setDraftReminderEnabled] = useState<boolean>(item.reminderEnabled);
+  const [draftRemindBefore, setDraftRemindBefore] = useState<RemindBeforeMinutes>(
+    item.remindBeforeMinutes
+  );
 
   const [draftRecType, setDraftRecType] = useState<RecurrenceType>(item.recurrence.type);
   const [draftInterval, setDraftInterval] = useState<number>(item.recurrence.interval || 1);
@@ -147,6 +155,32 @@ export default function TodoItemCard({
       ),
     });
   }
+  if (item.dueTime) {
+    const leadText =
+      item.reminderEnabled && item.remindBeforeMinutes > 0
+        ? ` · ${item.remindBeforeMinutes === 60 ? '1시간전' : `${item.remindBeforeMinutes}분전`}`
+        : '';
+    metaParts.push({
+      key: 'due-time',
+      node: (
+        <span
+          className={`inline-flex items-center gap-1 font-bold ${
+            item.reminderEnabled && !item.completed ? 'text-amber-700' : 'text-[#6C655B]'
+          }`}
+        >
+          <i
+            className={`text-[9px] ${
+              item.reminderEnabled ? 'fas fa-bell text-amber-500' : 'far fa-clock'
+            }`}
+          ></i>
+          <span>
+            {item.dueTime}
+            {leadText}
+          </span>
+        </span>
+      ),
+    });
+  }
   if (item.subtasks.length > 0) {
     metaParts.push({
       key: 'subtasks',
@@ -172,6 +206,9 @@ export default function TodoItemCard({
     setDraftPriority(item.priority);
     setDraftCategory(item.category);
     setDraftDueDate(item.dueDate || '');
+    setDraftDueTime(item.dueTime || '');
+    setDraftReminderEnabled(item.dueTime ? item.reminderEnabled : true);
+    setDraftRemindBefore(item.remindBeforeMinutes);
     setDraftRecType(item.recurrence.type);
     setDraftInterval(item.recurrence.interval || 1);
     setDraftWeekdays(
@@ -201,12 +238,17 @@ export default function TodoItemCard({
     const cleanedTitle = draftTitle.trim();
     if (!cleanedTitle) return;
 
+    const validTime = /^([01]\d|2[0-3]):[0-5]\d$/.test(draftDueTime) ? draftDueTime : null;
+
     onUpdate(item.id, {
       title: cleanedTitle,
       memo: draftMemo.trim(),
       priority: draftPriority,
       category: draftCategory,
       dueDate: draftDueDate || null,
+      dueTime: validTime,
+      reminderEnabled: validTime ? draftReminderEnabled : false,
+      remindBeforeMinutes: validTime ? draftRemindBefore : 0,
       recurrence:
         draftRecType === 'none'
           ? { type: 'none' }
@@ -412,12 +454,12 @@ export default function TodoItemCard({
               />
               <textarea
                 value={draftMemo}
-                onChange={(e) => setDraftMemo(e.target.value)}
-                maxLength={400}
-                rows={2}
-                placeholder="상세 메모 (선택)"
+                onChange={(e) => setDraftMemo(e.target.value.slice(0, TODO_MEMO_MAX_LENGTH))}
+                maxLength={TODO_MEMO_MAX_LENGTH}
+                rows={3}
+                placeholder="상세 내용 / 메모 (선택)"
                 aria-label="할 일 메모 수정"
-                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#D9D0C1] focus:border-indigo-500 text-[11px] font-medium text-[#24211D] outline-none resize-none"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#D9D0C1] focus:border-indigo-500 text-[11px] font-medium text-[#24211D] outline-none resize-y leading-relaxed"
               />
 
               <div className="flex flex-wrap items-center gap-1.5">
@@ -452,7 +494,53 @@ export default function TodoItemCard({
                   aria-label="마감일 수정"
                   className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] text-[10px] font-bold text-[#24211D]"
                 />
+                <input
+                  type="time"
+                  value={draftDueTime}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setDraftDueTime(next);
+                    if (next && !draftDueDate) {
+                      setDraftDueDate(todayStr);
+                    }
+                  }}
+                  aria-label="마감 시간 수정"
+                  className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] text-[10px] font-bold text-[#24211D]"
+                />
               </div>
+
+              {/^([01]\d|2[0-3]):[0-5]\d$/.test(draftDueTime) && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setDraftReminderEnabled((prev) => !prev)}
+                    className={`px-2 py-1 rounded-lg font-black border cursor-pointer flex items-center gap-1 ${
+                      draftReminderEnabled
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white text-[#6C655B] border-[#D9D0C1]'
+                    }`}
+                  >
+                    <i className={draftReminderEnabled ? 'fas fa-bell' : 'far fa-bell-slash'}></i>
+                    <span>{draftReminderEnabled ? '푸시 알람 ON' : '알람 OFF'}</span>
+                  </button>
+                  {draftReminderEnabled && (
+                    <select
+                      value={draftRemindBefore}
+                      onChange={(e) =>
+                        setDraftRemindBefore(Number(e.target.value) as RemindBeforeMinutes)
+                      }
+                      aria-label="알람 시점 수정"
+                      className="px-2 py-1 rounded-lg bg-white border border-[#D9D0C1] font-bold text-[#24211D]"
+                    >
+                      {REMIND_BEFORE_OPTIONS.map((opt) => (
+                        <option key={opt.minutes} value={opt.minutes}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
 
               {/* 반복 규칙 수정 */}
               <div className="space-y-1.5 pt-1 border-t border-[#E5DDD0] text-[10px]">
@@ -603,7 +691,7 @@ export default function TodoItemCard({
             </form>
           ) : (
             item.memo && (
-              <p className="text-[11px] text-[#4D473F] bg-[#FAF8F5] px-2.5 py-1.5 rounded-xl border border-[#E5DDD0] leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-[#4D473F] bg-[#FAF8F5] px-3 py-2 rounded-xl border border-[#E5DDD0] leading-relaxed whitespace-pre-wrap break-words">
                 {item.memo}
               </p>
             )

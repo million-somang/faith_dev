@@ -3,6 +3,7 @@ export const KNOWN_NOTIFICATION_CATEGORIES = [
     'azit.garden',
     'azit.camp',
     'schedule',
+    'todo',
     'system',
 ] as const;
 

@@ -540,6 +540,11 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                         >
                           {item.title}
                         </p>
+                        {item.memo && (
+                          <p className="text-[11px] text-[#6C655B] truncate mt-0.5">
+                            {item.memo}
+                          </p>
+                        )}
                         <div className="flex flex-wrap items-center gap-1 mt-1 text-[10px]">
                           <span className={`px-1.5 py-0.5 rounded border font-black ${pri.badge}`}>
                             {pri.label}
@@ -547,6 +552,22 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                           <span className="px-1.5 py-0.5 rounded bg-[#FAF8F5] border border-[#E5DDD0] text-[#6C655B] font-bold">
                             {CATEGORY_LABEL[item.category]}
                           </span>
+                          {item.dueTime && (
+                            <span
+                              className={`px-1.5 py-0.5 rounded border font-black inline-flex items-center gap-1 ${
+                                item.reminderEnabled
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                  : 'bg-stone-50 text-stone-600 border-stone-200'
+                              }`}
+                            >
+                              <i
+                                className={`text-[9px] ${
+                                  item.reminderEnabled ? 'fas fa-bell text-amber-600' : 'far fa-clock'
+                                }`}
+                              ></i>
+                              <span>{item.dueTime}</span>
+                            </span>
+                          )}
                           {isRecurring && item.occurrence.summaryLabel && (
                             <span className="px-1.5 py-0.5 rounded border bg-indigo-50 text-indigo-700 border-indigo-200 font-black">
                               🔁 {item.occurrence.summaryLabel}

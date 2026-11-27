@@ -30,6 +30,7 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
         'azit.garden': true,
         'azit.camp': true,
         schedule: true,
+        todo: true,
         system: true,
     },
     quietHoursEnabled: false,

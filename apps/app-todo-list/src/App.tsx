@@ -7,6 +7,7 @@ import { useAuthSession } from './hooks/useAuthSession';
 import { useFullscreen } from './hooks/useFullscreen';
 import { usePomodoroTimer } from './hooks/usePomodoroTimer';
 import { usePortalMessenger } from './hooks/usePortalMessenger';
+import { useTodoNotifications } from './hooks/useTodoNotifications';
 import { useTodos } from './hooks/useTodos';
 import { useViewMode } from './hooks/useViewMode';
 import type { MainTab, TodoDraftInput, WorkspaceView } from './types/todo';
@@ -29,6 +30,7 @@ import Header from './components/Header';
 import HowToGuide from './components/HowToGuide';
 import LegalFooterModal, { type LegalDocType } from './components/LegalFooterModal';
 import SplashScreen from './components/SplashScreen';
+import TodoCreateModal from './components/TodoCreateModal';
 import TodoEmptyState from './components/TodoEmptyState';
 import TodoFilterBar from './components/TodoFilterBar';
 import TodoFocusTimerPanel from './components/TodoFocusTimerPanel';
@@ -55,6 +57,8 @@ export function App() {
   const [activeTab, setActiveTab] = useState<MainTab>('todo');
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('todo');
   const [showTrashModal, setShowTrashModal] = useState<boolean>(false);
+  const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
+  const [createModalInitialTitle, setCreateModalInitialTitle] = useState<string>('');
   const [legalDoc, setLegalDoc] = useState<LegalDocType>(null);
   const [toastState, setToastState] = useState<{
     readonly message: string;
@@ -144,6 +148,34 @@ export function App() {
       }
     },
   });
+
+  const notifications = useTodoNotifications({
+    isAuthenticated,
+    activeItems,
+    onLocalAlarmTrigger: (triggeredItem) => {
+      audio.playTimerDone();
+      showToast(`⏰ [${triggeredItem.dueTime}] ${triggeredItem.title.slice(0, 24)}`);
+    },
+  });
+
+  useEffect(() => {
+    if (notifications.statusMessage) {
+      showToast(notifications.statusMessage);
+      notifications.clearStatusMessage();
+    }
+  }, [notifications, showToast]);
+
+  const hasActiveAlarmTodo = useMemo(
+    () =>
+      activeItems.some(
+        (item) => !item.isDeleted && !item.completed && item.reminderEnabled && Boolean(item.dueTime)
+      ),
+    [activeItems]
+  );
+
+  const showPushConnectBar =
+    hasActiveAlarmTodo &&
+    (isAuthenticated ? !notifications.isDeviceSubscribed : notifications.permission !== 'granted');
 
   const handleChangeWorkspaceView = useCallback(
     (view: WorkspaceView) => {
@@ -294,7 +326,9 @@ export function App() {
         const recSuffix = added.occurrence.summaryLabel
           ? ` (${added.occurrence.summaryLabel})`
           : '';
-        showToast(`'${shortTitle}'${recSuffix} 추가됨`);
+        const alarmSuffix =
+          added.dueTime && added.reminderEnabled ? ` · 🔔 ${added.dueTime} 알람` : '';
+        showToast(`'${shortTitle}'${recSuffix}${alarmSuffix} 추가됨`);
       }
     },
     [addTodo, audio, showToast]
@@ -548,8 +582,37 @@ export function App() {
                     aria-label="할 일 정리 워크스페이스"
                     className="flex-1 flex flex-col gap-2"
                   >
-                    {/* 1. 슬림 1행 빠른 입력 + 펼침 반복 스케줄러 카드 */}
-                    <TodoQuickAdd inputRef={quickAddInputRef} onAdd={handleAddTodo} />
+                    {/* 1. 슬림 1행 빠른 입력 + 상세·시간 모달 버튼 */}
+                    <TodoQuickAdd
+                      inputRef={quickAddInputRef}
+                      onAdd={handleAddTodo}
+                      onOpenDetailModal={(initial) => {
+                        setCreateModalInitialTitle(initial);
+                        setCreateModalOpen(true);
+                      }}
+                    />
+
+                    {/* 기기 알람 미연결 안내 바 (알람 설정 할 일이 있을 때만 노출) */}
+                    {showPushConnectBar && (
+                      <div className="px-3 py-2 rounded-2xl bg-amber-50/90 border border-amber-200 flex items-center justify-between gap-2 text-[11px]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <i className="fas fa-bell text-amber-600 text-xs shrink-0"></i>
+                          <span className="font-bold text-amber-950 truncate">
+                            {isAuthenticated
+                              ? '시간 알람을 받으려면 이 기기의 웹 푸시를 연결해 주세요.'
+                              : '시간 알람을 받으려면 브라우저 알림 허용이 필요합니다.'}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={notifications.isBusy}
+                          onClick={() => void notifications.enableNotifications()}
+                          className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-[10px] font-black shrink-0 cursor-pointer"
+                        >
+                          {notifications.isBusy ? '연결 중...' : '알람 켜기'}
+                        </button>
+                      </div>
+                    )}
 
                     {/* 2. 시그니처 화이트 통합 체크리스트 보드 */}
                     <div className="flex-1 flex flex-col bg-white rounded-2xl border border-[#E7E0D5] shadow-[0_2px_10px_rgba(36,33,29,0.04)] overflow-clip">
@@ -871,6 +934,20 @@ export function App() {
             )}
           </div>
         )}
+
+        {/* 상세 내용 & 시간/알람 등록 모달 */}
+        <TodoCreateModal
+          isOpen={createModalOpen}
+          initialTitle={createModalInitialTitle}
+          isAuthenticated={isAuthenticated}
+          pushPermission={notifications.permission}
+          isDeviceSubscribed={notifications.isDeviceSubscribed}
+          isNotificationBusy={notifications.isBusy}
+          isIosSafari={notifications.isIosSafari}
+          onEnableNotifications={notifications.enableNotifications}
+          onClose={() => setCreateModalOpen(false)}
+          onSubmit={handleAddTodo}
+        />
 
         {/* 휴지통 복구 Dialog */}
         <TrashDrawerModal

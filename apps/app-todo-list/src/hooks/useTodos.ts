@@ -4,6 +4,7 @@ import {
   TODO_COMPLETION_LOGS_KEY,
   TODO_MAX_ITEMS,
   TODO_MAX_SUBTASKS,
+  TODO_MEMO_MAX_LENGTH,
   TODO_MIGRATED_MARKER_KEY,
   TODO_STORAGE_KEY,
 } from '../constants/todoMeta';
@@ -31,6 +32,8 @@ import {
 import { safeStorage } from '../utils/safeStorage';
 import {
   isValidDateString,
+  normalizeDueTime,
+  normalizeRemindBeforeMinutes,
   parseValidatedBackupPayload,
   sanitizeText,
   sanitizeTodoRecord,
@@ -259,12 +262,15 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
       const title = sanitizeText(draft.title, 160);
       if (!title) return { added: null, allCompletedNow: false };
 
-      const memo = draft.memo ? sanitizeText(draft.memo, 400) : '';
+      const memo = draft.memo ? sanitizeText(draft.memo, TODO_MEMO_MAX_LENGTH) : '';
       const todayStr = getLocalTodayDateStr();
       const rawDueDate = isValidDateString(draft.dueDate) ? draft.dueDate : null;
       const anchorDate = rawDueDate ?? todayStr;
       const rule = normalizeRecurrenceRule(draft.recurrence, anchorDate);
       const dueDate = rule.type !== 'none' && !rawDueDate ? todayStr : rawDueDate;
+      const dueTime = normalizeDueTime(draft.dueTime);
+      const reminderEnabled = Boolean(dueTime && draft.reminderEnabled);
+      const remindBeforeMinutes = normalizeRemindBeforeMinutes(draft.remindBeforeMinutes);
 
       const nowIso = new Date().toISOString();
       const minOrder = itemsRef.current.reduce((min, item) => Math.min(min, item.order), 0);
@@ -284,6 +290,9 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
         priority: draft.priority,
         category: draft.category,
         dueDate,
+        dueTime,
+        reminderEnabled,
+        remindBeforeMinutes,
         completed: false,
         completedAt: null,
         subtasks: [],
@@ -316,6 +325,9 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
               priority: draft.priority,
               category: draft.category,
               dueDate,
+              dueTime,
+              reminderEnabled,
+              remindBeforeMinutes,
               recurrence: rule,
             },
             todayStr
@@ -468,13 +480,24 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
             if (item.id !== id) return item;
             const nextTitle =
               patch.title !== undefined ? sanitizeText(patch.title, 160) || item.title : item.title;
-            const nextMemo = patch.memo !== undefined ? sanitizeText(patch.memo, 400) : item.memo;
+            const nextMemo =
+              patch.memo !== undefined ? sanitizeText(patch.memo, TODO_MEMO_MAX_LENGTH) : item.memo;
             const nextDueDate =
               patch.dueDate !== undefined
                 ? isValidDateString(patch.dueDate)
                   ? patch.dueDate
                   : null
                 : item.dueDate;
+            const nextDueTime =
+              patch.dueTime !== undefined ? normalizeDueTime(patch.dueTime) : item.dueTime;
+            const nextReminderEnabled = Boolean(
+              nextDueTime &&
+                (patch.reminderEnabled !== undefined ? patch.reminderEnabled : item.reminderEnabled)
+            );
+            const nextRemindBeforeMinutes =
+              patch.remindBeforeMinutes !== undefined
+                ? normalizeRemindBeforeMinutes(patch.remindBeforeMinutes)
+                : item.remindBeforeMinutes;
             const anchor = nextDueDate ?? item.createdAt.slice(0, 10) ?? todayStr;
             const nextRecurrence =
               patch.recurrence !== undefined
@@ -488,6 +511,9 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
               priority: patch.priority ?? item.priority,
               category: patch.category ?? item.category,
               dueDate: nextDueDate,
+              dueTime: nextDueTime,
+              reminderEnabled: nextReminderEnabled,
+              remindBeforeMinutes: nextRemindBeforeMinutes,
               subtasks: patch.subtasks ?? item.subtasks,
               order: patch.order ?? item.order,
               recurrence: nextRecurrence,
@@ -501,6 +527,16 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
       const nextOptimistic = itemsRef.current.map((item) => {
         if (item.id !== id) return item;
         const nextDueDate = patch.dueDate !== undefined ? patch.dueDate : item.dueDate;
+        const nextDueTime =
+          patch.dueTime !== undefined ? normalizeDueTime(patch.dueTime) : item.dueTime;
+        const nextReminderEnabled = Boolean(
+          nextDueTime &&
+            (patch.reminderEnabled !== undefined ? patch.reminderEnabled : item.reminderEnabled)
+        );
+        const nextRemindBeforeMinutes =
+          patch.remindBeforeMinutes !== undefined
+            ? normalizeRemindBeforeMinutes(patch.remindBeforeMinutes)
+            : item.remindBeforeMinutes;
         const anchor = nextDueDate ?? item.createdAt.slice(0, 10) ?? todayStr;
         const nextRecurrence =
           patch.recurrence !== undefined
@@ -511,10 +547,14 @@ export function useTodos({ isAuthenticated, isCheckingAuth, userId }: UseTodosOp
           {
             ...item,
             title: patch.title !== undefined ? sanitizeText(patch.title, 160) || item.title : item.title,
-            memo: patch.memo !== undefined ? sanitizeText(patch.memo, 400) : item.memo,
+            memo:
+              patch.memo !== undefined ? sanitizeText(patch.memo, TODO_MEMO_MAX_LENGTH) : item.memo,
             priority: patch.priority ?? item.priority,
             category: patch.category ?? item.category,
             dueDate: nextDueDate,
+            dueTime: nextDueTime,
+            reminderEnabled: nextReminderEnabled,
+            remindBeforeMinutes: nextRemindBeforeMinutes,
             subtasks: patch.subtasks ?? item.subtasks,
             order: patch.order ?? item.order,
             recurrence: nextRecurrence,
