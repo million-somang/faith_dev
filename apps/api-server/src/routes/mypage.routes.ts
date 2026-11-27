@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import { MyPageService } from '../services/mypage.service.js';
 import { HomepageConfigService } from '../services/homepage-config.service.js';
+import { AppLauncherController } from '../controllers/app-launcher.controller.js';
 import { SessionUser } from '../middleware/auth.js';
 
 type Variables = {
@@ -334,5 +335,9 @@ mypage.get('/drive/token', (c) => DriveStreamController.getDriveToken(c));
 mypage.post('/drive/oauth/exchange', (c) => DriveStreamController.exchangeOrSaveToken(c));
 mypage.post('/drive/config', (c) => DriveStreamController.saveDriveConfig(c));
 mypage.get('/drive/stream/:fileId', (c) => DriveStreamController.streamVideo(c));
+
+// ===== Frequent Apps Phone Launcher =====
+mypage.get('/app-launcher', (c) => AppLauncherController.getLauncherLayout(c));
+mypage.put('/app-launcher', (c) => AppLauncherController.saveLauncherLayout(c));
 
 export default mypage;
