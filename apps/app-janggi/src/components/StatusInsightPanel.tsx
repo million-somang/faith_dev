@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   ScoreBreakdown,
   Piece,
@@ -27,13 +26,13 @@ const TIER_BADGES: { id: Difficulty; label: string }[] = [
   { id: 'master', label: '9단' },
 ];
 
-const PIECE_LABEL_SHORT: Record<string, string> = {
-  chariot: '車',
-  cannon: '包',
-  horse: '馬',
-  elephant: '象',
-  guard: '士',
-  soldier: '卒',
+const PIECE_LABEL_SHORT: Record<string, { cho: string; han: string }> = {
+  chariot: { cho: '車', han: '車' },
+  cannon: { cho: '包', han: '包' },
+  horse: { cho: '馬', han: '馬' },
+  elephant: { cho: '象', han: '象' },
+  guard: { cho: '士', han: '士' },
+  soldier: { cho: '卒', han: '兵' },
 };
 
 export function StatusInsightPanel({
@@ -99,10 +98,11 @@ export function StatusInsightPanel({
           </div>
         </div>
       )}
+
       {/* 1. 점수제 실시간 우세도 게이지 (한국 장기 공식 73.5점 체계) */}
       <div className="space-y-1">
         <div className="flex items-center justify-between text-xs font-black">
-          <div className="flex items-center gap-1.5 text-cyan-600">
+          <div className="flex items-center gap-1.5 text-emerald-700">
             <span>楚 초나라</span>
             <span className="font-mono">{score.choPoints}점</span>
           </div>
@@ -115,16 +115,16 @@ export function StatusInsightPanel({
               : '동점 (균형)'}
           </div>
 
-          <div className="flex items-center gap-1.5 text-rose-600">
+          <div className="flex items-center gap-1.5 text-rose-700">
             <span className="font-mono">{score.hanPoints}점</span>
             <span>漢 한나라 (덤 1.5)</span>
           </div>
         </div>
 
-        {/* 듀얼 네온 게이지 바 */}
+        {/* 듀얼 게이지 바 */}
         <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex border border-slate-200">
           <div
-            className="bg-cyan-500 h-full transition-all duration-300"
+            className="bg-emerald-500 h-full transition-all duration-300"
             style={{ width: `${choPercent}%` }}
           ></div>
           <div
@@ -134,22 +134,22 @@ export function StatusInsightPanel({
         </div>
       </div>
 
-      {/* 2. 포획한 기물 트레이 (Captured Pieces) */}
+      {/* 2. 포획한 기물 트레이 (미니 8각 목기물 배지) */}
       <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 text-[11px]">
         {/* 초나라가 잡은 한나라 기물 */}
         <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 space-y-1">
           <div className="text-[10px] text-slate-400 font-bold flex items-center justify-between">
-            <span className="text-cyan-600 font-black">楚 포획 기물</span>
+            <span className="text-emerald-700 font-black">楚 포획 기물</span>
             <span>{capturedByCho.length}개</span>
           </div>
-          <div className="flex flex-wrap gap-1 min-h-[22px]">
+          <div className="flex flex-wrap gap-1 min-h-[24px]">
             {capturedByCho.length > 0 ? (
               capturedByCho.map((p, i) => (
                 <span
                   key={i}
-                  className="w-5 h-5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold flex items-center justify-center font-mono shadow-2xs"
+                  className="w-5.5 h-5.5 [clip-path:polygon(29%_0%,71%_0%,100%_29%,100%_71%,71%_100%,29%_100%,0%_71%,0%_29%)] bg-gradient-to-br from-[#fffdf8] to-[#e6d6b8] text-[#991b1b] text-[10px] font-black flex items-center justify-center shadow-xs border border-[#b89a6a]"
                 >
-                  {PIECE_LABEL_SHORT[p.type] || '卒'}
+                  {PIECE_LABEL_SHORT[p.type]?.han || '兵'}
                 </span>
               ))
             ) : (
@@ -161,17 +161,17 @@ export function StatusInsightPanel({
         {/* 한나라가 잡은 초나라 기물 */}
         <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 space-y-1">
           <div className="text-[10px] text-slate-400 font-bold flex items-center justify-between">
-            <span className="text-rose-600 font-black">漢 포획 기물</span>
+            <span className="text-rose-700 font-black">漢 포획 기물</span>
             <span>{capturedByHan.length}개</span>
           </div>
-          <div className="flex flex-wrap gap-1 min-h-[22px]">
+          <div className="flex flex-wrap gap-1 min-h-[24px]">
             {capturedByHan.length > 0 ? (
               capturedByHan.map((p, i) => (
                 <span
                   key={i}
-                  className="w-5 h-5 rounded-md bg-cyan-50 text-cyan-700 border border-cyan-200 text-[10px] font-bold flex items-center justify-center font-mono shadow-2xs"
+                  className="w-5.5 h-5.5 [clip-path:polygon(29%_0%,71%_0%,100%_29%,100%_71%,71%_100%,29%_100%,0%_71%,0%_29%)] bg-gradient-to-br from-[#fffdf8] to-[#e6d6b8] text-[#065f46] text-[10px] font-black flex items-center justify-center shadow-xs border border-[#b89a6a]"
                 >
-                  {PIECE_LABEL_SHORT[p.type] || '卒'}
+                  {PIECE_LABEL_SHORT[p.type]?.cho || '卒'}
                 </span>
               ))
             ) : (
@@ -181,10 +181,12 @@ export function StatusInsightPanel({
         </div>
       </div>
 
-      {/* 3. 대국 진행 상태 요약 인포 바 (850px 하단 데드 스페이스 방지) */}
+      {/* 3. 대국 진행 상태 요약 인포 바 */}
       <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px] text-slate-500 px-1">
         <div className="flex items-center gap-2">
-          <span>총 수순: <strong className="text-slate-800 font-mono">{moveCount}수</strong></span>
+          <span>
+            총 수순: <strong className="text-slate-800 font-mono">{moveCount}수</strong>
+          </span>
           {puzzleProgress && (
             <span className="text-blue-600 font-bold">
               • 외통 수순: {puzzleProgress.current} / {puzzleProgress.max}수

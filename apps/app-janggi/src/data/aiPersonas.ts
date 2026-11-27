@@ -6,14 +6,24 @@ export interface AiPersona {
   title: string;
   rank: string;
   avatar: string;
+  portrait: string;
   badgeColor: string;
   greeting: string;
   onThinking: string[];
   onCheck: string[];
   onInCheck: string[];
+  onMunggun: string[];
   onCapture: string[];
   onVictory: string[];
   onDefeat: string[];
+}
+
+export function getJanggiAssetUrl(relativePath: string): string {
+  const meta = import.meta as ImportMeta & { env?: { BASE_URL?: string } };
+  const base = meta.env?.BASE_URL || '/';
+  const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+  const normalizedPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+  return `${normalizedBase}${normalizedPath}`;
 }
 
 export const AI_PERSONAS: Record<Difficulty, AiPersona> = {
@@ -23,6 +33,7 @@ export const AI_PERSONAS: Record<Difficulty, AiPersona> = {
     title: '장기 입문 훈수봇',
     rank: '18급',
     avatar: '🤖',
+    portrait: 'assets/personas/beginner.png',
     badgeColor: 'from-emerald-500 to-teal-600',
     greeting: '반가워요! 저랑 재미있게 장기 배워봐요!',
     onThinking: [
@@ -37,6 +48,10 @@ export const AI_PERSONAS: Record<Difficulty, AiPersona> = {
     onInCheck: [
       '으앗! 내 왕이 위험해! 어디로 도망가지?!',
       '장군이라니! 얼른 피해야겠어!',
+    ],
+    onMunggun: [
+      '휴~ 멍군! 다행히 왕을 지켰어요!',
+      '우와, 아슬아슬하게 장군을 막아내셨네요!',
     ],
     onCapture: [
       '앗싸! 장기알 하나 득템!',
@@ -57,6 +72,7 @@ export const AI_PERSONAS: Record<Difficulty, AiPersona> = {
     title: '동네 기원 꿈나무',
     rank: '10급',
     avatar: '👦',
+    portrait: 'assets/personas/easy.png',
     badgeColor: 'from-sky-500 to-blue-600',
     greeting: '안녕하세요! 정정당당하게 한 판 겨뤄봐요.',
     onThinking: [
@@ -71,6 +87,10 @@ export const AI_PERSONAS: Record<Difficulty, AiPersona> = {
     onInCheck: [
       '침착하게 길을 막거나 왕을 피하자...',
       '날카로운 공격이네요! 방어에 집중!',
+    ],
+    onMunggun: [
+      '멍군! 침착하게 위기를 넘겼습니다.',
+      '빈틈을 주지 않으시네요! 다시 전열을 가다듬겠습니다.',
     ],
     onCapture: [
       '기물 교환에서 이득을 봤네요!',
@@ -91,6 +111,7 @@ export const AI_PERSONAS: Record<Difficulty, AiPersona> = {
     title: '기원 3급 훈장님',
     rank: '3급',
     avatar: '👴',
+    portrait: 'assets/personas/normal.png',
     badgeColor: 'from-amber-500 to-orange-600',
     greeting: '허허, 반갑구려. 차분하게 정석대로 한 수 둬보세.',
     onThinking: [
@@ -105,6 +126,10 @@ export const AI_PERSONAS: Record<Difficulty, AiPersona> = {
     onInCheck: [
       '허허! 젊은 친구 수가 아주 매섭구려.',
       '어디 보자, 궁성을 두텁게 보강해야겠군.',
+    ],
+    onMunggun: [
+      '허허, 멍군! 수비 솜씨가 제법이구려.',
+      '노장의 궁성을 뚫기엔 아직 이르다네.',
     ],
     onCapture: [
       '공짜 말은 사양하지 않는 법이지, 허허.',
@@ -125,6 +150,7 @@ export const AI_PERSONAS: Record<Difficulty, AiPersona> = {
     title: '기원 1단 유단자',
     rank: '1단',
     avatar: '🥋',
+    portrait: 'assets/personas/hard.png',
     badgeColor: 'from-indigo-600 to-purple-600',
     greeting: '반갑습니다. 빈틈을 보이지 않는 실전 장기를 보여드리죠.',
     onThinking: [
@@ -139,6 +165,10 @@ export const AI_PERSONAS: Record<Difficulty, AiPersona> = {
     onInCheck: [
       '허를 찔렸군. 하지만 아직 역전의 수가 남아있다.',
       '철벽 궁성으로 막아내겠습니다.',
+    ],
+    onMunggun: [
+      '멍군. 이 정도로 내 방어선을 무너뜨릴 순 없습니다.',
+      '훌륭한 방어군요. 이제 진검승부입니다.',
     ],
     onCapture: [
       '급소를 타격하여 기물을 포획했습니다.',
@@ -159,6 +189,7 @@ export const AI_PERSONAS: Record<Difficulty, AiPersona> = {
     title: '천하제일 프로 9단',
     rank: '프로 9단',
     avatar: '👑',
+    portrait: 'assets/personas/master.png',
     badgeColor: 'from-rose-600 to-red-700',
     greeting: '천하의 기객이 모였소. 반상의 진정한 도를 겨뤄봅시다.',
     onThinking: [
@@ -173,6 +204,10 @@ export const AI_PERSONAS: Record<Difficulty, AiPersona> = {
     onInCheck: [
       '궁성의 호위가 반석 같으니 흔들리지 않소.',
       '잠시 칼끝을 비껴갈 뿐, 형세는 변치 않소.',
+    ],
+    onMunggun: [
+      '멍군이오! 국수의 수비에 빈틈은 없소.',
+      '예리한 공세를 막아내었으니 이제 반격의 차례로군.',
     ],
     onCapture: [
       '반상의 대세를 거스를 수는 없는 법이오.',

@@ -1,5 +1,12 @@
 import React from 'react';
-import { SetupType, Difficulty, Side, JanggiRecordsMap, createEmptyJanggiRecords } from '../types/janggi';
+import {
+  SetupType,
+  Difficulty,
+  Side,
+  JanggiRecordsMap,
+  createEmptyJanggiRecords,
+} from '../types/janggi';
+import { AI_PERSONAS, getJanggiAssetUrl } from '../data/aiPersonas';
 import { soundEffects } from '../utils/soundEffects';
 
 interface SetupModalProps {
@@ -26,12 +33,12 @@ const SETUPS: { id: SetupType; name: string; desc: string; layout: string }[] = 
   { id: 'yanggwima', name: '양귀마', desc: '외곽에 마를 배치하여 광활한 중앙 침투', layout: '상 - 마 - 마 - 상' },
 ];
 
-const DIFFICULTIES: { id: Difficulty; name: string; tag: string; desc: string; badge: string }[] = [
-  { id: 'beginner', name: '입문 (18급)', tag: '🌱 입문', desc: '장기 행마를 배우기 좋은 가벼운 AI, 가끔 실수를 합니다.', badge: '18급' },
-  { id: 'easy', name: '초급 (10급)', tag: '⭐ 초급', desc: '1~2수 앞을 보며 기물 포획 위주로 기본에 충실합니다.', badge: '10급' },
-  { id: 'normal', name: '중급 (3급)', tag: '⭐⭐ 중급', desc: '2수 앞을 내다보고 중앙과 기물 전진을 조화롭게 운영합니다.', badge: '3급' },
-  { id: 'hard', name: '고급 (1단)', tag: '⭐⭐⭐ 고급', desc: '3수 수읽기와 알파베타 가지치기로 빈틈을 날카롭게 찌릅니다.', badge: '1단' },
-  { id: 'master', name: '달인 (프로 9단)', tag: '👑 프로', desc: '외통수 집중 수순과 철벽 방어를 구사하는 최정상급 AI', badge: '9단' },
+const DIFFICULTIES: { id: Difficulty; name: string; desc: string; badge: string }[] = [
+  { id: 'beginner', name: '입문 (18급)', desc: '장기 행마를 배우기 좋은 가벼운 AI, 가끔 실수를 합니다.', badge: '18급' },
+  { id: 'easy', name: '초급 (10급)', desc: '1~2수 앞을 보며 기물 포획 위주로 기본에 충실합니다.', badge: '10급' },
+  { id: 'normal', name: '중급 (3급)', desc: '2수 앞을 내다보고 중앙과 기물 전진을 조화롭게 운영합니다.', badge: '3급' },
+  { id: 'hard', name: '고급 (1단)', desc: '3수 수읽기와 알파베타 가지치기로 빈틈을 날카롭게 찌릅니다.', badge: '1단' },
+  { id: 'master', name: '달인 (프로 9단)', desc: '외통수 집중 수순과 철벽 방어를 구사하는 최정상급 AI', badge: '9단' },
 ];
 
 export const SetupModal: React.FC<SetupModalProps> = ({
@@ -50,6 +57,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({
   const [selectedDiff, setSelectedDiff] = React.useState<Difficulty>(aiDifficulty);
   const [selectedSide, setSelectedSide] = React.useState<Side>(playerSide);
   const tierRecords = recordsByTier || createEmptyJanggiRecords();
+
   const totalStats = DIFFICULTIES.reduce(
     (acc, d) => {
       const r = tierRecords[d.id] || { wins: 0, losses: 0, draws: 0 };
@@ -67,7 +75,6 @@ export const SetupModal: React.FC<SetupModalProps> = ({
   const activeTierWinRate =
     activeTierDecided > 0 ? Math.round((activeTierRec.wins / activeTierDecided) * 100) : 0;
 
-  // 모달이 열릴 때 최신 props로 상태 동기화
   React.useEffect(() => {
     if (isOpen) {
       setSelectedChoSetup(choSetup);
@@ -79,8 +86,10 @@ export const SetupModal: React.FC<SetupModalProps> = ({
 
   if (!isOpen) return null;
 
+  const activePersona = AI_PERSONAS[selectedDiff];
+
   const handleApply = () => {
-    soundEffects.playSnap();
+    soundEffects.playUiClick();
     onSave({
       choSetup: selectedChoSetup,
       hanSetup: selectedHanSetup,
@@ -91,7 +100,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm animate-fade-in">
       <div
         className="w-full max-w-sm rounded-3xl bg-white border border-slate-200/90 shadow-2xl p-5 text-slate-800 max-h-[90vh] flex flex-col"
         data-screenshot-target="setup-dialog"
@@ -99,27 +108,32 @@ export const SetupModal: React.FC<SetupModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-xs ${
-              isStartMode
-                ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white'
-                : 'bg-indigo-50 text-indigo-600'
-            }`}>
+            <span
+              className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-xs ${
+                isStartMode
+                  ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white'
+                  : 'bg-indigo-50 text-indigo-600'
+              }`}
+            >
               <i className={`fas ${isStartMode ? 'fa-chess-knight' : 'fa-sliders-h'}`}></i>
             </span>
             <div>
               <h3 className="text-base font-black tracking-tight text-slate-900">
-                {isStartMode ? '대국 준비 & 난이도 선택' : '대국 설정 & 기물 차림'}
+                {isStartMode ? '대국 준비 & 상대 선택' : '대국 설정 & 기물 차림'}
               </h3>
               {isStartMode && (
                 <p className="text-[10px] text-slate-500 font-medium">
-                  원하는 AI 난이도와 진영을 선택하고 대국을 시작하세요
+                  겨룰 대국 상대와 진영을 선택하고 대국을 시작하세요
                 </p>
               )}
             </div>
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              soundEffects.playUiClick();
+              onClose();
+            }}
             className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs transition-all cursor-pointer"
           >
             <i className="fas fa-times"></i>
@@ -128,41 +142,48 @@ export const SetupModal: React.FC<SetupModalProps> = ({
 
         {/* Body (Scrollable) */}
         <div className="flex-1 overflow-y-auto py-3 space-y-4 pr-1 text-xs">
-          {/* 1. AI Difficulty (최우선 선택 영역) */}
-          <div className="bg-amber-50/60 p-3 rounded-2xl border border-amber-200/80">
-            <div className="flex items-center justify-between mb-2">
+          {/* 1. AI Difficulty & 한국화 초상화 선택 */}
+          <div className="bg-amber-50/65 p-3 rounded-2xl border border-amber-200/80 space-y-2.5">
+            <div className="flex items-center justify-between">
               <label className="text-[11px] font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
-                <i className="fas fa-brain text-amber-600"></i>
-                <span>인공지능(AI) 난이도 선택</span>
+                <i className="fas fa-user-tie text-amber-600"></i>
+                <span>대국 상대 (AI 급수) 선택</span>
               </label>
               <span className="text-[11px] font-extrabold text-amber-800">
                 {DIFFICULTIES.find((d) => d.id === selectedDiff)?.name}
               </span>
             </div>
+
             <div className="grid grid-cols-5 gap-1">
               {DIFFICULTIES.map((d) => {
                 const rec = tierRecords[d.id] || { wins: 0, losses: 0, draws: 0 };
+                const persona = AI_PERSONAS[d.id];
+                const isSelected = selectedDiff === d.id;
                 return (
                   <button
                     key={d.id}
                     type="button"
                     onClick={() => {
-                      soundEffects.playSnap();
+                      soundEffects.playUiClick();
                       setSelectedDiff(d.id);
                     }}
-                    className={`py-2 px-1 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-                      selectedDiff === d.id
-                        ? 'border-amber-500 bg-amber-500 text-white font-black shadow-sm scale-102'
+                    className={`py-1.5 px-1 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-amber-500 bg-amber-500 text-white font-black shadow-sm scale-[1.03]'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    <span className={`text-[9px] font-extrabold ${selectedDiff === d.id ? 'text-amber-100' : 'text-slate-500'}`}>
-                      {d.tag.split(' ')[0]}
-                    </span>
-                    <span className="text-[11px] font-black mt-0.5">{d.badge}</span>
+                    <img
+                      src={getJanggiAssetUrl(persona.portrait)}
+                      alt={persona.name}
+                      className={`w-9 h-9 rounded-full object-cover border ${
+                        isSelected ? 'border-white shadow-xs' : 'border-amber-200'
+                      }`}
+                    />
+                    <span className="text-[10px] font-black mt-1 leading-none">{d.badge}</span>
                     <span
-                      className={`text-[9px] font-mono font-bold mt-0.5 ${
-                        selectedDiff === d.id ? 'text-amber-50' : 'text-slate-500'
+                      className={`text-[9px] font-mono font-bold mt-0.5 leading-none ${
+                        isSelected ? 'text-amber-50' : 'text-slate-500'
                       }`}
                     >
                       {rec.wins}승{rec.losses}패
@@ -171,14 +192,40 @@ export const SetupModal: React.FC<SetupModalProps> = ({
                 );
               })}
             </div>
-            <div className="mt-2 px-2.5 py-2 rounded-xl bg-white/85 border border-amber-200/70 flex items-center justify-between text-[10px]">
+
+            {/* 선택된 AI 캐릭터 프리뷰 카드 */}
+            <div className="p-2.5 rounded-xl bg-white/95 border border-amber-200/80 flex items-center gap-2.5 shadow-2xs">
+              <img
+                src={getJanggiAssetUrl(activePersona.portrait)}
+                alt={activePersona.name}
+                className="w-12 h-12 rounded-2xl object-cover border-2 border-amber-300 shrink-0 shadow-xs"
+              />
+              <div className="min-w-0 flex-1 text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-black text-slate-900">{activePersona.name}</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
+                    {activePersona.rank}
+                  </span>
+                </div>
+                <p className="text-[10px] font-semibold text-slate-500 truncate">
+                  {activePersona.title}
+                </p>
+                <p className="text-[10px] text-amber-900 font-medium mt-0.5 line-clamp-2 leading-snug">
+                  "{activePersona.greeting}"
+                </p>
+              </div>
+            </div>
+
+            <div className="px-2.5 py-1.5 rounded-xl bg-white/85 border border-amber-200/70 flex items-center justify-between text-[10px]">
               <div className="flex items-center gap-1.5 font-extrabold text-slate-700">
                 <span className="px-1.5 py-0.5 rounded bg-amber-500 text-white font-black">
                   {DIFFICULTIES.find((d) => d.id === selectedDiff)?.badge}
                 </span>
                 <span>전적:</span>
                 <span className="text-emerald-700 font-black">{activeTierRec.wins}승</span>
-                {activeTierRec.draws > 0 && <span className="text-slate-500 font-bold">{activeTierRec.draws}무</span>}
+                {activeTierRec.draws > 0 && (
+                  <span className="text-slate-500 font-bold">{activeTierRec.draws}무</span>
+                )}
                 <span className="text-rose-600 font-black">{activeTierRec.losses}패</span>
                 <span className="text-slate-400 font-mono">({activeTierWinRate}%)</span>
               </div>
@@ -186,7 +233,8 @@ export const SetupModal: React.FC<SetupModalProps> = ({
                 통산 {totalStats.wins}승 {totalStats.losses}패 ({totalWinRate}%)
               </div>
             </div>
-            <p className="text-[10px] text-amber-800 mt-2 px-1 font-medium bg-white/70 py-1.5 rounded-lg border border-amber-200/50">
+
+            <p className="text-[10px] text-amber-800 px-1 font-medium bg-white/70 py-1.5 rounded-lg border border-amber-200/50">
               💡 {DIFFICULTIES.find((d) => d.id === selectedDiff)?.desc}
             </p>
           </div>
@@ -200,7 +248,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  soundEffects.playSnap();
+                  soundEffects.playUiClick();
                   setSelectedSide('cho');
                 }}
                 className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-2 transition-all cursor-pointer ${
@@ -217,7 +265,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  soundEffects.playSnap();
+                  soundEffects.playUiClick();
                   setSelectedSide('han');
                 }}
                 className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-2 transition-all cursor-pointer ${
@@ -234,7 +282,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({
             </div>
           </div>
 
-          {/* 3. Cho Setup (마/상 차림) */}
+          {/* 3. Cho Setup */}
           <div>
             <label className="block text-[11px] font-bold text-emerald-700 mb-1.5 uppercase tracking-wider">
               초(楚) 상마 차림법
@@ -245,7 +293,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({
                   key={`cho-${s.id}`}
                   type="button"
                   onClick={() => {
-                    soundEffects.playSnap();
+                    soundEffects.playUiClick();
                     setSelectedChoSetup(s.id);
                   }}
                   className={`w-full p-2 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
@@ -266,7 +314,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({
             </div>
           </div>
 
-          {/* 4. Han Setup (마/상 차림) */}
+          {/* 4. Han Setup */}
           <div>
             <label className="block text-[11px] font-bold text-rose-700 mb-1.5 uppercase tracking-wider">
               한(漢) 상마 차림법
@@ -277,7 +325,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({
                   key={`han-${s.id}`}
                   type="button"
                   onClick={() => {
-                    soundEffects.playSnap();
+                    soundEffects.playUiClick();
                     setSelectedHanSetup(s.id);
                   }}
                   className={`w-full p-2 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
@@ -303,7 +351,10 @@ export const SetupModal: React.FC<SetupModalProps> = ({
         <div className="pt-3 border-t border-slate-100 flex gap-2">
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              soundEffects.playUiClick();
+              onClose();
+            }}
             className="w-1/3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-all cursor-pointer"
           >
             {isStartMode ? '닫기' : '취소'}

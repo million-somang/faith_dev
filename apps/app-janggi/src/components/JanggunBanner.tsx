@@ -3,17 +3,23 @@ import { Side } from '../types/janggi';
 
 interface JanggunBannerProps {
   attacker: Side;
+  playerSide?: Side;
   onClose: () => void;
 }
 
-export const JanggunBanner: React.FC<JanggunBannerProps> = ({ attacker, onClose }) => {
+export const JanggunBanner: React.FC<JanggunBannerProps> = ({
+  attacker,
+  playerSide = 'cho',
+  onClose,
+}) => {
   const isChoAttacker = attacker === 'cho';
+  const isPlayerAttacker = attacker === playerSide;
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       onClose();
     }, 1800);
-    return () => clearTimeout(timer);
+    return () => window.clearTimeout(timer);
   }, [onClose]);
 
   return (
@@ -40,7 +46,7 @@ export const JanggunBanner: React.FC<JanggunBannerProps> = ({ attacker, onClose 
           <span>{isChoAttacker ? '초(楚) 선공 진영' : '한(漢) 후공 진영'}</span>
         </div>
 
-        {/* 웅장한 장군(將軍) 한자 & 한글 타이틀 */}
+        {/* 웅장한 장군(將軍) 한자 & 도장 타이틀 */}
         <div className="relative my-1 flex items-center justify-center">
           <span
             className={`text-5xl sm:text-6xl font-black tracking-tight leading-none ${
@@ -56,7 +62,7 @@ export const JanggunBanner: React.FC<JanggunBannerProps> = ({ attacker, onClose 
             將 軍
           </span>
           <span
-            className={`ml-2 text-2xl sm:text-3xl font-black px-2 py-0.5 rounded-lg text-white shadow-md animate-bounce ${
+            className={`ml-2 text-2xl sm:text-3xl font-black px-2.5 py-0.5 rounded-lg text-white shadow-md animate-bounce ${
               isChoAttacker ? 'bg-[#059669]' : 'bg-[#dc2626]'
             }`}
           >
@@ -64,17 +70,25 @@ export const JanggunBanner: React.FC<JanggunBannerProps> = ({ attacker, onClose 
           </span>
         </div>
 
-        {/* 상황 설명 자막 */}
+        {/* 상황 설명 자막 (플레이어 진영 기준 정확히 분기) */}
         <div className="mt-2 text-xs sm:text-[13px] font-bold text-slate-700 leading-snug">
-          {isChoAttacker ? (
-            <p className="text-[#065f46]">
-              <span className="font-extrabold text-emerald-900">초(楚)</span>의 맹렬한 공격!{' '}
-              <span className="text-rose-700 font-extrabold">한(漢)의 왕</span>이 위기에 빠졌습니다!
+          {isPlayerAttacker ? (
+            <p className={isChoAttacker ? 'text-[#065f46]' : 'text-[#991b1b]'}>
+              <span className="font-extrabold">
+                내 진영({isChoAttacker ? '楚' : '漢'})
+              </span>
+              의 맹렬한 일격! 상대의 왕을 위협합니다!
             </p>
           ) : (
-            <p className="text-[#991b1b]">
-              <span className="font-extrabold text-rose-900">한(漢)</span>의 날카로운 일격!{' '}
-              <span className="text-emerald-800 font-extrabold">내 왕(楚)</span>을 즉시 대피시키세요!
+            <p className={isChoAttacker ? 'text-[#065f46]' : 'text-[#991b1b]'}>
+              <span className="font-extrabold">
+                상대({isChoAttacker ? '楚' : '漢'})
+              </span>
+              의 날카로운 장군!{' '}
+              <span className="font-extrabold underline">
+                내 왕({playerSide === 'cho' ? '楚' : '漢'})
+              </span>
+              을 즉시 대피시키세요!
             </p>
           )}
         </div>

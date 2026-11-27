@@ -11,6 +11,12 @@ import {
   SajuElementBuff,
   JanggiGameScoreDetails,
   JanggiRecordsMap,
+  BoardTheme,
+  AiEmotion,
+  SoundSettings,
+  JanggiPreferences,
+  ComboBannerEvent,
+  DEFAULT_JANGGI_PREFERENCES,
   createEmptyJanggiRecords,
 } from './types/janggi';
 import { useAuth, usePortalMessenger } from '@faithportal/mini-app-sdk';
@@ -31,7 +37,7 @@ import { findBestMove } from './logic/janggiAi';
 import { getDailyPuzzle, JanggiPuzzle } from './data/dailyPuzzles';
 import { getTodaySajuBuff } from './utils/sajuCalculator';
 import { soundEffects } from './utils/soundEffects';
-import { AI_PERSONAS, getRandomLine } from './data/aiPersonas';
+import { AI_PERSONAS, getJanggiAssetUrl, getRandomLine } from './data/aiPersonas';
 
 // Components
 import { SplashScreen } from './components/SplashScreen';
@@ -43,6 +49,7 @@ import { VictoryModal } from './components/VictoryModal';
 import { SetupModal } from './components/SetupModal';
 import { RuleGuideModal } from './components/RuleGuideModal';
 import { JanggunBanner } from './components/JanggunBanner';
+import { MunggunBanner } from './components/MunggunBanner';
 import { CheckmateBanner } from './components/CheckmateBanner';
 import { BigjangModal } from './components/BigjangModal';
 
@@ -53,6 +60,32 @@ const DIFFICULTY_INFO: Record<Difficulty, { label: string; badge: string; color:
   normal: { label: '중급 (3급)', badge: '⭐⭐ 3급', color: 'text-amber-800 bg-amber-100/90 border-amber-300' },
   hard: { label: '고급 (1단)', badge: '⭐⭐⭐ 1단', color: 'text-indigo-800 bg-indigo-100/90 border-indigo-300' },
   master: { label: '달인 (9단)', badge: '👑 9단', color: 'text-rose-800 bg-rose-100/90 border-rose-300' },
+};
+
+const PREFS_STORAGE_KEY = 'vera_janggi_prefs_v1';
+
+const loadJanggiPreferences = (): JanggiPreferences => {
+  if (typeof window === 'undefined') return DEFAULT_JANGGI_PREFERENCES;
+  try {
+    const raw = localStorage.getItem(PREFS_STORAGE_KEY);
+    if (!raw) return DEFAULT_JANGGI_PREFERENCES;
+    const parsed = JSON.parse(raw) as Partial<JanggiPreferences>;
+    const boardTheme: BoardTheme =
+      parsed.boardTheme === 'royal_ebony' || parsed.boardTheme === 'night_ink'
+        ? parsed.boardTheme
+        : 'classic_wood';
+    return {
+      boardTheme,
+      showKoreanSubLabel: Boolean(parsed.showKoreanSubLabel),
+      sound: {
+        sfxEnabled: parsed.sound?.sfxEnabled ?? true,
+        voiceEnabled: parsed.sound?.voiceEnabled ?? true,
+        bgmEnabled: parsed.sound?.bgmEnabled ?? false,
+      },
+    };
+  } catch {
+    return DEFAULT_JANGGI_PREFERENCES;
+  }
 };
 
 const parseRecordsJson = (raw: string | null | undefined): JanggiRecordsMap => {
@@ -163,9 +196,14 @@ export function App() {
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const [lastMoveIsCapture, setLastMoveIsCapture] = useState<boolean>(false);
   const [janggunAttacker, setJanggunAttacker] = useState<Side | null>(null);
+  const [munggunDefender, setMunggunDefender] = useState<Side | null>(null);
   const [checkmateWinner, setCheckmateWinner] = useState<Side | null>(null);
   const [isBigjangModalOpen, setIsBigjangModalOpen] = useState<boolean>(false);
   const [boardHashes, setBoardHashes] = useState<string[]>([]);
+  const [shakeTrigger, setShakeTrigger] = useState<number>(0);
+  const [playerCaptureStreak, setPlayerCaptureStreak] = useState<number>(0);
+  const [comboBanner, setComboBanner] = useState<ComboBannerEvent | null>(null);
+  const [aiEmotion, setAiEmotion] = useState<AiEmotion>('idle');
 
   // 4. 승패 및 상태
   const [isCheckState, setIsCheckState] = useState<boolean>(false);
@@ -189,11 +227,55 @@ export function App() {
   const [puzzleStreak, setPuzzleStreak] = useState<number>(3);
   const [sajuBuff, setSajuBuff] = useState<SajuElementBuff>(() => getTodaySajuBuff());
 
-  // 6. 타이머 / 샷클락 & 오디오
+  // 6. 타이머 / 샷클락 & 오디오 · 테마 설정
   const initialTime = gameMode === 'mini' ? 15 : 30;
   const [timeRemaining, setTimeRemaining] = useState<number>(initialTime);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isAiThinking, setIsAiThinking] = useState<boolean>(false);
+  const [preferences, setPreferences] = useState<JanggiPreferences>(() => loadJanggiPreferences());
+
+  // 오디오·테마 환경설정 로컬스토리지 동기화 및 SoundManager 반영
+  useEffect(() => {
+    soundEffects.updateSettings(preferences.sound);
+    try {
+      localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(preferences));
+    } catch {
+      // ignore storage quota error
+    }
+  }, [preferences]);
+
+  // 콤보 배너 자동 닫기
+  useEffect(() => {
+    if (!comboBanner) return;
+    const timer = window.setTimeout(() => {
+      setComboBanner(null);
+    }, 1700);
+    return () => window.clearTimeout(timer);
+  }, [comboBanner]);
+
+  const handleUpdateSoundSettings = useCallback((partial: Partial<SoundSettings>) => {
+    setPreferences((prev) => ({
+      ...prev,
+      sound: {
+        ...prev.sound,
+        ...partial,
+      },
+    }));
+  }, []);
+
+  const handleChangeBoardTheme = useCallback((boardTheme: BoardTheme) => {
+    setPreferences((prev) => ({
+      ...prev,
+      boardTheme,
+    }));
+  }, []);
+
+  const handleToggleKoreanSubLabel = useCallback(() => {
+    setPreferences((prev) => ({
+      ...prev,
+      showKoreanSubLabel: !prev.showKoreanSubLabel,
+    }));
+  }, []);
 
   // 7. 모달 상태
   const [isSetupOpen, setIsSetupOpen] = useState<boolean>(false);
@@ -210,9 +292,13 @@ export function App() {
     setLastMove(null);
     setLastMoveIsCapture(false);
     setJanggunAttacker(null);
+    setMunggunDefender(null);
     setCheckmateWinner(null);
     setIsBigjangModalOpen(false);
     setBoardHashes([]);
+    setPlayerCaptureStreak(0);
+    setComboBanner(null);
+    setAiEmotion('idle');
     setIsCheckState(false);
     setWinner(null);
     setIsVictoryModalOpen(false);
@@ -244,7 +330,7 @@ export function App() {
       setBoard(createClassicBoard(cSetup, hSetup));
       setCurrentTurn('cho');
     }
-  }, [gameMode, choSetup, hanSetup]);
+  }, [gameMode, choSetup, hanSetup, aiDifficulty]);
 
   // 대국 종료 시 마지막 수 확인을 위해 1.8초 딜레이 후 결과 모달 표시
   useEffect(() => {
@@ -382,7 +468,7 @@ export function App() {
 
   // 모드 변경 처리: AI 대전 모드인 경우 난이도/설정 모달을 띄워 대국을 준비
   const handleSelectMode = (newMode: GameMode) => {
-    soundEffects.playSnap();
+    soundEffects.playUiClick();
     setGameMode(newMode);
     if (newMode === 'puzzle') {
       initGame(newMode, choSetup, hanSetup);
@@ -453,6 +539,7 @@ export function App() {
     if (aiRunningRef.current) return;
     aiRunningRef.current = true;
     setIsAiThinking(true);
+    setAiEmotion('thinking');
     setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onThinking));
 
     const thinkDuration =
@@ -473,12 +560,14 @@ export function App() {
       const bestMove = findBestMove(activeBoard, activeTurn, aiDifficulty, cols, rows);
 
       if (!bestMove) {
-        // AI가 둘 수 있는 수가 없음 -> 외통수 패배
+        // AI가 둘 수 있는 수가 없음 -> 외통수 패배 (플레이어 승리)
         const winSide: Side = activeTurn === 'cho' ? 'han' : 'cho';
         setWinner(winSide);
         setWinReason('외통수 (장군을 피할 수 없음)');
         setCheckmateWinner(winSide);
-        soundEffects.playCheckmate();
+        setShakeTrigger((prev) => prev + 1);
+        setAiEmotion('defeat');
+        soundEffects.playCheckmate(true);
         setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onDefeat));
         aiRunningRef.current = false;
         setIsAiThinking(false);
@@ -494,14 +583,15 @@ export function App() {
     return () => {
       clearTimeout(timer);
     };
-  }, [currentTurn, playerSide, winner, showSplash, gameMode, cols, rows, aiDifficulty]);
+  }, [currentTurn, playerSide, winner, showSplash, isGameStarted, isSetupOpen, gameMode, cols, rows, aiDifficulty]);
 
   // 실제 기물 이동 실행
-  const executeMove = (from: Position, to: Position, isAi = false) => {
+  const executeMove = (from: Position, to: Position, _isAi = false) => {
     const movingPiece = board[from.y][from.x];
     if (!movingPiece) return;
 
     const targetPiece = board[to.y][to.x];
+    const wasInCheck = isCheckState;
 
     // Undo 기록 저장 (최대 10수 전까지)
     setUndoHistory((prev) => [
@@ -518,7 +608,7 @@ export function App() {
     newBoard[to.y][to.x] = { ...movingPiece };
     newBoard[from.y][from.x] = null;
 
-    // 기물 포획 사운드 및 목록 업데이트
+    // 기물 포획 사운드 · 콤보 · 타격감 업데이트
     const hasCaptured = !!targetPiece;
     setLastMoveIsCapture(hasCaptured);
 
@@ -527,7 +617,45 @@ export function App() {
     }
 
     if (targetPiece) {
-      soundEffects.playCapture();
+      let nextStreak = 1;
+      if (currentTurn === playerSide) {
+        nextStreak = playerCaptureStreak + 1;
+        setPlayerCaptureStreak(nextStreak);
+      } else {
+        setPlayerCaptureStreak(0);
+      }
+
+      soundEffects.playCapture(targetPiece.type, currentTurn === playerSide ? nextStreak : 1);
+
+      if (targetPiece.type === 'chariot' || targetPiece.type === 'cannon' || nextStreak >= 2) {
+        setShakeTrigger((prev) => prev + 1);
+      }
+
+      if (currentTurn === playerSide) {
+        if (targetPiece.type === 'chariot') {
+          setComboBanner({
+            id: Date.now(),
+            title: '🔥 차(車) 격파! (+13점)',
+            subtitle: nextStreak >= 2 ? `${nextStreak}연속 포획 기세 상승!` : '상대의 주력 기물을 잡았습니다!',
+            tone: 'rose',
+          });
+        } else if (targetPiece.type === 'cannon') {
+          setComboBanner({
+            id: Date.now(),
+            title: '💥 포(包) 격파! (+7점)',
+            subtitle: nextStreak >= 2 ? `${nextStreak}연속 포획 기세 상승!` : '화력 핵심 기물을 제압했습니다!',
+            tone: 'amber',
+          });
+        } else if (nextStreak >= 2) {
+          setComboBanner({
+            id: Date.now(),
+            title: `⚡ ${nextStreak}연속 포획!`,
+            subtitle: '파죽지세의 공세가 이어집니다',
+            tone: 'emerald',
+          });
+        }
+      }
+
       if (currentTurn === 'cho') {
         setCapturedByCho((prev) => [...prev, targetPiece]);
         setSkillGauge((prev) => Math.min(100, prev + 25));
@@ -536,7 +664,10 @@ export function App() {
         setSkillGauge((prev) => Math.min(100, prev + 25));
       }
     } else {
-      soundEffects.playSnap();
+      if (currentTurn === playerSide) {
+        setPlayerCaptureStreak(0);
+      }
+      soundEffects.playPieceMove(movingPiece.type);
     }
 
     setBoard(newBoard);
@@ -559,20 +690,18 @@ export function App() {
         currentStep.to.x === to.x &&
         currentStep.to.y === to.y
       ) {
-        // 정답 수 성공!
         const nextStep = puzzleMoveStep + 1;
         setPuzzleMoveStep(nextStep);
 
         if (nextStep >= dailyPuzzle.solution.length) {
-          // 외통수 퍼즐 최종 해결!
-          soundEffects.playVictory();
+          soundEffects.playCheckmate(true);
           setWinner('cho');
           setWinReason(`🎉 오늘의 묘수풀이 [${dailyPuzzle.title}] 완전 정복!`);
           setPuzzleStreak((prev) => prev + 1);
           return;
         }
       } else {
-        // 오답 수
+        soundEffects.playDefeat();
         alert('아쉽습니다! 정답 수순이 아닙니다. 다시 시도해보세요.');
         initGame('puzzle');
         return;
@@ -581,8 +710,17 @@ export function App() {
 
     // 1. 150수 제한 도달 시 한국장기협회 공식 점수제 판정
     if (nextMoveCount >= 150) {
-      soundEffects.playVictory();
       const finalScore = calculateJanggiScore(newBoard, cols, rows);
+      const isPlayerWin = finalScore.leader === playerSide;
+      if (finalScore.leader === 'draw') {
+        soundEffects.playDraw();
+      } else if (isPlayerWin) {
+        soundEffects.playVictory();
+        setAiEmotion('defeat');
+      } else {
+        soundEffects.playDefeat();
+        setAiEmotion('victory');
+      }
       setWinner(finalScore.leader);
       setWinReason('150수 제한 도달 — 한국장기협회 공식 점수제 판정');
       return;
@@ -590,8 +728,17 @@ export function App() {
 
     // 2. 양측 핵심 공격 기물(차, 포, 마, 상) 전멸 시 외통 불능 점수제 판정
     if (hasInsufficientMaterial(newBoard)) {
-      soundEffects.playVictory();
       const finalScore = calculateJanggiScore(newBoard, cols, rows);
+      const isPlayerWin = finalScore.leader === playerSide;
+      if (finalScore.leader === 'draw') {
+        soundEffects.playDraw();
+      } else if (isPlayerWin) {
+        soundEffects.playVictory();
+        setAiEmotion('defeat');
+      } else {
+        soundEffects.playDefeat();
+        setAiEmotion('victory');
+      }
       setWinner(finalScore.leader);
       setWinReason('양측 공격 기물 소진 (외통 불능) — 공식 점수제 판정');
       return;
@@ -601,57 +748,75 @@ export function App() {
     const currentHash = getBoardHash(newBoard, nextTurn);
     const hashOccurrences = boardHashes.filter((h) => h === currentHash).length;
     if (hashOccurrences >= 2) {
-      soundEffects.playVictory();
+      soundEffects.playDraw();
+      setAiEmotion('idle');
       setWinner('draw');
       setWinReason('동일 국면 3회 반복 (한국장기협회 공식 삼복수 무승부)');
       return;
     }
     setBoardHashes((prev) => [...prev, currentHash]);
 
-    // 4. 장군(Check) 판별
+    // 4. 장군(Check) 및 멍군(방어 성공) 판별
     const checkOnOpponent = isCheck(newBoard, nextTurn, cols, rows);
     setIsCheckState(checkOnOpponent);
 
     if (checkOnOpponent) {
-      soundEffects.playCheck();
-      setJanggunAttacker(currentTurn);
+      setShakeTrigger((prev) => prev + 1);
+      setMunggunDefender(null);
 
-      // 외통수(Checkmate) 체크: 다음 턴 상대가 둘 수 있는 합법 수가 전혀 없는가?
+      // 외통수(Checkmate) 체크
       const opponentMoves = getAllLegalMoves(newBoard, nextTurn, cols, rows);
       if (opponentMoves.length === 0) {
-        soundEffects.playCheckmate();
+        const isPlayerWin = currentTurn === playerSide;
+        soundEffects.playCheckmate(isPlayerWin);
         setCheckmateWinner(currentTurn);
         setWinner(currentTurn);
         setWinReason(`외통수(外痛手)! ${currentTurn === 'cho' ? '초(楚)' : '한(漢)'} 완승`);
+        setAiEmotion(isPlayerWin ? 'defeat' : 'victory');
 
-        if (currentTurn === playerSide) {
+        if (isPlayerWin) {
           setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onDefeat));
         } else {
           setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onVictory));
         }
         return;
       } else {
-        // 장군 시 AI 대사
+        soundEffects.playCheck();
+        setJanggunAttacker(currentTurn);
+
         if (currentTurn !== playerSide) {
+          setAiEmotion('attack');
           setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onCheck));
         } else {
+          setAiEmotion('danger');
           setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onInCheck));
         }
       }
     } else {
       setJanggunAttacker(null);
-      if (targetPiece) {
+
+      if (wasInCheck) {
+        // 직전 장군 상태에서 합법 수로 방어에 성공 -> 멍군!
+        soundEffects.playMunggun();
+        setMunggunDefender(currentTurn);
+        setAiEmotion(currentTurn === playerSide ? 'idle' : 'attack');
+        setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onMunggun));
+      } else if (targetPiece) {
         if (currentTurn !== playerSide) {
+          setAiEmotion('attack');
           setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onCapture));
         } else {
+          setAiEmotion('danger');
           setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onInCheck));
         }
+      } else {
+        setAiEmotion('idle');
       }
     }
 
-    // 5. 빅장(Face-to-Face King) 체크: 두 궁이 마주보면 무승부 제안 모달 트리거
+    // 5. 빅장(Face-to-Face King) 체크
     if (isBigjang(newBoard, cols, rows)) {
-      soundEffects.playCheck();
+      soundEffects.playBigjang();
       setIsBigjangModalOpen(true);
     }
 
@@ -663,14 +828,12 @@ export function App() {
     if (!isGameStarted || isSetupOpen || winner || isAiThinking) return;
     const piece = board[pos.y][pos.x];
 
-    // 현재 턴의 아군 기물 선택
     if (piece && piece.side === currentTurn) {
-      soundEffects.playSnap();
+      soundEffects.playSelect();
       setSelectedPos(pos);
       const moves = getValidMovesForPiece(board, pos, cols, rows);
       setValidMoves(moves);
     } else if (selectedPos) {
-      // 빈 칸이나 상대 기물 클릭 시 (유효 이동 경로인 경우 이동)
       const isTargetValid = validMoves.some((m) => m.x === pos.x && m.y === pos.y);
       if (isTargetValid) {
         executeMove(selectedPos, pos, false);
@@ -690,7 +853,7 @@ export function App() {
   // 한수 쉼 (Pass)
   const handlePass = () => {
     if (!isGameStarted || isSetupOpen || winner || isAiThinking) return;
-    soundEffects.playSnap();
+    soundEffects.playUiClick();
     const nextTurn: Side = currentTurn === 'cho' ? 'han' : 'cho';
     setCurrentTurn(nextTurn);
     setSelectedPos(null);
@@ -701,9 +864,8 @@ export function App() {
   // 무르기 (Undo) - 최대 3회
   const handleUndo = () => {
     if (!isGameStarted || isSetupOpen || undoHistory.length === 0 || undoCount >= 3 || isAiThinking) return;
-    soundEffects.playSnap();
+    soundEffects.playUiClick();
 
-    // AI 대국일 경우 내 수와 AI 수 2수를 되돌림
     const stepsToPop = gameMode !== 'puzzle' && currentTurn === playerSide ? 2 : 1;
     const newHistory = [...undoHistory];
     let lastState = null;
@@ -720,11 +882,13 @@ export function App() {
       setLastMove(lastState.lastMove);
       setLastMoveIsCapture(false);
       setJanggunAttacker(null);
+      setMunggunDefender(null);
       setUndoHistory(newHistory);
       setUndoCount((prev) => prev + 1);
       setSelectedPos(null);
       setValidMoves([]);
       setIsCheckState(isCheck(lastState.board, lastState.turn, cols, rows));
+      setAiEmotion('idle');
       setWinner(null);
     }
   };
@@ -732,7 +896,7 @@ export function App() {
   // 힌트 보기
   const handleHint = () => {
     if (winner || isAiThinking) return;
-    soundEffects.playSnap();
+    soundEffects.playUiClick();
 
     if (gameMode === 'puzzle') {
       const step = dailyPuzzle.solution[puzzleMoveStep];
@@ -773,16 +937,16 @@ export function App() {
     setIsMuted(nextMute);
   };
 
-  // 새 대국 시작 모달 열기 (난이도 및 진영/상차림 선택)
+  // 새 대국 시작 모달 열기
   const handleOpenNewGame = () => {
-    soundEffects.playSnap();
+    soundEffects.playUiClick();
     setIsStartModalMode(true);
     setIsSetupOpen(true);
   };
 
   // 상차림/설정 모달 열기
   const handleOpenSetup = () => {
-    soundEffects.playSnap();
+    soundEffects.playUiClick();
     setIsStartModalMode(false);
     setIsSetupOpen(true);
   };
@@ -805,15 +969,21 @@ export function App() {
           timeRemaining={timeRemaining}
           isMiniMode={gameMode === 'mini'}
           isMuted={isMuted}
+          soundSettings={preferences.sound}
+          boardTheme={preferences.boardTheme}
+          showKoreanSubLabel={preferences.showKoreanSubLabel}
           sajuBuff={sajuBuff}
           onToggleMute={handleToggleMute}
+          onUpdateSoundSettings={handleUpdateSoundSettings}
+          onChangeBoardTheme={handleChangeBoardTheme}
+          onToggleKoreanSubLabel={handleToggleKoreanSubLabel}
           onOpenRules={() => setIsRuleOpen(true)}
           onSelectMode={handleSelectMode}
         />
 
-        {/* 상시 고정 대국 상태 브리핑 바 (Zero Layout Shift - 화면 덜컹거림 100% 방지) */}
+        {/* 상시 고정 AI 캐릭터 초상화 & 국면 말풍선 브리핑 바 (Zero Layout Shift) */}
         <div
-          className={`w-full h-10 min-h-[40px] max-h-[40px] px-2.5 rounded-xl border flex items-center justify-between transition-colors duration-200 select-none shadow-xs box-border overflow-hidden ${
+          className={`w-full min-h-[54px] max-h-[56px] px-2.5 py-1.5 rounded-2xl border flex items-center justify-between transition-colors duration-200 select-none shadow-xs box-border overflow-hidden ${
             winner
               ? 'bg-amber-100/95 border-amber-400 text-amber-950'
               : !isGameStarted
@@ -823,47 +993,59 @@ export function App() {
               : isAiThinking
               ? 'bg-indigo-50/95 border-indigo-300 text-indigo-900'
               : currentTurn === playerSide
-              ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+              ? 'bg-emerald-50/85 border-emerald-200 text-emerald-950'
               : 'bg-slate-100/90 border-slate-200 text-slate-700'
           }`}
         >
-          {/* 좌측: 실시간 국면 및 AI 수읽기 / 리액션 말풍선 브리핑 */}
-          <div className="flex items-center gap-1.5 overflow-hidden text-xs font-black truncate flex-1 mr-2">
+          {/* 좌측: 한국화 AI 초상화(감정 아우라) + 2줄 가독성 말풍선 */}
+          <div className="flex items-center gap-2 overflow-hidden flex-1 mr-2">
             {winner ? (
               <>
-                <i className="fas fa-flag-checkered text-amber-600 text-xs shrink-0"></i>
-                <span className="truncate text-amber-950">
+                <i className="fas fa-flag-checkered text-amber-600 text-sm shrink-0"></i>
+                <span className="text-xs font-black text-amber-950 line-clamp-2 leading-tight">
                   대국 종료 ({winReason || '최종 수 확인'}) — 마지막 수를 확인하세요
                 </span>
               </>
             ) : (
               <>
-                <span className="text-sm shrink-0" title={`${AI_PERSONAS[aiDifficulty]?.name} (${AI_PERSONAS[aiDifficulty]?.title})`}>
-                  {AI_PERSONAS[aiDifficulty]?.avatar}
-                </span>
-                {!isGameStarted ? (
-                  <span className="truncate text-amber-900">
-                    {AI_PERSONAS[aiDifficulty]?.name}: "{AI_PERSONAS[aiDifficulty]?.greeting}"
-                  </span>
-                ) : isCheckState ? (
-                  <>
-                    <i className="fas fa-exclamation-triangle text-rose-600 animate-bounce text-xs shrink-0"></i>
-                    <span className="truncate">
-                      {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || (currentTurn === playerSide ? '장군 위기! 왕을 피하세요!' : '외통의 길목이오, 장군!')}"
-                    </span>
-                  </>
-                ) : isAiThinking ? (
-                  <>
-                    <i className="fas fa-microchip text-indigo-600 animate-spin text-xs shrink-0"></i>
-                    <span className="truncate animate-pulse text-indigo-950">
-                      {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || '수읽기 연산 중...'}"
-                    </span>
-                  </>
-                ) : (
-                  <span className="truncate">
-                    {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || (currentTurn === playerSide ? '당신의 차례입니다. 신중히 두세요.' : '수를 준비 중입니다.')}"
-                  </span>
-                )}
+                <div
+                  className={`relative w-9 h-9 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${
+                    aiEmotion === 'danger'
+                      ? 'border-rose-500 ring-2 ring-rose-300/60'
+                      : aiEmotion === 'attack'
+                      ? 'border-amber-500 ring-2 ring-amber-300/60'
+                      : aiEmotion === 'thinking'
+                      ? 'border-indigo-500 animate-pulse'
+                      : 'border-amber-300/90'
+                  }`}
+                  title={`${AI_PERSONAS[aiDifficulty]?.name} (${AI_PERSONAS[aiDifficulty]?.title})`}
+                >
+                  <img
+                    src={getJanggiAssetUrl(AI_PERSONAS[aiDifficulty]?.portrait)}
+                    alt={AI_PERSONAS[aiDifficulty]?.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1 text-[10px] font-black opacity-80 leading-none mb-0.5">
+                    <span>{AI_PERSONAS[aiDifficulty]?.name}</span>
+                    {isCheckState && (
+                      <i className="fas fa-exclamation-triangle text-rose-600 animate-bounce text-[10px]"></i>
+                    )}
+                    {isAiThinking && (
+                      <i className="fas fa-microchip text-indigo-600 animate-spin text-[10px]"></i>
+                    )}
+                  </div>
+                  <p className="text-[11px] font-bold leading-snug line-clamp-2">
+                    {!isGameStarted
+                      ? `"${AI_PERSONAS[aiDifficulty]?.greeting}"`
+                      : isCheckState
+                      ? `"${aiDialogue || (currentTurn === playerSide ? '장군 위기! 왕을 피하세요!' : '외통의 길목이오, 장군!')}"`
+                      : isAiThinking
+                      ? `"${aiDialogue || '수읽기 연산 중...'}"`
+                      : `"${aiDialogue || (currentTurn === playerSide ? '당신의 차례입니다. 신중히 두세요.' : '수를 준비 중입니다.')}"`}
+                  </p>
+                </div>
               </>
             )}
           </div>
@@ -873,10 +1055,10 @@ export function App() {
             <button
               type="button"
               onClick={() => {
-                soundEffects.playSnap();
+                soundEffects.playUiClick();
                 setIsVictoryModalOpen(true);
               }}
-              className="flex items-center gap-1 py-1 px-2.5 rounded-lg text-[11px] font-black bg-amber-500 hover:bg-amber-600 text-white shadow-xs shrink-0 transition-colors cursor-pointer"
+              className="flex items-center gap-1 py-1.5 px-2.5 rounded-lg text-[11px] font-black bg-amber-500 hover:bg-amber-600 text-white shadow-xs shrink-0 transition-colors cursor-pointer"
             >
               <i className="fas fa-trophy text-[10px]"></i>
               <span>결과창 보기</span>
@@ -884,7 +1066,7 @@ export function App() {
           ) : (
             <div
               title={`상대: ${AI_PERSONAS[aiDifficulty]?.name} (${AI_PERSONAS[aiDifficulty]?.title}) - ${DIFFICULTY_INFO[aiDifficulty]?.label}`}
-              className={`flex items-center gap-1 py-1 px-2.5 rounded-lg text-[11px] font-black border select-none shrink-0 shadow-xs ${
+              className={`flex items-center gap-1 py-1 px-2 rounded-lg text-[10px] font-black border select-none shrink-0 shadow-xs ${
                 DIFFICULTY_INFO[aiDifficulty]?.color || 'bg-white text-slate-700 border-slate-300'
               }`}
             >
@@ -909,15 +1091,53 @@ export function App() {
             isCheckSide={isCheckState ? currentTurn : null}
             currentTurn={currentTurn}
             playerSide={playerSide}
+            boardTheme={preferences.boardTheme}
+            showKoreanSubLabel={preferences.showKoreanSubLabel}
+            shakeTrigger={shakeTrigger}
             onSelectPiece={handleSelectPiece}
             onMakeMove={handleMakeMove}
           />
+
+          {/* 연속 포획 / 대물 격파 콤보 토스트 */}
+          {comboBanner && !janggunAttacker && !checkmateWinner && (
+            <div
+              key={comboBanner.id}
+              className="pointer-events-none absolute top-3 inset-x-6 z-30 flex justify-center animate-combo-toast"
+            >
+              <div
+                className={`px-3.5 py-1.5 rounded-full shadow-lg border text-center backdrop-blur-xs ${
+                  comboBanner.tone === 'rose'
+                    ? 'bg-rose-600/95 border-rose-300 text-white'
+                    : comboBanner.tone === 'amber'
+                    ? 'bg-amber-500/95 border-amber-200 text-white'
+                    : 'bg-emerald-600/95 border-emerald-200 text-white'
+                }`}
+              >
+                <div className="text-xs font-black tracking-tight leading-tight">
+                  {comboBanner.title}
+                </div>
+                <div className="text-[10px] font-semibold opacity-90 leading-tight">
+                  {comboBanner.subtitle}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 중앙 시네마틱 '장군(將軍)!' 팝업 배너 */}
           {janggunAttacker && !checkmateWinner && (
             <JanggunBanner
               attacker={janggunAttacker}
+              playerSide={playerSide}
               onClose={() => setJanggunAttacker(null)}
+            />
+          )}
+
+          {/* 상단 '멍군(防)!' 방어 성공 배너 */}
+          {munggunDefender && !janggunAttacker && !checkmateWinner && (
+            <MunggunBanner
+              defender={munggunDefender}
+              playerSide={playerSide}
+              onClose={() => setMunggunDefender(null)}
             />
           )}
 

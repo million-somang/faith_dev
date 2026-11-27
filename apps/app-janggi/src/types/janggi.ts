@@ -100,6 +100,39 @@ export interface JanggiTierRecord {
 
 export type JanggiRecordsMap = Record<Difficulty, JanggiTierRecord>;
 
+export type BoardTheme = 'classic_wood' | 'royal_ebony' | 'night_ink';
+
+export type AiEmotion = 'idle' | 'thinking' | 'attack' | 'danger' | 'victory' | 'defeat';
+
+export interface SoundSettings {
+  sfxEnabled: boolean;
+  voiceEnabled: boolean;
+  bgmEnabled: boolean;
+}
+
+export interface JanggiPreferences {
+  boardTheme: BoardTheme;
+  showKoreanSubLabel: boolean;
+  sound: SoundSettings;
+}
+
+export interface ComboBannerEvent {
+  id: number;
+  title: string;
+  subtitle: string;
+  tone: 'amber' | 'rose' | 'emerald';
+}
+
+export const DEFAULT_JANGGI_PREFERENCES: JanggiPreferences = {
+  boardTheme: 'classic_wood',
+  showKoreanSubLabel: false,
+  sound: {
+    sfxEnabled: true,
+    voiceEnabled: true,
+    bgmEnabled: false,
+  },
+};
+
 export const createEmptyJanggiRecords = (): JanggiRecordsMap => ({
   beginner: { wins: 0, losses: 0, draws: 0 },
   easy: { wins: 0, losses: 0, draws: 0 },

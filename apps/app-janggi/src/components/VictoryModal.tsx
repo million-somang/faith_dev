@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
+import confetti from 'canvas-confetti';
 import {
   GameMode,
   Side,
@@ -6,6 +7,7 @@ import {
   JanggiRecordsMap,
   createEmptyJanggiRecords,
 } from '../types/janggi';
+import { AI_PERSONAS, getJanggiAssetUrl, getRandomLine } from '../data/aiPersonas';
 import { soundEffects } from '../utils/soundEffects';
 
 export interface VictoryModalProps {
@@ -56,11 +58,36 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   onRestart,
   onNewGame,
 }) => {
-  if (!winner || !isOpen) return null;
-
   const isCho = winner === 'cho';
   const isDraw = winner === 'draw';
-  const isPlayerWin = !isDraw && (gameMode === 'puzzle' ? winner === 'cho' : winner === playerSide);
+  const isPlayerWin =
+    Boolean(winner) &&
+    !isDraw &&
+    (gameMode === 'puzzle' ? winner === 'cho' : winner === playerSide);
+
+  // 플레이어 승리 시 오방색·금빛 축하 컨페티 발사
+  useEffect(() => {
+    if (!isOpen || !isPlayerWin) return;
+    try {
+      confetti({
+        particleCount: 65,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#059669', '#dc2626', '#f59e0b', '#fbbf24', '#2563eb'],
+      });
+    } catch {
+      // ignore canvas errors in headless environments
+    }
+  }, [isOpen, isPlayerWin]);
+
+  const persona = AI_PERSONAS[aiDifficulty] || AI_PERSONAS.normal;
+  const closingRemark = useMemo(() => {
+    if (!winner) return '';
+    if (isDraw) return '치열한 접전 끝에 우열을 가리지 못했군요. 명국이었습니다!';
+    return isPlayerWin ? getRandomLine(persona.onDefeat) : getRandomLine(persona.onVictory);
+  }, [winner, isDraw, isPlayerWin, persona]);
+
+  if (!winner || !isOpen) return null;
 
   const tierRecords = recordsByTier || createEmptyJanggiRecords();
   const currentTierInfo = TIER_ROWS.find((t) => t.id === aiDifficulty) || TIER_ROWS[2];
@@ -89,7 +116,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
     : `${currentTierInfo.badge} 대국 패배`;
 
   const handleShare = () => {
-    soundEffects.playSnap();
+    soundEffects.playUiClick();
     const shareText = `[베라장기] ${title} (${reason}) | ${currentTierInfo.badge} 전적: ${currentTierRec.wins}승 ${currentTierRec.draws}무 ${currentTierRec.losses}패 | 통산 ${totalStats.wins}승 ${totalStats.losses}패 (승률 ${totalWinRate}%)`;
     if (navigator.share) {
       navigator
@@ -106,16 +133,16 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm animate-fade-in">
       <div
-        className="w-full max-w-sm rounded-3xl bg-white border border-slate-200/90 shadow-2xl p-5 sm:p-6 text-center relative overflow-hidden text-slate-800"
+        className="w-full max-w-sm rounded-3xl bg-white border border-slate-200/90 shadow-2xl p-5 sm:p-6 text-center relative overflow-hidden text-slate-800 max-h-[92vh] overflow-y-auto"
         data-screenshot-target="victory-dialog"
       >
-        {/* 우측 상단 닫기 (판 확인하기) 버튼 */}
+        {/* 우측 상단 닫기 버튼 */}
         <button
           type="button"
           onClick={() => {
-            soundEffects.playSnap();
+            soundEffects.playUiClick();
             onClose();
           }}
           title="결과창 닫고 장기판 확인하기"
@@ -124,7 +151,6 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           <i className="fas fa-times text-xs"></i>
         </button>
 
-        {/* Soft ambient background accent */}
         <div
           className={`absolute -top-16 -left-16 w-40 h-40 rounded-full blur-3xl opacity-20 ${
             isCho ? 'bg-emerald-400' : isDraw ? 'bg-amber-400' : 'bg-rose-400'
@@ -136,16 +162,35 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           }`}
         />
 
-        {/* Crown / Trophy icon */}
-        <div className="relative inline-block mb-2">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 flex items-center justify-center text-white text-2xl shadow-lg shadow-amber-500/25 mx-auto animate-bounce">
-            <i className={`fas ${isDraw ? 'fa-handshake' : 'fa-trophy'}`}></i>
+        {/* 트로피 아이콘 */}
+        <div className="relative inline-block mb-1.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 flex items-center justify-center text-white text-xl shadow-lg shadow-amber-500/25 mx-auto animate-bounce">
+            <i className={`fas ${isDraw ? 'fa-handshake' : isPlayerWin ? 'fa-trophy' : 'fa-chess-king'}`}></i>
           </div>
         </div>
 
         {/* Title & Reason */}
         <h2 className="text-xl font-black tracking-tight text-slate-900 mb-0.5">{title}</h2>
-        <p className="text-xs text-slate-500 mb-3.5 font-medium">{reason}</p>
+        <p className="text-xs text-slate-500 mb-2.5 font-medium">{reason}</p>
+
+        {/* AI 상대 초상화 & 종국 소감 카드 */}
+        {gameMode !== 'puzzle' && (
+          <div className="mb-2.5 p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-2.5 text-left">
+            <img
+              src={getJanggiAssetUrl(persona.portrait)}
+              alt={persona.name}
+              className="w-11 h-11 rounded-full object-cover border-2 border-amber-300 shrink-0 shadow-xs"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-black text-slate-700">
+                {persona.name} ({persona.rank})
+              </div>
+              <div className="text-[11px] font-semibold text-slate-800 leading-snug line-clamp-2">
+                "{closingRemark}"
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 현재 급수 대국 결과 및 승패 히어로 배너 */}
         <div
@@ -174,7 +219,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           </div>
         </div>
 
-        {/* 전 급수별 (9단 · 1단 · 3급 · 10급 · 18급) 승·무·패 전적표 */}
+        {/* 전 급수별 승·무·패 전적표 */}
         <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200/90 mb-2.5 shadow-xs text-left">
           <div className="flex items-center justify-between mb-1.5 px-0.5">
             <span className="text-[10px] text-slate-600 font-black uppercase tracking-wider flex items-center gap-1">
@@ -222,7 +267,6 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             })}
           </div>
 
-          {/* 장기 공식 기물 점수 (초 vs 한) 요약 */}
           <div className="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px] px-0.5">
             <span className="text-slate-400 font-bold">기물 점수 (공식 73.5점제)</span>
             <div className="flex items-center gap-2 font-mono font-bold">
@@ -243,7 +287,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         </div>
 
         {/* 베라 포인트 적립 & 서버 랭킹 저장 상태 인디케이터 */}
-        <div className="flex flex-col gap-1.5 mb-3.5">
+        <div className="flex flex-col gap-1.5 mb-3">
           <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black shadow-2xs">
             <i className="fas fa-coins text-amber-500"></i>
             <span>베라 포인트 +{earnedPoints}P 적립</span>
@@ -271,7 +315,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              soundEffects.playSnap();
+              soundEffects.playUiClick();
               onClose();
             }}
             className="w-full py-2.5 px-4 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-extrabold text-xs border border-amber-300 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
@@ -283,7 +327,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              soundEffects.playSnap();
+              soundEffects.playUiClick();
               onNewGame();
             }}
             className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm shadow-md shadow-emerald-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
@@ -296,7 +340,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             <button
               type="button"
               onClick={() => {
-                soundEffects.playSnap();
+                soundEffects.playUiClick();
                 onRestart();
               }}
               className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 active:scale-95 transition-all cursor-pointer"
