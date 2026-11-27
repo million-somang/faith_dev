@@ -19,8 +19,7 @@ export interface AiPersona {
 }
 
 export function getJanggiAssetUrl(relativePath: string): string {
-  const meta = import.meta as ImportMeta & { env?: { BASE_URL?: string } };
-  const base = meta.env?.BASE_URL || '/';
+  const base = import.meta.env.BASE_URL || '/app/janggi/';
   const normalizedBase = base.endsWith('/') ? base : `${base}/`;
   const normalizedPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
   return `${normalizedBase}${normalizedPath}`;

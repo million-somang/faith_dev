@@ -249,9 +249,13 @@ export function App() {
     if (!comboBanner) return;
     const timer = window.setTimeout(() => {
       setComboBanner(null);
-    }, 1700);
+    }, 1400);
     return () => window.clearTimeout(timer);
   }, [comboBanner]);
+
+  const handleCloseJanggun = useCallback(() => setJanggunAttacker(null), []);
+  const handleCloseMunggun = useCallback(() => setMunggunDefender(null), []);
+  const handleCloseCheckmate = useCallback(() => setCheckmateWinner(null), []);
 
   const handleUpdateSoundSettings = useCallback((partial: Partial<SoundSettings>) => {
     setPreferences((prev) => ({
@@ -981,9 +985,9 @@ export function App() {
           onSelectMode={handleSelectMode}
         />
 
-        {/* 상시 고정 AI 캐릭터 초상화 & 국면 말풍선 브리핑 바 (Zero Layout Shift) */}
+        {/* 상시 고정 AI 캐릭터 초상화 & 국면 말풍선 브리핑 바 (Zero Layout Shift) + 장군/멍군/외통/콤보 배너 */}
         <div
-          className={`w-full min-h-[54px] max-h-[56px] px-2.5 py-1.5 rounded-2xl border flex items-center justify-between transition-colors duration-200 select-none shadow-xs box-border overflow-hidden ${
+          className={`relative w-full min-h-[54px] max-h-[56px] px-2.5 py-1.5 rounded-2xl border flex items-center justify-between transition-colors duration-200 select-none shadow-xs box-border overflow-hidden ${
             winner
               ? 'bg-amber-100/95 border-amber-400 text-amber-950'
               : !isGameStarted
@@ -1076,9 +1080,57 @@ export function App() {
               </span>
             </div>
           )}
+
+          {/* 장기판 위 기물을 절대 가리지 않도록 상단 브리핑 바 영역에만 배너 표시 */}
+          {comboBanner && !janggunAttacker && !munggunDefender && !checkmateWinner && (
+            <div
+              key={comboBanner.id}
+              onClick={() => setComboBanner(null)}
+              className={`absolute inset-0 z-20 rounded-2xl px-3 flex items-center justify-between gap-2 cursor-pointer border-2 animate-combo-toast ${
+                comboBanner.tone === 'rose'
+                  ? 'bg-rose-600 border-rose-300 text-white'
+                  : comboBanner.tone === 'amber'
+                  ? 'bg-amber-500 border-amber-200 text-white'
+                  : 'bg-emerald-600 border-emerald-200 text-white'
+              }`}
+            >
+              <div className="min-w-0 text-left">
+                <div className="text-xs font-black tracking-tight truncate">{comboBanner.title}</div>
+                <div className="text-[10px] font-semibold opacity-90 truncate">{comboBanner.subtitle}</div>
+              </div>
+              <i className="fas fa-fire-flame-curved text-base shrink-0"></i>
+            </div>
+          )}
+
+          {janggunAttacker && !checkmateWinner && (
+            <JanggunBanner
+              key={`janggun_${moveCount}`}
+              attacker={janggunAttacker}
+              playerSide={playerSide}
+              onClose={handleCloseJanggun}
+            />
+          )}
+
+          {munggunDefender && !janggunAttacker && !checkmateWinner && (
+            <MunggunBanner
+              key={`munggun_${moveCount}`}
+              defender={munggunDefender}
+              playerSide={playerSide}
+              onClose={handleCloseMunggun}
+            />
+          )}
+
+          {checkmateWinner && (
+            <CheckmateBanner
+              key={`checkmate_${moveCount}`}
+              winner={checkmateWinner}
+              playerSide={playerSide}
+              onClose={handleCloseCheckmate}
+            />
+          )}
         </div>
 
-        {/* 메인 장기판 (9x10 또는 7x7 보드) */}
+        {/* 메인 장기판 (9x10 또는 7x7 보드 — 기물 가림 없음) */}
         <div data-screenshot-target="janggi-board" className="flex items-center justify-center w-full relative">
           <JanggiBoard
             board={board}
@@ -1097,58 +1149,6 @@ export function App() {
             onSelectPiece={handleSelectPiece}
             onMakeMove={handleMakeMove}
           />
-
-          {/* 연속 포획 / 대물 격파 콤보 토스트 */}
-          {comboBanner && !janggunAttacker && !checkmateWinner && (
-            <div
-              key={comboBanner.id}
-              className="pointer-events-none absolute top-3 inset-x-6 z-30 flex justify-center animate-combo-toast"
-            >
-              <div
-                className={`px-3.5 py-1.5 rounded-full shadow-lg border text-center backdrop-blur-xs ${
-                  comboBanner.tone === 'rose'
-                    ? 'bg-rose-600/95 border-rose-300 text-white'
-                    : comboBanner.tone === 'amber'
-                    ? 'bg-amber-500/95 border-amber-200 text-white'
-                    : 'bg-emerald-600/95 border-emerald-200 text-white'
-                }`}
-              >
-                <div className="text-xs font-black tracking-tight leading-tight">
-                  {comboBanner.title}
-                </div>
-                <div className="text-[10px] font-semibold opacity-90 leading-tight">
-                  {comboBanner.subtitle}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 중앙 시네마틱 '장군(將軍)!' 팝업 배너 */}
-          {janggunAttacker && !checkmateWinner && (
-            <JanggunBanner
-              attacker={janggunAttacker}
-              playerSide={playerSide}
-              onClose={() => setJanggunAttacker(null)}
-            />
-          )}
-
-          {/* 상단 '멍군(防)!' 방어 성공 배너 */}
-          {munggunDefender && !janggunAttacker && !checkmateWinner && (
-            <MunggunBanner
-              defender={munggunDefender}
-              playerSide={playerSide}
-              onClose={() => setMunggunDefender(null)}
-            />
-          )}
-
-          {/* 피날레 '외통수(外痛手)!' 시네마틱 배너 */}
-          {checkmateWinner && (
-            <CheckmateBanner
-              winner={checkmateWinner}
-              playerSide={playerSide}
-              onClose={() => setCheckmateWinner(null)}
-            />
-          )}
         </div>
 
         {/* 점수 & 국면 현황 & 포획 기물 트레이 */}
