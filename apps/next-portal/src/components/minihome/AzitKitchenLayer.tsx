@@ -1319,6 +1319,20 @@ export const AzitKitchenControlPanel: React.FC<AzitKitchenControlPanelProps> = (
           )
         : sortedRecipes;
 
+    const harvestCounts = gameState.garden?.harvestCounts ?? {};
+    const totalHarvestCrops = gameState.catalog.crops.reduce(
+        (acc, c) => acc + (harvestCounts[c.cropId] || 0),
+        0
+    );
+    const sortedCrops = [...gameState.catalog.crops].sort((a, b) => {
+        const qa = harvestCounts[a.cropId] || 0;
+        const qb = harvestCounts[b.cropId] || 0;
+        return (qb > 0 ? 1 : 0) - (qa > 0 ? 1 : 0) || qb - qa;
+    });
+    const visibleCrops = hideEmptyItems
+        ? sortedCrops.filter((c) => (harvestCounts[c.cropId] || 0) > 0)
+        : sortedCrops;
+
     return (
         <div className="w-full mt-2 rounded-2xl bg-[#f0f4f8] border border-white/85 shadow-[4px_4px_10px_rgba(163,177,198,0.35),-4px_-4px_10px_rgba(255,255,255,0.85)] p-3.5 sm:p-4 space-y-3 shrink-0">
             {/* 상단 요약 1줄 (중복 버튼 제거, 구역 상태 + 요약 + 필터 토글) */}
@@ -1470,6 +1484,54 @@ export const AzitKitchenControlPanel: React.FC<AzitKitchenControlPanelProps> = (
                                         <span className={qty > 0 ? 'text-orange-600 font-black' : 'text-[#94a3b8]'}>
                                             ×{qty}
                                         </span>
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* 섹션 3: 보유 수확 작물 (요리·연금 재료) */}
+            <div className="rounded-xl bg-[#e8edf2]/80 border border-white/75 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.85)] p-2.5 sm:p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-black text-[#1e293b] flex items-center gap-1">
+                        <span>🌿 보유 수확 작물</span>
+                        <span className="text-[10px] font-bold text-[#64748b]">(요리·연금 재료)</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-black text-emerald-700">
+                        총 {totalHarvestCrops}개
+                    </span>
+                </div>
+
+                {visibleCrops.length === 0 ? (
+                    <div className="py-2 text-center text-[11px] font-bold text-[#94a3b8]">
+                        보유 중인 수확 작물이 없습니다. 아지트 정원에서 작물을 수확해 보세요.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5">
+                        {visibleCrops.map((crop) => {
+                            const qty = harvestCounts[crop.cropId] || 0;
+                            const hasStock = qty > 0;
+                            return (
+                                <div
+                                    key={`kitchen-crop-chip-${crop.cropId}`}
+                                    className={`px-2.5 py-1.5 rounded-xl border flex items-center justify-between gap-1.5 text-[11px] transition-all ${
+                                        hasStock
+                                            ? 'bg-white/95 border-white text-[#1e293b] shadow-[2px_2px_5px_rgba(163,177,198,0.3),-2px_-2px_5px_rgba(255,255,255,0.9)] font-extrabold'
+                                            : 'bg-[#e8edf2]/60 border-slate-200/70 text-[#94a3b8] font-semibold'
+                                    }`}
+                                >
+                                    <span className="truncate flex items-center gap-1 min-w-0">
+                                        <span>{crop.emoji}</span>
+                                        <span className="truncate">{crop.shortName || crop.name}</span>
+                                    </span>
+                                    <span
+                                        className={`font-mono shrink-0 ${
+                                            hasStock ? 'text-emerald-700 font-black' : 'text-[#94a3b8]'
+                                        }`}
+                                    >
+                                        {qty}
                                     </span>
                                 </div>
                             );

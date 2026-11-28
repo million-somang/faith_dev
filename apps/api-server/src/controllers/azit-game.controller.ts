@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 import type { SessionUser } from '../middleware/auth.js';
-import { DEFAULT_FERTILIZER_ID, MAX_GARDEN_PLOTS } from '../services/azit-game.catalog.js';
+import { DEFAULT_FERTILIZER_ID, MAX_GARDEN_PLOTS, MAX_TOWER_FLOOR } from '../services/azit-game.catalog.js';
 import { AzitGameError, AzitGameService } from '../services/azit-game.service.js';
 
 function parseIntegerField(raw: unknown): number {
@@ -56,7 +56,7 @@ function handleControllerError(c: Context, err: unknown, fallbackMsg: string) {
                     message: err.message,
                 },
             },
-            err.statusCode as 400 | 404 | 409
+            err.statusCode as 400 | 403 | 404 | 409
         );
     }
     const message = err instanceof Error ? err.message : fallbackMsg;
@@ -553,15 +553,80 @@ export class AzitGameController {
             if (!userId) {
                 return c.json({ success: false, error: { code: 401, message: '로그인이 필요합니다.' } }, 401);
             }
-            const body = await readJsonBody<{ mercCode?: unknown }>(c);
-            const mercCode = typeof body.mercCode === 'string' ? body.mercCode.trim() : '';
-            if (!mercCode) {
-                return c.json({ success: false, error: { code: 400, message: '훈련할 용병을 선택해 주세요.' } }, 400);
-            }
-            const result = await AzitGameService.upgradeMercenary(userId, mercCode);
-            return c.json({ success: true, data: result });
+            throw new AzitGameError(
+                '용병은 전투 경험치로만 레벨업할 수 있습니다.',
+                403,
+                'GOLD_UPGRADE_DISABLED'
+            );
         } catch (err) {
             return handleControllerError(c, err, '용병 훈련에 실패했습니다.');
+        }
+    }
+
+    static async saveGroup(c: Context) {
+        try {
+            const userId = getAuthUserId(c);
+            if (!userId) {
+                return c.json({ success: false, error: { code: 401, message: '로그인이 필요합니다.' } }, 401);
+            }
+            const body = await readJsonBody<{
+                id?: unknown;
+                name?: unknown;
+                slotIndex?: unknown;
+                mercCodes?: unknown;
+            }>(c);
+            let id: number | undefined;
+            if (body.id !== undefined && body.id !== null) {
+                const parsedId = parseIntegerField(body.id);
+                if (!Number.isInteger(parsedId) || parsedId <= 0) {
+                    return c.json({ success: false, error: { code: 400, message: '올바른 그룹 ID가 아닙니다.' } }, 400);
+                }
+                id = parsedId;
+            }
+            const name = typeof body.name === 'string' ? body.name.trim() : '';
+            if (name.length < 1 || name.length > 24) {
+                return c.json({ success: false, error: { code: 400, message: '그룹 이름은 1~24자여야 합니다.' } }, 400);
+            }
+            let slotIndex: number | undefined;
+            if (body.slotIndex !== undefined && body.slotIndex !== null) {
+                const parsedSlot = parseIntegerField(body.slotIndex);
+                if (!Number.isInteger(parsedSlot) || parsedSlot < 0 || parsedSlot > 9) {
+                    return c.json({ success: false, error: { code: 400, message: '올바른 슬롯 번호(0~9)가 아닙니다.' } }, 400);
+                }
+                slotIndex = parsedSlot;
+            }
+            if (!Array.isArray(body.mercCodes) || body.mercCodes.length === 0) {
+                return c.json({ success: false, error: { code: 400, message: '그룹에 편성할 용병 목록이 필요합니다.' } }, 400);
+            }
+            const mercCodes: string[] = [];
+            for (const item of body.mercCodes) {
+                if (typeof item !== 'string' || item.trim().length === 0) {
+                    return c.json({ success: false, error: { code: 400, message: '올바른 용병 코드 목록이 필요합니다.' } }, 400);
+                }
+                mercCodes.push(item.trim());
+            }
+            const result = await AzitGameService.saveGroup(userId, { id, name, slotIndex, mercCodes });
+            return c.json({ success: true, data: result });
+        } catch (err) {
+            return handleControllerError(c, err, '용병 그룹 저장에 실패했습니다.');
+        }
+    }
+
+    static async deleteGroup(c: Context) {
+        try {
+            const userId = getAuthUserId(c);
+            if (!userId) {
+                return c.json({ success: false, error: { code: 401, message: '로그인이 필요합니다.' } }, 401);
+            }
+            const body = await readJsonBody<{ groupId?: unknown }>(c);
+            const groupId = parseIntegerField(body.groupId);
+            if (!Number.isInteger(groupId) || groupId <= 0) {
+                return c.json({ success: false, error: { code: 400, message: '올바른 그룹 ID가 필요합니다.' } }, 400);
+            }
+            const result = await AzitGameService.deleteGroup(userId, groupId);
+            return c.json({ success: true, data: result });
+        } catch (err) {
+            return handleControllerError(c, err, '용병 그룹 삭제에 실패했습니다.');
         }
     }
 
@@ -573,13 +638,33 @@ export class AzitGameController {
             }
             const body = await readJsonBody<{
                 zoneId?: unknown;
+                groupId?: unknown;
                 partyMercCodes?: unknown;
                 dishRecipeId?: unknown;
                 dishQuality?: unknown;
+                useSpecialDish?: unknown;
+                elixirItemId?: unknown;
             }>(c);
             const zoneId = typeof body.zoneId === 'string' ? body.zoneId.trim() : '';
             const dishRecipeId = typeof body.dishRecipeId === 'string' ? body.dishRecipeId.trim() : '';
-            let dishQuality: 'normal' | 'special' = 'normal';
+
+            let groupId: number | undefined;
+            if (body.groupId !== undefined && body.groupId !== null) {
+                const parsedGroupId = parseIntegerField(body.groupId);
+                if (!Number.isInteger(parsedGroupId) || parsedGroupId <= 0) {
+                    return c.json({ success: false, error: { code: 400, message: '올바른 용병 그룹 ID가 아닙니다.' } }, 400);
+                }
+                groupId = parsedGroupId;
+            }
+
+            if (body.useSpecialDish !== undefined && typeof body.useSpecialDish !== 'boolean') {
+                return c.json(
+                    { success: false, error: { code: 400, message: 'useSpecialDish는 boolean이어야 합니다.' } },
+                    400
+                );
+            }
+
+            let dishQuality: 'normal' | 'special' = body.useSpecialDish ? 'special' : 'normal';
             if (body.dishQuality !== undefined) {
                 if (body.dishQuality !== 'normal' && body.dishQuality !== 'special') {
                     return c.json(
@@ -590,16 +675,54 @@ export class AzitGameController {
                         400
                     );
                 }
+                if (
+                    (body.dishQuality === 'normal' && body.useSpecialDish === true) ||
+                    (body.dishQuality === 'special' && body.useSpecialDish === false)
+                ) {
+                    return c.json(
+                        {
+                            success: false,
+                            code: 'INVALID_BODY',
+                            error: {
+                                code: 'INVALID_BODY',
+                                message: 'dishQuality와 useSpecialDish 값이 서로 모순됩니다.',
+                            },
+                        },
+                        400
+                    );
+                }
                 dishQuality = body.dishQuality;
             }
-            const partyMercCodes = Array.isArray(body.partyMercCodes)
-                ? body.partyMercCodes.filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
-                : [];
-            if (!zoneId || !dishRecipeId || partyMercCodes.length === 0) {
+
+            let partyMercCodes: string[] = [];
+            if (body.partyMercCodes !== undefined && body.partyMercCodes !== null) {
+                if (!Array.isArray(body.partyMercCodes)) {
+                    return c.json({ success: false, error: { code: 400, message: 'partyMercCodes는 배열이어야 합니다.' } }, 400);
+                }
+                for (const item of body.partyMercCodes) {
+                    if (typeof item !== 'string' || item.trim().length === 0) {
+                        return c.json({ success: false, error: { code: 400, message: '올바른 출전 용병 코드가 필요합니다.' } }, 400);
+                    }
+                    partyMercCodes.push(item.trim());
+                }
+            }
+
+            let elixirItemId: string | undefined;
+            if (body.elixirItemId !== undefined && body.elixirItemId !== null) {
+                if (typeof body.elixirItemId !== 'string') {
+                    return c.json({ success: false, error: { code: 400, message: '올바른 비약 아이템 ID가 아닙니다.' } }, 400);
+                }
+                const trimmedElixir = body.elixirItemId.trim();
+                if (trimmedElixir.length > 0) {
+                    elixirItemId = trimmedElixir;
+                }
+            }
+
+            if (!zoneId || !dishRecipeId || (groupId === undefined && partyMercCodes.length === 0)) {
                 return c.json(
                     {
                         success: false,
-                        error: { code: 400, message: '원정 지역, 출전 용병, 보급 도시락을 모두 선택해 주세요.' },
+                        error: { code: 400, message: '원정 지역, 출전 용병(또는 그룹), 보급 도시락을 모두 선택해 주세요.' },
                     },
                     400
                 );
@@ -607,9 +730,11 @@ export class AzitGameController {
             const result = await AzitGameService.startExpedition({
                 userId,
                 zoneId,
+                groupId,
                 partyMercCodes,
                 dishRecipeId,
                 dishQuality,
+                elixirItemId,
             });
             return c.json({ success: true, data: result });
         } catch (err) {
@@ -632,6 +757,214 @@ export class AzitGameController {
             return c.json({ success: true, data: result });
         } catch (err) {
             return handleControllerError(c, err, '원정 정산에 실패했습니다.');
+        }
+    }
+
+    static async reviveMercenary(c: Context) {
+        try {
+            const userId = getAuthUserId(c);
+            if (!userId) {
+                return c.json({ success: false, error: { code: 401, message: '로그인이 필요합니다.' } }, 401);
+            }
+            const body = await readJsonBody<{
+                mercCode?: unknown;
+                itemId?: unknown;
+                useGold?: unknown;
+                payGold?: unknown;
+                points?: unknown;
+                gold?: unknown;
+            }>(c);
+            if (
+                Boolean(body.useGold) ||
+                Boolean(body.payGold) ||
+                (body.points !== undefined && body.points !== null && body.points !== false && body.points !== 0) ||
+                (body.gold !== undefined && body.gold !== null && body.gold !== false && body.gold !== 0)
+            ) {
+                throw new AzitGameError(
+                    '골드로 용병을 부활시킬 수 없습니다. 부활 아이템을 사용해 주세요.',
+                    400,
+                    'GOLD_REVIVAL_DISABLED'
+                );
+            }
+            const mercCode = typeof body.mercCode === 'string' ? body.mercCode.trim() : '';
+            const itemId = typeof body.itemId === 'string' ? body.itemId.trim() : '';
+            if (!mercCode || !itemId) {
+                return c.json({ success: false, error: { code: 400, message: '부활시킬 용병과 부활 아이템을 선택해 주세요.' } }, 400);
+            }
+            const result = await AzitGameService.reviveMercenary(userId, mercCode, itemId);
+            return c.json({ success: true, data: result });
+        } catch (err) {
+            return handleControllerError(c, err, '용병 부활에 실패했습니다.');
+        }
+    }
+
+    static async upgradeMercSkill(c: Context) {
+        try {
+            const userId = getAuthUserId(c);
+            if (!userId) {
+                return c.json({ success: false, error: { code: 401, message: '로그인이 필요합니다.' } }, 401);
+            }
+            const body = await readJsonBody<{ mercCode?: unknown; skillSlot?: unknown }>(c);
+            const mercCode = typeof body.mercCode === 'string' ? body.mercCode.trim() : '';
+            const skillSlot = body.skillSlot;
+            if (!mercCode || (skillSlot !== 'main' && skillSlot !== 'sub')) {
+                return c.json(
+                    { success: false, error: { code: 400, message: '용병 코드와 스킬 슬롯(main 또는 sub)을 확인해 주세요.' } },
+                    400
+                );
+            }
+            const result = await AzitGameService.upgradeMercSkill(userId, mercCode, skillSlot);
+            return c.json({ success: true, data: result });
+        } catch (err) {
+            return handleControllerError(c, err, '용병 스킬 강화에 실패했습니다.');
+        }
+    }
+
+    static async buyShopItem(c: Context) {
+        try {
+            const userId = getAuthUserId(c);
+            if (!userId) {
+                return c.json({ success: false, error: { code: 401, message: '로그인이 필요합니다.' } }, 401);
+            }
+            const body = await readJsonBody<{ itemId?: unknown; qty?: unknown; quantity?: unknown }>(c);
+            const itemId = typeof body.itemId === 'string' ? body.itemId.trim() : '';
+            const rawQty = body.qty !== undefined ? body.qty : (body.quantity ?? 1);
+            const qty = parseIntegerField(rawQty);
+            if (!itemId || !Number.isInteger(qty) || qty < 1 || qty > 99) {
+                return c.json(
+                    { success: false, error: { code: 400, message: '구매할 아이템과 수량(1~99)을 확인해 주세요.' } },
+                    400
+                );
+            }
+            const result = await AzitGameService.buyShopItem(userId, itemId, qty);
+            return c.json({ success: true, data: result });
+        } catch (err) {
+            return handleControllerError(c, err, '아이템 구매에 실패했습니다.');
+        }
+    }
+
+    static async craftItem(c: Context) {
+        try {
+            const userId = getAuthUserId(c);
+            if (!userId) {
+                return c.json({ success: false, error: { code: 401, message: '로그인이 필요합니다.' } }, 401);
+            }
+            const body = await readJsonBody<{ recipeId?: unknown; qty?: unknown; quantity?: unknown }>(c);
+            const recipeId = typeof body.recipeId === 'string' ? body.recipeId.trim() : '';
+            const rawQty = body.qty !== undefined ? body.qty : (body.quantity ?? 1);
+            const qty = parseIntegerField(rawQty);
+            if (!recipeId || !Number.isInteger(qty) || qty < 1 || qty > 50) {
+                return c.json(
+                    { success: false, error: { code: 400, message: '제작 레시피와 수량(1~50)을 확인해 주세요.' } },
+                    400
+                );
+            }
+            const result = await AzitGameService.craftItem(userId, recipeId, qty);
+            return c.json({ success: true, data: result });
+        } catch (err) {
+            return handleControllerError(c, err, '아이템 제작에 실패했습니다.');
+        }
+    }
+
+    static async getTowerFloors(c: Context) {
+        try {
+            const userId = getAuthUserId(c);
+            if (!userId) {
+                return c.json({ success: false, error: { code: 401, message: '로그인이 필요합니다.' } }, 401);
+            }
+            const rawFrom = c.req.query('from');
+            const rawTo = c.req.query('to');
+            const from = rawFrom === undefined ? 1 : parseIntegerField(rawFrom);
+            const to = rawTo === undefined ? MAX_TOWER_FLOOR : parseIntegerField(rawTo);
+            if (
+                !Number.isInteger(from) ||
+                !Number.isInteger(to) ||
+                from < 1 ||
+                to > MAX_TOWER_FLOOR ||
+                from > to
+            ) {
+                return c.json(
+                    { success: false, error: { code: 400, message: `유효한 층 범위(1~${MAX_TOWER_FLOOR})를 지정해 주세요.` } },
+                    400
+                );
+            }
+            const result = await AzitGameService.getTowerFloors(userId, from, to);
+            return c.json({ success: true, data: result });
+        } catch (err) {
+            return handleControllerError(c, err, '베라의 탑 층 정보를 불러오지 못했습니다.');
+        }
+    }
+
+    static async battleTowerFloor(c: Context) {
+        try {
+            const userId = getAuthUserId(c);
+            if (!userId) {
+                return c.json({ success: false, error: { code: 401, message: '로그인이 필요합니다.' } }, 401);
+            }
+            const body = await readJsonBody<{
+                floor?: unknown;
+                groupId?: unknown;
+                partyMercCodes?: unknown;
+                elixirItemId?: unknown;
+            }>(c);
+            const floor = parseIntegerField(body.floor);
+            if (!Number.isInteger(floor) || floor < 1 || floor > MAX_TOWER_FLOOR) {
+                return c.json(
+                    { success: false, error: { code: 400, message: `도전 층수는 1~${MAX_TOWER_FLOOR}층이어야 합니다.` } },
+                    400
+                );
+            }
+
+            let groupId: number | undefined;
+            if (body.groupId !== undefined && body.groupId !== null) {
+                const parsedGroupId = parseIntegerField(body.groupId);
+                if (!Number.isInteger(parsedGroupId) || parsedGroupId <= 0) {
+                    return c.json({ success: false, error: { code: 400, message: '올바른 용병 그룹 ID가 아닙니다.' } }, 400);
+                }
+                groupId = parsedGroupId;
+            }
+
+            let partyMercCodes: string[] = [];
+            if (body.partyMercCodes !== undefined && body.partyMercCodes !== null) {
+                if (!Array.isArray(body.partyMercCodes)) {
+                    return c.json({ success: false, error: { code: 400, message: 'partyMercCodes는 배열이어야 합니다.' } }, 400);
+                }
+                for (const item of body.partyMercCodes) {
+                    if (typeof item !== 'string' || item.trim().length === 0) {
+                        return c.json({ success: false, error: { code: 400, message: '올바른 출전 용병 코드가 필요합니다.' } }, 400);
+                    }
+                    partyMercCodes.push(item.trim());
+                }
+            }
+
+            if (groupId === undefined && partyMercCodes.length === 0) {
+                return c.json(
+                    { success: false, error: { code: 400, message: '출전할 용병(또는 그룹)을 선택해 주세요.' } },
+                    400
+                );
+            }
+
+            let elixirItemId: string | undefined;
+            if (body.elixirItemId !== undefined && body.elixirItemId !== null) {
+                if (typeof body.elixirItemId !== 'string') {
+                    return c.json({ success: false, error: { code: 400, message: '올바른 비약 아이템 ID가 아닙니다.' } }, 400);
+                }
+                const trimmedElixir = body.elixirItemId.trim();
+                if (trimmedElixir.length > 0) {
+                    elixirItemId = trimmedElixir;
+                }
+            }
+
+            const result = await AzitGameService.battleTowerFloor({
+                userId,
+                floor,
+                groupId,
+                partyMercCodes,
+                elixirItemId,
+            });
+            return c.json({ success: true, data: result });
+        } catch (err) {
+            return handleControllerError(c, err, '베라의 탑 전투 진행에 실패했습니다.');
         }
     }
 }

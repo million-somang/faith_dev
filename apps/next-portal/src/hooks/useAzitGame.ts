@@ -11,11 +11,15 @@ import type {
     AzitFarmerConfigurePayload,
     AzitFertilizerId,
     AzitFullGameState,
+    AzitItemId,
     AzitMercCode,
     AzitRecipeId,
+    AzitTowerBattleResponse,
+    AzitTowerFloorSummary,
     AzitZoneId,
     UseAzitGameController,
 } from '@/types/azit-game.types';
+import { MAX_TOWER_FLOOR, MERC_GOLD_UPGRADE_ENABLED } from '@/types/azit-game.types';
 
 interface AzitApiPayload {
     message?: string;
@@ -50,6 +54,7 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
     const onSyncRef = useRef(onSyncState);
     const onToastRef = useRef(onToast);
     const clockOffsetRef = useRef<number>(0);
+    const isActingRef = useRef<boolean>(false);
     onSyncRef.current = onSyncState;
     onToastRef.current = onToast;
 
@@ -59,12 +64,26 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
             specialDishes: nextState.specialDishes ?? ({} as Record<AzitRecipeId, number>),
             farmers: Array.isArray(nextState.farmers) ? nextState.farmers : [],
             farmerLogs: Array.isArray(nextState.farmerLogs) ? nextState.farmerLogs : [],
+            groups: Array.isArray(nextState.groups) ? nextState.groups : [],
+            items: Array.isArray(nextState.items) ? nextState.items : [],
+            tower: nextState.tower ?? {
+                highestClearedFloor: 0,
+                maxFloor: MAX_TOWER_FLOOR,
+                totalClears: 0,
+                totalAttempts: 0,
+            },
             catalog: {
                 ...nextState.catalog,
                 fertilizers: Array.isArray(nextState.catalog?.fertilizers) ? nextState.catalog.fertilizers : [],
                 soilLevels: Array.isArray(nextState.catalog?.soilLevels) ? nextState.catalog.soilLevels : [],
                 plotUnlocks: Array.isArray(nextState.catalog?.plotUnlocks) ? nextState.catalog.plotUnlocks : [],
                 farmers: Array.isArray(nextState.catalog?.farmers) ? nextState.catalog.farmers : [],
+                items: Array.isArray(nextState.catalog?.items) ? nextState.catalog.items : [],
+                craftRecipes: Array.isArray(nextState.catalog?.craftRecipes) ? nextState.catalog.craftRecipes : [],
+                towerThemes: Array.isArray(nextState.catalog?.towerThemes) ? nextState.catalog.towerThemes : [],
+                towerFloorsSummary: Array.isArray(nextState.catalog?.towerFloorsSummary)
+                    ? nextState.catalog.towerFloorsSummary
+                    : [],
             },
         };
         if (typeof normalizedState.serverNowMs === 'number') {
@@ -114,7 +133,8 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
 
     const runAction = useCallback(
         async (endpoint: string, payload: Record<string, unknown>, openReport = false): Promise<boolean> => {
-            if (!enabled) return false;
+            if (!enabled || isActingRef.current) return false;
+            isActingRef.current = true;
             setIsActing(true);
             try {
                 const res = await fetch(endpoint, {
@@ -161,6 +181,7 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
                 refreshState().catch(() => {});
                 return false;
             } finally {
+                isActingRef.current = false;
                 setIsActing(false);
             }
         },
@@ -287,23 +308,30 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
         [runAction]
     );
 
-    const upgradeMercenary = useCallback(
-        (mercCode: AzitMercCode) => runAction('/api/azit-game/mercenaries/upgrade', { mercCode }),
-        [runAction]
-    );
+    const upgradeMercenary = useCallback(async (_mercCode: AzitMercCode): Promise<boolean> => {
+        if (!MERC_GOLD_UPGRADE_ENABLED) {
+            onToastRef.current?.('⚠️ 용병은 전투 경험치로만 레벨업할 수 있습니다.');
+        }
+        return false;
+    }, []);
 
     const startExpedition = useCallback(
         (
             zoneId: AzitZoneId,
             partyMercCodes: AzitMercCode[],
             dishRecipeId: AzitRecipeId,
-            dishQuality: AzitDishQuality = 'normal'
+            dishQuality: AzitDishQuality = 'normal',
+            dispatchOptions?: { groupId?: number; elixirItemId?: AzitItemId }
         ) =>
             runAction('/api/azit-game/expeditions/start', {
                 zoneId,
                 partyMercCodes,
                 dishRecipeId,
                 dishQuality,
+                ...(typeof dispatchOptions?.groupId === 'number'
+                    ? { groupId: dispatchOptions.groupId }
+                    : {}),
+                ...(dispatchOptions?.elixirItemId ? { elixirItemId: dispatchOptions.elixirItemId } : {}),
             }),
         [runAction]
     );
@@ -311,6 +339,106 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
     const claimExpedition = useCallback(
         (expeditionId: number) => runAction('/api/azit-game/expeditions/claim', { expeditionId }, true),
         [runAction]
+    );
+
+    const saveGroup = useCallback(
+        (payload: { id?: number; name: string; slotIndex?: number; mercCodes: AzitMercCode[] }) =>
+            runAction('/api/azit-game/groups/save', {
+                ...(typeof payload.id === 'number' ? { id: payload.id } : {}),
+                name: payload.name,
+                ...(typeof payload.slotIndex === 'number' ? { slotIndex: payload.slotIndex } : {}),
+                mercCodes: payload.mercCodes,
+            }),
+        [runAction]
+    );
+
+    const deleteGroup = useCallback(
+        (groupId: number) => runAction('/api/azit-game/groups/delete', { groupId }),
+        [runAction]
+    );
+
+    const reviveMercenary = useCallback(
+        (mercCode: AzitMercCode, itemId: AzitItemId) =>
+            runAction('/api/azit-game/mercenaries/revive', { mercCode, itemId }),
+        [runAction]
+    );
+
+    const upgradeMercSkill = useCallback(
+        (mercCode: AzitMercCode, skillSlot: 'main' | 'sub') =>
+            runAction('/api/azit-game/mercenaries/skills/upgrade', { mercCode, skillSlot }),
+        [runAction]
+    );
+
+    const buyShopItem = useCallback(
+        (itemId: AzitItemId, qty = 1) => runAction('/api/azit-game/shop/buy', { itemId, qty }),
+        [runAction]
+    );
+
+    const craftItem = useCallback(
+        (recipeId: string, qty = 1) => runAction('/api/azit-game/craft', { recipeId, qty }),
+        [runAction]
+    );
+
+    const battleTowerFloor = useCallback(
+        async (payload: {
+            floor: number;
+            groupId?: number;
+            partyMercCodes?: AzitMercCode[];
+            elixirItemId?: AzitItemId;
+        }): Promise<AzitTowerBattleResponse | null> => {
+            if (!enabled || isActingRef.current) return null;
+            isActingRef.current = true;
+            setIsActing(true);
+            try {
+                const res = await fetch('/api/azit-game/tower/battle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        floor: payload.floor,
+                        ...(typeof payload.groupId === 'number' ? { groupId: payload.groupId } : {}),
+                        ...(payload.partyMercCodes ? { partyMercCodes: payload.partyMercCodes } : {}),
+                        ...(payload.elixirItemId ? { elixirItemId: payload.elixirItemId } : {}),
+                    }),
+                });
+                const rawText = await res.text();
+                let json: AzitApiResponse<AzitTowerBattleResponse> | null = null;
+                try {
+                    json = JSON.parse(rawText) as AzitApiResponse<AzitTowerBattleResponse>;
+                } catch {
+                    json = null;
+                }
+
+                if (!json) {
+                    onToastRef.current?.('⚠️ 서버 응답이 지연되어 최신 아지트 상태를 다시 동기화합니다...');
+                    await refreshState();
+                    return null;
+                }
+
+                if (!res.ok || !json.success || !json.data) {
+                    const errMsg = json.error?.message || '베라의 탑 전투를 시작하지 못했습니다.';
+                    onToastRef.current?.(`⚠️ ${errMsg}`);
+                    if (res.status === 409 || res.status >= 502) {
+                        await refreshState();
+                    }
+                    return null;
+                }
+
+                if (json.data.state) {
+                    applyState(json.data.state);
+                }
+                return json.data;
+            } catch (err) {
+                const errMsg = err instanceof Error ? err.message : '네트워크 오류가 발생했습니다.';
+                onToastRef.current?.(`⚠️ ${errMsg} (상태 동기화 중...)`);
+                refreshState().catch(() => {});
+                return null;
+            } finally {
+                isActingRef.current = false;
+                setIsActing(false);
+            }
+        },
+        [enabled, applyState, refreshState]
     );
 
     return {
@@ -346,5 +474,43 @@ export function useAzitGame(options: UseAzitGameOptions): UseAzitGameController 
         upgradeMercenary,
         startExpedition,
         claimExpedition,
+        saveGroup,
+        deleteGroup,
+        reviveMercenary,
+        upgradeMercSkill,
+        buyShopItem,
+        craftItem,
+        battleTowerFloor,
     };
+}
+
+interface TowerFloorsEnvelope {
+    floors?: AzitTowerFloorSummary[];
+    towerFloors?: AzitTowerFloorSummary[];
+    items?: AzitTowerFloorSummary[];
+}
+
+export async function fetchAzitTowerFloors(
+    from = 1,
+    to = MAX_TOWER_FLOOR
+): Promise<AzitTowerFloorSummary[]> {
+    const rawFrom = Number.isFinite(from) ? Math.floor(from) : 1;
+    const safeFrom = Math.max(1, Math.min(MAX_TOWER_FLOOR, rawFrom));
+    const rawTo = Number.isFinite(to) ? Math.floor(to) : MAX_TOWER_FLOOR;
+    const safeTo = Math.max(safeFrom, Math.min(MAX_TOWER_FLOOR, rawTo));
+    try {
+        const res = await fetch(`/api/azit-game/tower/floors?from=${safeFrom}&to=${safeTo}`, {
+            credentials: 'include',
+        });
+        if (!res.ok) return [];
+        const json = (await res.json()) as AzitApiResponse<AzitTowerFloorSummary[] | TowerFloorsEnvelope>;
+        if (!json.success || !json.data) return [];
+        if (Array.isArray(json.data)) {
+            return json.data;
+        }
+        return json.data.floors ?? json.data.towerFloors ?? json.data.items ?? [];
+    } catch (err) {
+        console.error('[useAzitGame] fetchAzitTowerFloors error:', err);
+        return [];
+    }
 }

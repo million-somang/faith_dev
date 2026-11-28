@@ -35,5 +35,13 @@ azitGameRoutes.post('/api/azit-game/dishes/sell', (c) => AzitGameController.sell
 
 azitGameRoutes.post('/api/azit-game/mercenaries/hire', (c) => AzitGameController.hireMercenary(c));
 azitGameRoutes.post('/api/azit-game/mercenaries/upgrade', (c) => AzitGameController.upgradeMercenary(c));
+azitGameRoutes.post('/api/azit-game/mercenaries/revive', (c) => AzitGameController.reviveMercenary(c));
+azitGameRoutes.post('/api/azit-game/mercenaries/skills/upgrade', (c) => AzitGameController.upgradeMercSkill(c));
+azitGameRoutes.post('/api/azit-game/groups/save', (c) => AzitGameController.saveGroup(c));
+azitGameRoutes.post('/api/azit-game/groups/delete', (c) => AzitGameController.deleteGroup(c));
 azitGameRoutes.post('/api/azit-game/expeditions/start', (c) => AzitGameController.startExpedition(c));
 azitGameRoutes.post('/api/azit-game/expeditions/claim', (c) => AzitGameController.claimExpedition(c));
+azitGameRoutes.post('/api/azit-game/shop/buy', (c) => AzitGameController.buyShopItem(c));
+azitGameRoutes.post('/api/azit-game/craft', (c) => AzitGameController.craftItem(c));
+azitGameRoutes.get('/api/azit-game/tower/floors', (c) => AzitGameController.getTowerFloors(c));
+azitGameRoutes.post('/api/azit-game/tower/battle', (c) => AzitGameController.battleTowerFloor(c));

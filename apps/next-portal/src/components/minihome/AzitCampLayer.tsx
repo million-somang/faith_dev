@@ -7,8 +7,9 @@ import type {
     AzitMercCode,
     AzitMercenaryRecord,
 } from '@/types/azit-game.types';
-import { formatCountdownLabel } from '@/types/azit-game.types';
+import { formatCountdownLabel, formatDurationCompact } from '@/types/azit-game.types';
 import { getMercSpriteMeta } from '@/data/azitCharacterAssets';
+import { AzitBattlefieldCanvas } from '@/components/minihome/AzitBattlefieldCanvas';
 
 const ORIGIN_X = 400;
 const ORIGIN_Y = 236;
@@ -120,6 +121,15 @@ function computeMercTrainingAnim(mercCode: AzitMercCode, animSec: number, idx: n
                 tiltDeg: dash * 7.5,
                 isBurst: true,
                 burstPhase: p,
+            };
+        }
+        default: {
+            return {
+                dx: 0,
+                dy: Math.sin(animSec * 2.2 + idx) * 1.6,
+                tiltDeg: 0,
+                isBurst: false,
+                burstPhase: 0,
             };
         }
     }
@@ -279,7 +289,7 @@ function getIsoTilePolygon(gridX: number, gridY: number): string {
     return `${topX},${topY} ${topX + TILE_W / 2},${topY + TILE_H / 2} ${topX},${topY + TILE_H} ${topX - TILE_W / 2},${topY + TILE_H / 2}`;
 }
 
-export type CampNodeType = 'tent' | 'portal';
+export type CampNodeType = 'tent' | 'portal' | 'tower';
 
 interface AzitCampIsoSceneProps {
     gameState: AzitFullGameState;
@@ -319,6 +329,7 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
     const targetPos = getIsoCenter(4.8, 2.7);
     const firePos = getIsoCenter(3.7, 3.7);
     const exitIndoorPos = getIsoCenter(0.9, 6.2);
+    const towerPos = getIsoCenter(3.9, 6.4);
     const goKitchenPos = getIsoCenter(6.3, 5.9);
 
     const [animSec, setAnimSec] = useState<number>(0);
@@ -660,9 +671,17 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
                 const { merc, idx, coord } = entity;
                 const pos = getIsoCenter(coord.gridX, coord.gridY);
                 const meta = mercCatalogMap.get(merc.mercCode);
-                const sprite = getMercSpriteMeta(merc.mercCode);
+                const sprite = getMercSpriteMeta(merc.mercCode) ?? getMercSpriteMeta('merc-leo');
+                const shadowRx = sprite?.shadowRx ?? 21;
+                const shadowRy = sprite?.shadowRy ?? 9.5;
+                const accentRingColor = sprite?.accentRingColor ?? '#3b82f6';
+                const spriteUrl = sprite?.spriteUrl ?? '/images/minihome/azit/merc-leo.png';
+                const spriteWidth = sprite?.spriteWidth ?? 86;
+                const spriteHeight = sprite?.spriteHeight ?? 86;
+                const spriteOffsetY = sprite?.spriteOffsetY ?? 10;
+                const isDead = merc.status === 'dead';
                 const isOut = merc.status === 'expedition';
-                const trainAnim = isOut
+                const trainAnim = isOut || isDead
                     ? { dx: 0, dy: 0, tiltDeg: 0, isBurst: false, burstPhase: 0 }
                     : computeMercTrainingAnim(merc.mercCode, animSec, idx);
 
@@ -670,7 +689,7 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
                     <g
                         key={`merc-iso-${merc.mercCode}`}
                         transform={`translate(${pos.x}, ${pos.y})`}
-                        opacity={isOut ? 0.48 : 1}
+                        opacity={isDead ? 0.42 : isOut ? 0.48 : 1}
                         onClick={(e) => {
                             e.stopPropagation();
                             onSelectNode('tent');
@@ -680,35 +699,65 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
                         <ellipse
                             cx="0"
                             cy="5"
-                            rx={sprite.shadowRx}
-                            ry={sprite.shadowRy}
-                            fill="rgba(15, 23, 42, 0.26)"
+                            rx={shadowRx}
+                            ry={shadowRy}
+                            fill={isDead ? 'rgba(153, 27, 27, 0.32)' : 'rgba(15, 23, 42, 0.26)'}
                         />
+                        {isDead && (
+                            <ellipse
+                                cx="0"
+                                cy="5"
+                                rx={shadowRx + 5}
+                                ry={shadowRy + 2.5}
+                                fill="none"
+                                stroke="#dc2626"
+                                strokeWidth="1.6"
+                                strokeDasharray="4 3"
+                                opacity="0.85"
+                            />
+                        )}
                         {trainAnim.isBurst && (
                             <ellipse
                                 cx="0"
                                 cy="5"
-                                rx={sprite.shadowRx + 4 + Math.sin(animSec * 7) * 1.5}
-                                ry={sprite.shadowRy + 2 + Math.sin(animSec * 7) * 0.6}
+                                rx={shadowRx + 4 + Math.sin(animSec * 7) * 1.5}
+                                ry={shadowRy + 2 + Math.sin(animSec * 7) * 0.6}
                                 fill="none"
-                                stroke={sprite.accentRingColor}
+                                stroke={accentRingColor}
                                 strokeWidth="1.5"
                                 opacity="0.65"
                             />
                         )}
                         <g transform={`translate(${trainAnim.dx}, ${trainAnim.dy}) rotate(${trainAnim.tiltDeg} 0 -18)`}>
                             <image
-                                href={sprite.spriteUrl}
-                                x={-sprite.spriteWidth / 2}
-                                y={-sprite.spriteHeight + sprite.spriteOffsetY}
-                                width={sprite.spriteWidth}
-                                height={sprite.spriteHeight}
+                                href={spriteUrl}
+                                x={-spriteWidth / 2}
+                                y={-spriteHeight + spriteOffsetY}
+                                width={spriteWidth}
+                                height={spriteHeight}
                                 preserveAspectRatio="xMidYMax meet"
                             />
                         </g>
-                        {!isOut && renderMercSkillFx(merc.mercCode, trainAnim, animSec)}
+                        {!isOut && !isDead && renderMercSkillFx(merc.mercCode, trainAnim, animSec)}
+                        {isDead && (
+                            <g transform={`translate(0, ${-spriteHeight + spriteOffsetY - 8})`}>
+                                <rect
+                                    x="-32"
+                                    y="-9"
+                                    width="64"
+                                    height="15"
+                                    rx="7.5"
+                                    fill="#dc2626"
+                                    stroke="#ffffff"
+                                    strokeWidth="1"
+                                />
+                                <text x="0" y="1.5" textAnchor="middle" fill="#ffffff" fontSize="8.2" fontWeight="900">
+                                    💀 부활 필요
+                                </text>
+                            </g>
+                        )}
                         {isOut && (
-                            <g transform={`translate(0, ${-sprite.spriteHeight + sprite.spriteOffsetY - 8})`}>
+                            <g transform={`translate(0, ${-spriteHeight + spriteOffsetY - 8})`}>
                                 <rect
                                     x="-26"
                                     y="-9"
@@ -725,17 +774,21 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
                             </g>
                         )}
                         <rect
-                            x="-46"
+                            x="-50"
                             y="11"
-                            width="92"
+                            width="100"
                             height="17"
                             rx="8.5"
-                            fill={isOut ? '#7c3aed' : 'rgba(15, 23, 42, 0.86)'}
+                            fill={isDead ? '#991b1b' : isOut ? '#7c3aed' : 'rgba(15, 23, 42, 0.86)'}
                             stroke="rgba(255, 255, 255, 0.35)"
                             strokeWidth="0.8"
                         />
-                        <text x="0" y="22.5" textAnchor="middle" fill="#ffffff" fontSize="9.2" fontWeight="800">
-                            {isOut ? '⚔️ 원정 중' : `${meta?.name || merc.mercCode} Lv.${merc.level}`}
+                        <text x="0" y="22.5" textAnchor="middle" fill="#ffffff" fontSize="8.8" fontWeight="800">
+                            {isDead
+                                ? `💀 ${meta?.name || merc.mercCode} (전투불능)`
+                                : isOut
+                                  ? '⚔️ 원정 중'
+                                  : `${meta?.name || merc.mercCode} Lv.${merc.level}`}
                         </text>
                     </g>
                 );
@@ -793,6 +846,37 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
                     👨‍🍳 도시락 조리하기
                 </text>
             </g>
+
+            {/* 중앙 하단: 베라의 탑 입구 첨탑 */}
+            <g
+                data-camp-node="tower"
+                transform={`translate(${towerPos.x}, ${towerPos.y})`}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectNode('tower');
+                }}
+                className="cursor-pointer"
+            >
+                {selectedNode === 'tower' && (
+                    <ellipse
+                        cx="0"
+                        cy="4"
+                        rx="44"
+                        ry="17"
+                        fill="rgba(99, 102, 241, 0.28)"
+                        stroke="#818cf8"
+                        strokeWidth="2.4"
+                    />
+                )}
+                <ellipse cx="0" cy="4" rx="28" ry="11" fill="#312e81" stroke="#a5b4fc" strokeWidth="1.3" />
+                <polygon points="-14,2 -10,-36 10,-36 14,2" fill="#4338ca" stroke="#1e1b4b" strokeWidth="1.3" />
+                <polygon points="-12,-36 0,-52 12,-36" fill="#6366f1" stroke="#e0e7ff" strokeWidth="1.1" />
+                <circle cx="0" cy="-22" r="6" fill="#38bdf8" opacity="0.9" />
+                <rect x="-54" y="-74" width="108" height="19" rx="9.5" fill="rgba(49, 46, 129, 0.94)" stroke="#c7d2fe" strokeWidth="1.1" />
+                <text x="0" y="-61.5" textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="900">
+                    🏰 베라의 탑 ({gameState.tower?.highestClearedFloor ?? 0}/200F)
+                </text>
+            </g>
         </g>
     );
 };
@@ -807,6 +891,7 @@ interface CampActionBubbleProps {
     onOpenMercModal: () => void;
     onOpenExpeditionModal: () => void;
     onClaimExpedition: (expeditionId: number) => Promise<boolean>;
+    onOpenTower?: () => void;
 }
 
 export const CampActionBubble: React.FC<CampActionBubbleProps> = ({
@@ -819,18 +904,23 @@ export const CampActionBubble: React.FC<CampActionBubbleProps> = ({
     onOpenMercModal,
     onOpenExpeditionModal,
     onClaimExpedition,
+    onOpenTower,
 }) => {
     const posClass = isZoomed
         ? 'top-14 left-1/2 -translate-x-1/2'
         : node === 'tent'
           ? 'bottom-[46%] left-[44%] -translate-x-1/2'
-          : 'bottom-[46%] left-[64%] -translate-x-1/2';
+          : node === 'tower'
+            ? 'bottom-[24%] left-1/2 -translate-x-1/2'
+            : 'bottom-[46%] left-[64%] -translate-x-1/2';
 
     const idleMercs = gameState.mercenaries.filter((m) => m.status === 'idle');
+    const deadMercs = gameState.mercenaries.filter((m) => m.status === 'dead');
     const idlePower = idleMercs.reduce((sum, m) => sum + m.power, 0);
     const completedExp = gameState.activeExpeditions.filter((e) => e.endsAtMs <= nowMs);
     const canDispatchMore =
         gameState.activeExpeditions.length < gameState.profile.limits.maxActiveExpeditions;
+    const highestClearedFloor = gameState.tower?.highestClearedFloor ?? 0;
 
     return (
         <div
@@ -841,7 +931,11 @@ export const CampActionBubble: React.FC<CampActionBubbleProps> = ({
         >
             <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-700/80">
                 <span className="text-xs font-black text-indigo-200">
-                    {node === 'tent' ? '🛡️ 용병 길드 텐트' : '🌀 몬스터 원정 관문'}
+                    {node === 'tent'
+                        ? '🛡️ 용병 길드 텐트'
+                        : node === 'tower'
+                          ? '🏰 베라의 탑 (200F)'
+                          : '🌀 몬스터 원정 관문'}
                 </span>
                 <button
                     type="button"
@@ -866,6 +960,14 @@ export const CampActionBubble: React.FC<CampActionBubbleProps> = ({
                             <span className="text-slate-300">대기 전투력</span>
                             <span className="text-amber-300 font-black">⚔️ {idlePower.toLocaleString()}</span>
                         </div>
+                        {deadMercs.length > 0 && (
+                            <div className="pt-1 flex justify-between items-center font-black text-rose-300 border-t border-slate-700/70">
+                                <span>전투불능 용병</span>
+                                <span className="px-1.5 py-0.5 rounded bg-rose-600/80 text-white text-[10px]">
+                                    💀 {deadMercs.length}명 부활 필요
+                                </span>
+                            </div>
+                        )}
                     </div>
                     <button
                         type="button"
@@ -875,8 +977,42 @@ export const CampActionBubble: React.FC<CampActionBubbleProps> = ({
                         }}
                         className="w-full py-2 px-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-black cursor-pointer"
                     >
-                        🛡️ 용병 영입 · 훈련실 열기
+                        {deadMercs.length > 0
+                            ? '💀 부활 아이템·용병 길드 열기'
+                            : '🛡️ 용병·스킬·그룹 길드 열기'}
                     </button>
+                </div>
+            ) : node === 'tower' ? (
+                <div className="space-y-2">
+                    <div className="p-2.5 rounded-xl bg-slate-800/90 border border-slate-700 text-xs space-y-1">
+                        <div className="flex justify-between font-bold">
+                            <span className="text-slate-300">최고 정복 층</span>
+                            <span className="text-indigo-300 font-black font-mono">
+                                {highestClearedFloor} / 200F
+                            </span>
+                        </div>
+                        <div className="flex justify-between font-bold">
+                            <span className="text-slate-300">누적 정복</span>
+                            <span className="text-emerald-300 font-black font-mono">
+                                {gameState.tower?.totalClears ?? 0}회
+                            </span>
+                        </div>
+                        <div className="pt-1 border-t border-slate-700/70 text-[10px] font-bold text-emerald-300">
+                            🛡️ 패배 시 사망 패널티 없이 전원 회복
+                        </div>
+                    </div>
+                    {onOpenTower && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onClose();
+                                onOpenTower();
+                            }}
+                            className="w-full py-2 px-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-black cursor-pointer"
+                        >
+                            🏰 베라의 탑 입장하기
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="space-y-2">
@@ -947,6 +1083,7 @@ interface AzitCampControlPanelProps {
     onOpenMercModal: () => void;
     onOpenExpeditionModal: () => void;
     onGoToKitchen: () => void;
+    onOpenTower?: () => void;
 }
 
 export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
@@ -954,12 +1091,17 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
     nowMs,
     isActing,
     onClaimExpedition,
+    onOpenMercModal,
     onOpenExpeditionModal,
+    onOpenTower,
 }) => {
+    const [selectedBattleExpId, setSelectedBattleExpId] = useState<number | null>(null);
     const totalPower = gameState.mercenaries.reduce((sum, m) => sum + m.power, 0);
+    const deadCount = gameState.mercenaries.filter((m) => m.status === 'dead').length;
     const totalDishes =
         Object.values(gameState.dishes).reduce((sum, v) => sum + v, 0) +
         Object.values(gameState.specialDishes ?? {}).reduce((sum, v) => sum + v, 0);
+    const highestClearedFloor = gameState.tower?.highestClearedFloor ?? 0;
 
     const calcProgressPct = (exp: AzitExpeditionRecord): number => {
         const total = Math.max(1, exp.endsAtMs - exp.startedAtMs);
@@ -969,10 +1111,10 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
 
     return (
         <div className="w-full mt-2 rounded-2xl bg-[#f0f4f8] border border-white/85 shadow-[4px_4px_10px_rgba(163,177,198,0.35),-4px_-4px_10px_rgba(255,255,255,0.85)] p-3.5 sm:p-4 space-y-3 shrink-0">
-            {/* 상단 요약 1줄 (중복 버튼 제거, 구역 고유 원정 출정 액션만 유지) */}
+            {/* 상단 요약 1줄 (중복 버튼 제거, 구역 고유 원정 출정 및 탑 입장 액션) */}
             <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="px-2.5 py-0.5 rounded-full bg-rose-600 text-white font-black text-[11px] shadow-sm">
+                <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                    <span className="px-2.5 py-0.5 rounded-full bg-rose-600 text-white font-black text-[11px] shadow-sm shrink-0">
                         ⚔️ 용병 토벌 캠프
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full bg-[#e8edf2] border border-white/80 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.35),inset_-1px_-1px_3px_rgba(255,255,255,0.8)] text-[#1e293b] text-[10px] font-extrabold font-mono">
@@ -982,9 +1124,32 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
                     <span className="px-2 py-0.5 rounded-full bg-white/90 border border-white text-orange-700 text-[10px] font-black shadow-sm">
                         🍱 도시락 {totalDishes}개
                     </span>
+                    {deadCount > 0 && (
+                        <button
+                            type="button"
+                            onClick={onOpenMercModal}
+                            className="px-2 py-0.5 rounded-full bg-rose-100 hover:bg-rose-200 border border-rose-300 text-rose-800 text-[10px] font-black cursor-pointer shrink-0"
+                        >
+                            💀 부활 필요 {deadCount}명
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+                    {onOpenTower ? (
+                        <button
+                            type="button"
+                            data-testid="azit-tower-open-btn"
+                            onClick={onOpenTower}
+                            className="px-2.5 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black cursor-pointer transition-all shadow-sm active:scale-95"
+                        >
+                            🏰 베라의 탑 ({highestClearedFloor}/200F)
+                        </button>
+                    ) : (
+                        <span className="px-2.5 py-1 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-black">
+                            🏰 베라의 탑 {highestClearedFloor}/200F
+                        </span>
+                    )}
                     <button
                         type="button"
                         onClick={onOpenExpeditionModal}
@@ -1000,7 +1165,7 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
             {gameState.activeExpeditions.length === 0 ? (
                 <div className="px-3.5 py-2.5 rounded-xl bg-[#e8edf2]/80 border border-white/75 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.85)] text-xs text-[#64748b] font-bold flex flex-wrap items-center justify-between gap-2">
                     <span>
-                        출정 중인 원정대가 없습니다. 도시락을 챙겨 몬스터 토벌을 떠나보세요.
+                        출정 중인 원정대가 없습니다. 도시락을 챙겨 1~8시간 몬스터 토벌을 떠나보세요.
                     </span>
                     <button
                         type="button"
@@ -1011,70 +1176,94 @@ export const AzitCampControlPanel: React.FC<AzitCampControlPanelProps> = ({
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {gameState.activeExpeditions.map((exp) => {
-                        const zone = gameState.catalog.zones.find((z) => z.zoneId === exp.zoneId);
-                        const recipe = gameState.catalog.recipes.find((r) => r.recipeId === exp.dishRecipeId);
-                        const isFinished = exp.endsAtMs <= nowMs;
-                        const pct = calcProgressPct(exp);
+                <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {gameState.activeExpeditions.map((exp) => {
+                            const zone = gameState.catalog.zones.find((z) => z.zoneId === exp.zoneId);
+                            const recipe = gameState.catalog.recipes.find((r) => r.recipeId === exp.dishRecipeId);
+                            const isFinished = exp.endsAtMs <= nowMs;
+                            const pct = calcProgressPct(exp);
+                            const durationLabel = formatDurationCompact(
+                                exp.durationSec ?? zone?.durationSec ?? 3600
+                            );
 
-                        return (
-                            <div
-                                key={`active-exp-card-${exp.id}`}
-                                className={`p-2.5 rounded-xl border flex flex-col gap-2 ${
-                                    isFinished
-                                        ? 'bg-amber-50 border-amber-300/80 shadow-sm'
-                                        : 'bg-white/90 border-white shadow-[2px_2px_6px_rgba(163,177,198,0.35),-2px_-2px_6px_rgba(255,255,255,0.9)]'
-                                }`}
-                            >
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="min-w-0">
-                                        <div className="text-xs font-black text-[#1e293b] truncate">
-                                            {zone?.emoji} {zone?.name || exp.zoneId}
-                                        </div>
-                                        <div className="text-[10px] text-[#64748b] font-bold truncate">
-                                            도시락:{' '}
-                                            {exp.dishQuality === 'special' && (
-                                                <span className="px-1 py-0.2 mr-1 rounded bg-amber-200 text-amber-900 font-black">
-                                                    ★특제
+                            return (
+                                <div
+                                    key={`active-exp-card-${exp.id}`}
+                                    onClick={() => setSelectedBattleExpId(exp.id)}
+                                    className={`p-2.5 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all ${
+                                        isFinished
+                                            ? 'bg-amber-50 border-amber-300/80 shadow-sm'
+                                            : 'bg-white/90 border-white shadow-[2px_2px_6px_rgba(163,177,198,0.35),-2px_-2px_6px_rgba(255,255,255,0.9)]'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <div className="text-xs font-black text-[#1e293b] truncate flex items-center gap-1.5">
+                                                <span className="truncate">
+                                                    {zone?.emoji} {zone?.name || exp.zoneId}
                                                 </span>
-                                            )}
-                                            {recipe?.emoji} {recipe?.name} · 예상 승률{' '}
-                                            <span className="text-emerald-700 font-black">
-                                                {exp.predictedWinRate}%
-                                            </span>
+                                                <span className="px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 text-[9.5px] font-black shrink-0">
+                                                    {exp.groupName || `${exp.partyMercCodes.length}인 편성`}
+                                                </span>
+                                            </div>
+                                            <div className="text-[10px] text-[#64748b] font-bold truncate">
+                                                ⏱ {durationLabel} ·{' '}
+                                                {exp.dishQuality === 'special' && (
+                                                    <span className="px-1 py-0.2 mr-1 rounded bg-amber-200 text-amber-900 font-black">
+                                                        ★특제
+                                                    </span>
+                                                )}
+                                                {recipe?.emoji} {recipe?.name} · 예상 승률{' '}
+                                                <span className="text-emerald-700 font-black">
+                                                    {exp.predictedWinRate}%
+                                                </span>
+                                            </div>
                                         </div>
+                                        {isFinished ? (
+                                            <button
+                                                type="button"
+                                                disabled={isActing}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onClaimExpedition(exp.id);
+                                                }}
+                                                className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black shrink-0 cursor-pointer disabled:opacity-50 shadow-sm"
+                                            >
+                                                🏆 전리품 정산!
+                                            </button>
+                                        ) : (
+                                            <span className="px-2 py-0.5 rounded-lg bg-[#e8edf2] text-indigo-700 font-mono text-[11px] font-black shrink-0">
+                                                {formatCountdownLabel(exp.endsAtMs, nowMs)}
+                                            </span>
+                                        )}
                                     </div>
-                                    {isFinished ? (
-                                        <button
-                                            type="button"
-                                            disabled={isActing}
-                                            onClick={() => onClaimExpedition(exp.id)}
-                                            className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black shrink-0 cursor-pointer disabled:opacity-50 shadow-sm"
-                                        >
-                                            🏆 전리품 정산!
-                                        </button>
-                                    ) : (
-                                        <span className="px-2 py-0.5 rounded-lg bg-[#e8edf2] text-indigo-700 font-mono text-[11px] font-black shrink-0">
-                                            {formatCountdownLabel(exp.endsAtMs, nowMs)}
-                                        </span>
-                                    )}
-                                </div>
 
-                                <svg viewBox="0 0 100 6" className="w-full h-1.5" aria-hidden="true">
-                                    <rect x="0" y="0" width="100" height="6" rx="3" fill="#cbd5e1" />
-                                    <rect
-                                        x="0"
-                                        y="0"
-                                        width={pct}
-                                        height="6"
-                                        rx="3"
-                                        fill={isFinished ? '#f59e0b' : '#6366f1'}
-                                    />
-                                </svg>
-                            </div>
-                        );
-                    })}
+                                    <svg viewBox="0 0 100 6" className="w-full h-1.5" aria-hidden="true">
+                                        <rect x="0" y="0" width="100" height="6" rx="3" fill="#cbd5e1" />
+                                        <rect
+                                            x="0"
+                                            y="0"
+                                            width={pct}
+                                            height="6"
+                                            rx="3"
+                                            fill={isFinished ? '#f59e0b' : '#6366f1'}
+                                        />
+                                    </svg>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* R1: 캠프 하단 출정 전장터 실시간 전투 연출 (activeExpeditions > 0일 때만 마운트) */}
+                    <AzitBattlefieldCanvas
+                        gameState={gameState}
+                        nowMs={nowMs}
+                        isActing={isActing}
+                        selectedExpeditionId={selectedBattleExpId}
+                        onSelectExpedition={setSelectedBattleExpId}
+                        onClaimExpedition={onClaimExpedition}
+                    />
                 </div>
             )}
 

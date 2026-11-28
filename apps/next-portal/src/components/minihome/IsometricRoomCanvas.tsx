@@ -17,6 +17,7 @@ import {
     MinihomeGardenControlPanel,
 } from '@/components/minihome/MinihomeGardenLayer';
 import type {
+    AzitTowerBattleResponse,
     AzitZoneType,
     FarmerActionLog,
     OwnedFarmer,
@@ -35,6 +36,12 @@ import {
     type CampNodeType,
 } from '@/components/minihome/AzitCampLayer';
 import { AzitGameModals, type AzitModalKind } from '@/components/minihome/AzitGameModals';
+import { AzitTowerModal, type TowerLaunchContext } from '@/components/minihome/AzitTowerModal';
+import { AzitTowerBattleFullscreen } from '@/components/minihome/AzitTowerBattleFullscreen';
+
+interface TowerBattleSession extends TowerLaunchContext {
+    response: AzitTowerBattleResponse;
+}
 
 interface IsometricRoomCanvasProps {
     layout: MinihomeRoomLayout;
@@ -162,6 +169,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     const [openKitchenSlotIndex, setOpenKitchenSlotIndex] = useState<number | null>(null);
     const [openCampNode, setOpenCampNode] = useState<CampNodeType | null>(null);
     const [activeAzitModal, setActiveAzitModal] = useState<AzitModalKind>(null);
+    const [isTowerModalOpen, setIsTowerModalOpen] = useState<boolean>(false);
+    const [towerBattleSession, setTowerBattleSession] = useState<TowerBattleSession | null>(null);
     const [forcedGardenAction, setForcedGardenAction] = useState<ForcedGardenActionTrigger | null>(null);
 
     // ─── 무손실 스마트 줌 (100% ~ 200% 안전 배율) & 드래그 팬(Pan) 상태 ───
@@ -206,6 +215,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         ) {
             setActiveZone(requestedZone);
             setActiveAzitModal(null);
+            setIsTowerModalOpen(false);
+            setTowerBattleSession(null);
         }
     }, [requestedZone, zoneSyncNonce]);
 
@@ -221,6 +232,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         }
         if (isEditMode || activeZone !== 'camp') {
             setOpenCampNode(null);
+            setIsTowerModalOpen(false);
+            setTowerBattleSession(null);
         }
     }, [isEditMode, activeZone]);
 
@@ -1994,6 +2007,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             onOpenMercModal={() => setActiveAzitModal('mercs')}
                             onOpenExpeditionModal={() => setActiveAzitModal('expedition')}
                             onClaimExpedition={azitGame.claimExpedition}
+                            onOpenTower={() => setIsTowerModalOpen(true)}
                         />
                     )}
                 </div>
@@ -2051,19 +2065,92 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         onOpenMercModal={() => setActiveAzitModal('mercs')}
                         onOpenExpeditionModal={() => setActiveAzitModal('expedition')}
                         onGoToKitchen={() => setActiveZone('kitchen')}
+                        onOpenTower={() => setIsTowerModalOpen(true)}
                     />
                 )}
 
                 {/* 아지트 타이쿤 게임 모달 (장터 / 요리사 길드 / 용병 길드 / 원정 출정 / 전투 결과) */}
                 {isOwner && azitGame?.state && (
-                    <AzitGameModals
-                        activeModal={activeAzitModal}
-                        onCloseModal={() => setActiveAzitModal(null)}
-                        gameState={azitGame.state}
-                        azitGame={azitGame}
-                        onGoToKitchen={() => setActiveZone('kitchen')}
-                        onOpenMercModal={() => setActiveAzitModal('mercs')}
-                    />
+                    <>
+                        <AzitGameModals
+                            activeModal={activeAzitModal}
+                            onCloseModal={() => setActiveAzitModal(null)}
+                            gameState={azitGame.state}
+                            azitGame={azitGame}
+                            onGoToKitchen={() => setActiveZone('kitchen')}
+                            onOpenMercModal={() => setActiveAzitModal('mercs')}
+                        />
+                        <AzitTowerModal
+                            isOpen={isTowerModalOpen && towerBattleSession === null}
+                            onClose={() => setIsTowerModalOpen(false)}
+                            gameState={azitGame.state}
+                            azitGame={azitGame}
+                            onOpenMercModal={() => setActiveAzitModal('mercs')}
+                            onBattleStarted={(response, launchContext) => {
+                                setTowerBattleSession({
+                                    response,
+                                    ...launchContext,
+                                });
+                            }}
+                        />
+                        <AzitTowerBattleFullscreen
+                            battleResponse={towerBattleSession?.response ?? null}
+                            gameState={azitGame.state}
+                            isActing={azitGame.isActing}
+                            canUseElixir={
+                                (azitGame.state.items?.find(
+                                    (it) => it.itemId === 'item-battle-elixir'
+                                )?.qty ?? 0) > 0
+                            }
+                            onClose={() => setTowerBattleSession(null)}
+                            onRetryFloor={async (floor) => {
+                                if (!towerBattleSession || !azitGame.battleTowerFloor) return;
+                                const hasElixir =
+                                    (azitGame.state?.items?.find(
+                                        (it) => it.itemId === 'item-battle-elixir'
+                                    )?.qty ?? 0) > 0;
+                                const useElixirNow = towerBattleSession.useElixir && hasElixir;
+                                const res = await azitGame.battleTowerFloor({
+                                    floor,
+                                    ...(towerBattleSession.groupId !== undefined
+                                        ? { groupId: towerBattleSession.groupId }
+                                        : { partyMercCodes: towerBattleSession.partyMercCodes }),
+                                    ...(useElixirNow ? { elixirItemId: 'item-battle-elixir' } : {}),
+                                });
+                                if (res) {
+                                    setTowerBattleSession({
+                                        ...towerBattleSession,
+                                        floor,
+                                        useElixir: useElixirNow,
+                                        response: res,
+                                    });
+                                }
+                            }}
+                            onChallengeNextFloor={async (nextFloor) => {
+                                if (!towerBattleSession || !azitGame.battleTowerFloor) return;
+                                const hasElixir =
+                                    (azitGame.state?.items?.find(
+                                        (it) => it.itemId === 'item-battle-elixir'
+                                    )?.qty ?? 0) > 0;
+                                const useElixirNow = towerBattleSession.useElixir && hasElixir;
+                                const res = await azitGame.battleTowerFloor({
+                                    floor: nextFloor,
+                                    ...(towerBattleSession.groupId !== undefined
+                                        ? { groupId: towerBattleSession.groupId }
+                                        : { partyMercCodes: towerBattleSession.partyMercCodes }),
+                                    ...(useElixirNow ? { elixirItemId: 'item-battle-elixir' } : {}),
+                                });
+                                if (res) {
+                                    setTowerBattleSession({
+                                        ...towerBattleSession,
+                                        floor: nextFloor,
+                                        useElixir: useElixirNow,
+                                        response: res,
+                                    });
+                                }
+                            }}
+                        />
+                    </>
                 )}
 
                 {/* 꾸미기 모드 시 하단 플로팅 오브젝트 조작 바 */}

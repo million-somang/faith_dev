@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import type { AzitFullGameState } from '@/types/azit-game.types';
+import type { AzitFullGameState, AzitItemId } from '@/types/azit-game.types';
+import { getItemVisualMeta } from '@/data/azitCharacterAssets';
 
 interface AzitLevelHeaderBadgeProps {
     gameState: AzitFullGameState;
@@ -24,6 +25,18 @@ export const AzitLevelHeaderBadge: React.FC<AzitLevelHeaderBadgeProps> = ({
 }) => {
     const { profile, veraPoints, chefs, mercenaries, farmers } = gameState;
     const isFarmerUnlocked = profile.azitLevel >= 20;
+    const deadMercCount = mercenaries.filter((m) => m.status === 'dead').length;
+    const itemOrder: Array<{ itemId: AzitItemId; label: string }> = [
+        { itemId: 'item-revival-herb', label: '생명의 약초' },
+        { itemId: 'item-phoenix-feather', label: '불사조의 깃털' },
+        { itemId: 'item-skill-stone', label: '전술 연마석' },
+        { itemId: 'item-skill-tome', label: '비전 스킬 교본' },
+        { itemId: 'item-battle-elixir', label: '투지의 비약' },
+    ];
+    const itemQtyMap = new Map<AzitItemId, number>(
+        (gameState.items ?? []).map((it) => [it.itemId, it.qty])
+    );
+    const ownedItemCount = Array.from(itemQtyMap.values()).reduce((sum, q) => sum + q, 0);
     const safeAzitXp = Number.isFinite(profile.azitXp) ? Math.max(0, Math.floor(profile.azitXp)) : 0;
     const clampedPct = Number.isFinite(profile.progressPct)
         ? Math.max(0, Math.min(100, profile.progressPct))
@@ -118,18 +131,44 @@ export const AzitLevelHeaderBadge: React.FC<AzitLevelHeaderBadgeProps> = ({
                                 type="button"
                                 onClick={onOpenMercModal}
                                 className={neutralBtnClass}
-                                title="용병 길드 관리"
+                                title="용병 길드·스킬·부활·상점 관리"
                             >
                                 <span>⚔️ 용병</span>
                                 <span className="font-mono text-[#64748b]">
                                     {mercenaries.length}/{profile.limits.maxMercs}
                                 </span>
+                                {deadMercCount > 0 && (
+                                    <span className="px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[10px] font-black font-mono">
+                                        💀{deadMercCount}
+                                    </span>
+                                )}
                             </button>
                         )}
                     </div>
                 )}
 
                 <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+                    {onOpenMercModal && ownedItemCount > 0 && (
+                        <div className="flex flex-wrap items-center gap-1">
+                            {itemOrder.map(({ itemId, label }) => {
+                                const qty = itemQtyMap.get(itemId) ?? 0;
+                                if (qty <= 0) return null;
+                                const visual = getItemVisualMeta(itemId);
+                                return (
+                                    <button
+                                        key={`header-item-${itemId}`}
+                                        type="button"
+                                        onClick={onOpenMercModal}
+                                        title={`${label} ${qty}개 (용병 길드 상점·부활·강화 열기)`}
+                                        className={`px-1.5 py-0.5 rounded-lg border text-[10px] font-black font-mono cursor-pointer transition-transform active:scale-95 flex items-center gap-0.5 ${visual.bgClass} ${visual.textClass} ${visual.borderClass}`}
+                                    >
+                                        <span>{visual.emoji}</span>
+                                        <span>{qty}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
                     <span className="hidden sm:inline text-[10px] font-extrabold text-[#94a3b8] shrink-0">
                         거래·보관
                     </span>

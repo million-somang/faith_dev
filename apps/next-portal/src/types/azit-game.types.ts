@@ -62,6 +62,205 @@ export type AzitZoneId =
     | 'zone-wyvern'
     | 'zone-dragon';
 
+export type AzitZoneThemeId =
+    | 'theme-slime-marsh'
+    | 'theme-goblin-camp'
+    | 'theme-ancient-forest'
+    | 'theme-obsidian-canyon'
+    | 'theme-wyvern-peak'
+    | 'theme-dragon-abyss';
+
+export type AzitItemId =
+    | 'item-revival-herb'
+    | 'item-phoenix-feather'
+    | 'item-skill-stone'
+    | 'item-skill-tome'
+    | 'item-battle-elixir';
+
+export type AzitItemCategory = 'revival' | 'skill_mat' | 'consumable';
+
+export type AzitTowerThemeId =
+    | 'tower-1-forgotten'
+    | 'tower-2-spirit'
+    | 'tower-3-obsidian'
+    | 'tower-4-wyvern'
+    | 'tower-5-abyss';
+
+export type AzitTowerFloorType = 'normal' | 'mini_boss' | 'major_boss';
+
+export type AzitCombatRole =
+    | 'tank'
+    | 'ranger'
+    | 'mage'
+    | 'healer'
+    | 'berserker'
+    | 'allrounder'
+    | 'enemy-melee'
+    | 'enemy-ranged'
+    | 'enemy-boss';
+
+export type AzitCombatStatusKind =
+    | 'shield'
+    | 'regen'
+    | 'atkUp'
+    | 'defUp'
+    | 'defDown'
+    | 'burn'
+    | 'stun';
+
+export type AzitCombatSkillEffectKind =
+    | 'damage'
+    | 'aoe_damage'
+    | 'heal'
+    | 'heal_all'
+    | 'buff'
+    | 'debuff'
+    | 'shield';
+
+export type AzitCombatTargetScope =
+    | 'enemy_single'
+    | 'enemy_aoe'
+    | 'ally_lowest'
+    | 'ally_all'
+    | 'self';
+
+export interface AzitCombatSkillStatusSpec {
+    kind: AzitCombatStatusKind;
+    durationMs: number;
+    value: number;
+    chancePct?: number;
+}
+
+export interface AzitCombatSkillSpec {
+    id: string;
+    name: string;
+    emoji: string;
+    slot: 'main' | 'sub';
+    effectKind: AzitCombatSkillEffectKind;
+    targetScope: AzitCombatTargetScope;
+    cooldownMs: number;
+    powerPct: number;
+    perLevelPct: number;
+    range: number;
+    aoeRadius: number;
+    description: string;
+    statusEffect?: AzitCombatSkillStatusSpec;
+    secondaryStatusEffect?: AzitCombatSkillStatusSpec;
+    lifestealPct?: number;
+    critMult?: number;
+}
+
+export interface AzitMercBaseCombatStats {
+    combatRole: 'tank' | 'ranger' | 'mage' | 'healer' | 'berserker' | 'allrounder';
+    hp: number;
+    atk: number;
+    def: number;
+    moveSpeed: number;
+    attackIntervalMs: number;
+    range: number;
+    critPct: number;
+}
+
+export interface AzitMonsterDef {
+    monsterId: string;
+    name: string;
+    emoji: string;
+    role: '탱커' | '레인저' | '딜러' | '힐러' | '보스';
+    combatRole: AzitCombatRole;
+    maxHp: number;
+    atk: number;
+    def: number;
+    moveSpeed: number;
+    attackIntervalMs: number;
+    range: number;
+    isBoss: boolean;
+    mainSkill: AzitCombatSkillSpec;
+    subSkill: AzitCombatSkillSpec;
+}
+
+export interface AzitZoneItemDropDef {
+    itemId: AzitItemId;
+    chancePct: number;
+    minQty: number;
+    maxQty: number;
+}
+
+export interface AzitItemCatalogItem {
+    itemId: AzitItemId;
+    name: string;
+    emoji: string;
+    category: AzitItemCategory;
+    shopPrice: number | null;
+    requiredAzitLevel: number;
+    bonusMercXp?: number;
+    description: string;
+}
+
+export interface AzitCraftIngredient {
+    kind: 'crop' | 'material' | 'item';
+    id: AzitCropId | AzitMaterialId | AzitItemId;
+    qty: number;
+}
+
+export interface AzitCraftRecipeCatalogItem {
+    recipeId: string;
+    resultItemId: AzitItemId;
+    resultQty: number;
+    name: string;
+    emoji: string;
+    requiredAzitLevel: number;
+    pointsCost: number;
+    ingredients: AzitCraftIngredient[];
+    description: string;
+}
+
+export interface AzitTowerThemeCatalogItem {
+    themeId: AzitTowerThemeId;
+    name: string;
+    floorStart: number;
+    floorEnd: number;
+    themeColor: string;
+    primaryMaterialId: AzitMaterialId;
+    description: string;
+}
+
+export interface AzitTowerRewardBundle {
+    veraPoints: number;
+    mercXp: number;
+    azitXp: number;
+    materials: Partial<Record<AzitMaterialId, number>>;
+    crops: Partial<Record<AzitCropId, number>>;
+    items: Partial<Record<AzitItemId, number>>;
+}
+
+export interface AzitTowerFloorDef {
+    floor: number;
+    themeId: AzitTowerThemeId;
+    themeName: string;
+    floorType: AzitTowerFloorType;
+    isBoss: boolean;
+    name: string;
+    recommendedPower: number;
+    monsters: AzitMonsterDef[];
+    firstClearReward: AzitTowerRewardBundle;
+    repeatReward: AzitTowerRewardBundle;
+}
+
+export interface AzitTowerFloorSummary {
+    floor: number;
+    themeId: AzitTowerThemeId;
+    themeName: string;
+    floorType: AzitTowerFloorType;
+    isBoss: boolean;
+    name: string;
+    recommendedPower: number;
+    bossEmoji: string;
+    bossName: string;
+    firstClearPoints: number;
+    firstClearMercXp: number;
+    repeatPoints: number;
+}
+
 export interface AzitCropCatalogItem {
     cropId: AzitCropId;
     name: string;
@@ -184,6 +383,10 @@ export interface AzitMercenaryCatalogItem {
     bossRewardBonusPct: number;
     maxLevel: number;
     description: string;
+    combatRole?: 'tank' | 'ranger' | 'mage' | 'healer' | 'berserker' | 'allrounder';
+    baseStats?: AzitMercBaseCombatStats;
+    mainSkill?: AzitCombatSkillSpec;
+    subSkill?: AzitCombatSkillSpec;
 }
 
 export interface AzitExpeditionZoneItem {
@@ -204,6 +407,15 @@ export interface AzitExpeditionZoneItem {
     isBoss: boolean;
     requiredAzitLevel: number;
     description: string;
+    zoneTheme?: AzitZoneThemeId;
+    deathRiskPct?: number;
+    lossMercXp?: number;
+    monsters?: AzitMonsterDef[];
+    itemDrops?: AzitZoneItemDropDef[];
+    cropDropPool?: AzitCropId[];
+    bonusMaterialId?: AzitMaterialId;
+    bonusMaterialMinQty?: number;
+    bonusMaterialMaxQty?: number;
 }
 
 export interface AzitLevelStep {
@@ -295,14 +507,194 @@ export interface AzitKitchenSlotState {
     endsAtMs: number | null;
 }
 
+export interface AzitMercSkillSnapshot {
+    id: string;
+    name: string;
+    emoji: string;
+    description: string;
+    level: number;
+    maxLevel: number;
+    cooldownMs: number;
+    powerPct: number;
+}
+
 export interface AzitMercenaryRecord {
     mercCode: AzitMercCode;
     level: number;
     xp: number;
     nextXp: number;
     power: number;
-    status: 'idle' | 'expedition';
+    status: 'idle' | 'expedition' | 'dead';
     upgradeCost: number | null;
+    role?: '탱커' | '레인저' | '딜러' | '힐러' | '올라운더';
+    combatRole?: 'tank' | 'ranger' | 'mage' | 'healer' | 'berserker' | 'allrounder';
+    hp?: number;
+    maxHp?: number;
+    atk?: number;
+    def?: number;
+    spd?: number;
+    range?: number;
+    diedAt?: string | null;
+    deathZoneId?: AzitZoneId | null;
+    mainSkill?: AzitMercSkillSnapshot;
+    subSkill?: AzitMercSkillSnapshot;
+}
+
+export interface AzitMercenaryGroupRecord {
+    id: number;
+    name: string;
+    slotIndex: number;
+    mercCodes: AzitMercCode[];
+}
+
+export interface AzitItemInventoryRecord {
+    itemId: AzitItemId;
+    qty: number;
+}
+
+export interface AzitTowerProgressState {
+    highestClearedFloor: number;
+    maxFloor: number;
+    totalClears: number;
+    totalAttempts: number;
+}
+
+export interface AzitCombatUnitTemplate {
+    unitId: string;
+    side: 'ally' | 'enemy';
+    code: string;
+    name: string;
+    emoji: string;
+    combatRole: AzitCombatRole;
+    level: number;
+    maxHp: number;
+    atk: number;
+    def: number;
+    moveSpeed: number;
+    attackIntervalMs: number;
+    range: number;
+    critPct?: number;
+    isBoss?: boolean;
+    mainSkill: AzitCombatSkillSpec;
+    subSkill: AzitCombatSkillSpec;
+    mainSkillLevel: number;
+    subSkillLevel: number;
+}
+
+export interface AzitCombatSimulationInput {
+    mode: 'expedition' | 'tower';
+    seed: number;
+    allies: AzitCombatUnitTemplate[];
+    enemies: AzitCombatUnitTemplate[];
+    dishBuffs?: Partial<AzitDishEffectiveBuffs>;
+    elixirBoostPct?: number;
+    deathRiskPct?: number;
+    maxDurationMs?: number;
+    recordFrames?: boolean;
+    frameIntervalTicks?: number;
+}
+
+export type AzitCombatUnitAction =
+    | 'idle'
+    | 'move'
+    | 'attack'
+    | 'skill_main'
+    | 'skill_sub'
+    | 'stunned'
+    | 'dead';
+
+export interface AzitCombatFrameUnit {
+    unitId: string;
+    side: 'ally' | 'enemy';
+    code: string;
+    name: string;
+    emoji: string;
+    x: number;
+    y: number;
+    hp: number;
+    maxHp: number;
+    shield: number;
+    facing: 1 | -1;
+    alive: boolean;
+    action: AzitCombatUnitAction;
+    activeSkillName?: string;
+    statuses: AzitCombatStatusKind[];
+}
+
+export interface AzitCombatVfxEvent {
+    kind:
+        | 'slash'
+        | 'arrow'
+        | 'fireball'
+        | 'heal'
+        | 'shield'
+        | 'meteor'
+        | 'whirlwind'
+        | 'dash'
+        | 'hit'
+        | 'status';
+    fromX: number;
+    fromY: number;
+    toX: number;
+    toY: number;
+    color: string;
+    radius?: number;
+    value?: number;
+    isCrit?: boolean;
+    isHeal?: boolean;
+    label?: string;
+}
+
+export interface AzitCombatFrame {
+    tick: number;
+    timeMs: number;
+    units: AzitCombatFrameUnit[];
+    effects: AzitCombatVfxEvent[];
+}
+
+export interface AzitCombatEvent {
+    tick: number;
+    elapsedMs: number;
+    type: 'attack' | 'skill' | 'heal' | 'status' | 'death';
+    sourceId: string;
+    targetIds: string[];
+    skillSlot?: 'main' | 'sub';
+    skillName?: string;
+    amount?: number;
+    isCrit?: boolean;
+    statusKind?: AzitCombatStatusKind;
+    x: number;
+    y: number;
+    message: string;
+}
+
+export interface AzitCombatUnitOutcome {
+    unitId: string;
+    code: string;
+    name: string;
+    side: 'ally' | 'enemy';
+    hp: number;
+    maxHp: number;
+    alive: boolean;
+    damageDealt: number;
+    healingDone: number;
+    kills: number;
+}
+
+export interface AzitCombatSimulationResult {
+    won: boolean;
+    durationMs: number;
+    seed: number;
+    frames: AzitCombatFrame[];
+    events: AzitCombatEvent[];
+    battleLog: string[];
+    casualties: AzitMercCode[];
+    mvpMercCode: AzitMercCode | null;
+    totalDamageDealt: number;
+    totalHealingDone: number;
+    survivingAllies: number;
+    survivingEnemies: number;
+    unitOutcomes: AzitCombatUnitOutcome[];
 }
 
 export interface AzitExpeditionRecord {
@@ -321,6 +713,17 @@ export interface AzitExpeditionRecord {
     rewardXp: number;
     rewardMaterials: Partial<Record<AzitMaterialId, number>>;
     battleLog: string[];
+    groupId?: number | null;
+    groupName?: string | null;
+    durationSec?: number;
+    zoneTheme?: AzitZoneThemeId;
+    monsters?: AzitMonsterDef[];
+    battleSeed?: number;
+    partySnapshot?: AzitCombatUnitTemplate[];
+    casualties?: AzitMercCode[];
+    rewardItems?: Partial<Record<AzitItemId, number>>;
+    rewardCrops?: Partial<Record<AzitCropId, number>>;
+    rewardMercXp?: number;
 }
 
 export interface AzitLedgerRecord {
@@ -349,6 +752,23 @@ export interface AzitBattleReport {
     entryCostLost: number;
     lostDishId: AzitRecipeId;
     battleLog: string[];
+    casualties?: AzitMercCode[];
+    rewardItems?: Partial<Record<AzitItemId, number>>;
+    rewardCrops?: Partial<Record<AzitCropId, number>>;
+    mvpMercCode?: AzitMercCode | null;
+    battleFrames?: AzitCombatFrame[];
+}
+
+export interface AzitTowerBattleResponse {
+    won: boolean;
+    floor: number;
+    isFirstClear: boolean;
+    durationMs: number;
+    seed: number;
+    frames: AzitCombatFrame[];
+    battleLog: string[];
+    rewards: AzitTowerRewardBundle;
+    state: AzitFullGameState;
 }
 
 export interface AzitFullGameState {
@@ -383,6 +803,9 @@ export interface AzitFullGameState {
     chefs: AzitChefRecord[];
     kitchenSlots: AzitKitchenSlotState[];
     mercenaries: AzitMercenaryRecord[];
+    groups?: AzitMercenaryGroupRecord[];
+    items?: AzitItemInventoryRecord[];
+    tower?: AzitTowerProgressState;
     activeExpeditions: AzitExpeditionRecord[];
     recentExpeditions: AzitExpeditionRecord[];
     recentLedger: AzitLedgerRecord[];
@@ -400,6 +823,10 @@ export interface AzitFullGameState {
         mercenaries: AzitMercenaryCatalogItem[];
         zones: AzitExpeditionZoneItem[];
         levels: AzitLevelStep[];
+        items?: AzitItemCatalogItem[];
+        craftRecipes?: AzitCraftRecipeCatalogItem[];
+        towerThemes?: AzitTowerThemeCatalogItem[];
+        towerFloorsSummary?: AzitTowerFloorSummary[];
     };
 }
 
@@ -438,10 +865,30 @@ export interface UseAzitGameController {
         zoneId: AzitZoneId,
         partyMercCodes: AzitMercCode[],
         dishRecipeId: AzitRecipeId,
-        dishQuality?: AzitDishQuality
+        dishQuality?: AzitDishQuality,
+        options?: { groupId?: number; elixirItemId?: AzitItemId }
     ) => Promise<boolean>;
     claimExpedition: (expeditionId: number) => Promise<boolean>;
+    saveGroup?: (payload: { id?: number; name: string; slotIndex?: number; mercCodes: AzitMercCode[] }) => Promise<boolean>;
+    deleteGroup?: (groupId: number) => Promise<boolean>;
+    reviveMercenary?: (mercCode: AzitMercCode, itemId: AzitItemId) => Promise<boolean>;
+    upgradeMercSkill?: (mercCode: AzitMercCode, skillSlot: 'main' | 'sub') => Promise<boolean>;
+    buyShopItem?: (itemId: AzitItemId, qty?: number) => Promise<boolean>;
+    craftItem?: (recipeId: string, qty?: number) => Promise<boolean>;
+    battleTowerFloor?: (payload: {
+        floor: number;
+        groupId?: number;
+        partyMercCodes?: AzitMercCode[];
+        elixirItemId?: AzitItemId;
+    }) => Promise<AzitTowerBattleResponse | null>;
 }
+
+export const MERC_GOLD_UPGRADE_ENABLED = false;
+export const MAX_SKILL_LEVEL = 10;
+export const MAX_TOWER_FLOOR = 200;
+export const ARENA_WIDTH = 800;
+export const ARENA_HEIGHT = 360;
+export const COMBAT_TICK_MS = 100;
 
 export const MIN_COOK_DURATION_SEC = 60;
 export const MAX_CHEF_SPEED_BONUS_PCT = 40;

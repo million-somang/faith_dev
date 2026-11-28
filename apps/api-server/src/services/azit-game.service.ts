@@ -1,18 +1,27 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import crypto from 'crypto';
 import { pool } from '@faithportal/database';
 import { NotificationService } from './notification.service.js';
 import {
+    runCombatSimulation,
+    type CombatFrame,
+    type CombatUnitInput,
+} from './azit-combat.engine.js';
+import {
     AZIT_CHEFS,
+    AZIT_CRAFT_RECIPES,
     AZIT_CROPS,
     AZIT_EXPEDITION_ZONES,
     AZIT_FARMERS,
     AZIT_FERTILIZERS,
+    AZIT_ITEMS,
     AZIT_LEVEL_TABLE,
     AZIT_MATERIALS,
     AZIT_MERCENARIES,
     AZIT_PLOT_UNLOCKS,
     AZIT_RECIPES,
     AZIT_SOIL_LEVELS,
+    AZIT_TOWER_THEMES,
     AzitChefCode,
     AzitCropDef,
     AzitCropId,
@@ -20,10 +29,15 @@ import {
     AzitFarmerCode,
     AzitFarmerRole,
     AzitFertilizerId,
+    AzitItemId,
     AzitMaterialId,
     AzitMercCode,
+    AzitMonsterDef,
     AzitRecipeId,
+    AzitTowerFloorSummary,
+    AzitTowerRewardBundle,
     AzitZoneId,
+    AzitZoneThemeId,
     DEFAULT_FERTILIZER_ID,
     FARMER_TASK_XP,
     GARDEN_HARVEST_AZIT_XP,
@@ -31,16 +45,23 @@ import {
     MAX_FARMER_LEVEL,
     MAX_FERTILIZER_PER_CROP,
     MAX_GARDEN_PLOTS,
+    MAX_SKILL_LEVEL,
     MAX_SOIL_LEVEL,
+    MAX_TOWER_FLOOR,
+    MERC_GOLD_UPGRADE_ENABLED,
     STARTER_GARDEN_PLOTS,
     SoilHarvestYieldResult,
+    applyMercenaryCombatXp,
+    buildMercCombatUnit,
+    buildTowerEnemyUnits,
+    buildZoneEnemyUnits,
     calculateExpeditionWinRate,
     calculateHarvestYieldWithSoil,
-    generateBattleLog,
     getAzitLevelInfo,
     getChefDef,
     getChefEffectiveStats,
     getChefUpgradeCost,
+    getCraftRecipeDef,
     getCropDef,
     getDishEffectiveBuffs,
     getDishSellPrice,
@@ -50,14 +71,17 @@ import {
     getFarmerNextLevelXp,
     getFarmerUpgradeCost,
     getFertilizerDef,
+    getItemDef,
     getMaterialDef,
     getMercDef,
     getMercNextXp,
-    getMercUpgradeCost,
+    getMercenaryCombatStats,
     getMercenaryEffectivePower,
     getNextSoilLevelDef,
     getPlotUnlockDef,
     getRecipeDef,
+    getTowerFloorDef,
+    getTowerFloorSummaries,
     getZoneDef,
 } from './azit-game.catalog.js';
 
@@ -118,14 +142,56 @@ export interface AzitKitchenSlotRecord {
     endsAtMs: number | null;
 }
 
+export interface AzitMercSkillSnapshot {
+    id: string;
+    name: string;
+    emoji: string;
+    description: string;
+    level: number;
+    maxLevel: number;
+    cooldownMs: number;
+    powerPct: number;
+}
+
 export interface AzitMercenaryRecord {
     mercCode: AzitMercCode;
     level: number;
     xp: number;
     nextXp: number;
     power: number;
-    status: 'idle' | 'expedition';
+    status: 'idle' | 'expedition' | 'dead';
     upgradeCost: number | null;
+    role: '탱커' | '레인저' | '딜러' | '힐러' | '올라운더';
+    combatRole: 'tank' | 'ranger' | 'mage' | 'healer' | 'berserker' | 'allrounder';
+    hp: number;
+    maxHp: number;
+    atk: number;
+    def: number;
+    spd: number;
+    range: number;
+    diedAt: string | null;
+    deathZoneId: AzitZoneId | null;
+    mainSkill: AzitMercSkillSnapshot;
+    subSkill: AzitMercSkillSnapshot;
+}
+
+export interface AzitMercenaryGroupRecord {
+    id: number;
+    name: string;
+    slotIndex: number;
+    mercCodes: AzitMercCode[];
+}
+
+export interface AzitItemInventoryRecord {
+    itemId: AzitItemId;
+    qty: number;
+}
+
+export interface AzitTowerProgressState {
+    highestClearedFloor: number;
+    maxFloor: number;
+    totalClears: number;
+    totalAttempts: number;
 }
 
 export interface AzitExpeditionRecord {
@@ -144,6 +210,17 @@ export interface AzitExpeditionRecord {
     rewardXp: number;
     rewardMaterials: Partial<Record<AzitMaterialId, number>>;
     battleLog: string[];
+    groupId: number | null;
+    groupName: string | null;
+    durationSec: number;
+    zoneTheme?: AzitZoneThemeId;
+    monsters?: AzitMonsterDef[];
+    battleSeed?: number;
+    partySnapshot?: CombatUnitInput[];
+    casualties: AzitMercCode[];
+    rewardItems: Partial<Record<AzitItemId, number>>;
+    rewardCrops: Partial<Record<AzitCropId, number>>;
+    rewardMercXp: number;
 }
 
 export interface AzitLedgerRecord {
@@ -221,6 +298,9 @@ export interface AzitFullGameState {
     chefs: AzitChefRecord[];
     kitchenSlots: AzitKitchenSlotRecord[];
     mercenaries: AzitMercenaryRecord[];
+    groups: AzitMercenaryGroupRecord[];
+    items: AzitItemInventoryRecord[];
+    tower: AzitTowerProgressState;
     activeExpeditions: AzitExpeditionRecord[];
     recentExpeditions: AzitExpeditionRecord[];
     recentLedger: AzitLedgerRecord[];
@@ -238,6 +318,10 @@ export interface AzitFullGameState {
         mercenaries: typeof AZIT_MERCENARIES;
         zones: typeof AZIT_EXPEDITION_ZONES;
         levels: typeof AZIT_LEVEL_TABLE;
+        items: typeof AZIT_ITEMS;
+        craftRecipes: typeof AZIT_CRAFT_RECIPES;
+        towerThemes: typeof AZIT_TOWER_THEMES;
+        towerFloorsSummary: AzitTowerFloorSummary[];
     };
 }
 
@@ -306,7 +390,9 @@ const VALID_CROP_IDS = new Set<string>(AZIT_CROPS.map((c) => c.cropId));
 const VALID_FERTILIZER_IDS = new Set<string>(AZIT_FERTILIZERS.map((f) => f.fertilizerId));
 const VALID_MATERIAL_IDS = new Set<string>(AZIT_MATERIALS.map((m) => m.materialId));
 const VALID_RECIPE_IDS = new Set<string>(AZIT_RECIPES.map((r) => r.recipeId));
+const VALID_ITEM_IDS = new Set<string>(AZIT_ITEMS.map((i) => i.itemId));
 const SLOT_UNLOCK_LEVELS: Record<number, number> = { 0: 1, 1: 3, 2: 6 };
+const MAX_MERC_GROUPS = 6;
 
 function createEmptySeedMap(): Record<AzitCropId, number> {
     const map = {} as Record<AzitCropId, number>;
@@ -340,6 +426,45 @@ function createEmptyDishMap(): Record<AzitRecipeId, number> {
     return map;
 }
 
+let sqliteTxQueue: Promise<void> = Promise.resolve();
+const sqliteQueueStorage = new AsyncLocalStorage<{ inQueue: boolean }>();
+
+async function runSerializedDbOp<T>(fn: () => Promise<T>): Promise<T> {
+    if (sqliteQueueStorage.getStore()?.inQueue) {
+        return fn();
+    }
+    const previous = sqliteTxQueue;
+    let release!: () => void;
+    sqliteTxQueue = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+
+    await previous;
+    try {
+        return await sqliteQueueStorage.run({ inQueue: true }, fn);
+    } finally {
+        release();
+    }
+}
+
+async function runSerializedTransaction<T>(fn: () => Promise<T>): Promise<T> {
+    return runSerializedDbOp(async () => {
+        await pool.query('BEGIN IMMEDIATE');
+        try {
+            const result = await fn();
+            await pool.query('COMMIT');
+            return result;
+        } catch (err) {
+            try {
+                await pool.query('ROLLBACK');
+            } catch (rollbackErr) {
+                console.error('[AzitGameService] SQLite ROLLBACK failed:', rollbackErr);
+            }
+            throw err;
+        }
+    });
+}
+
 export class AzitGameService {
     private static ensureTablesPromise: Promise<void> | null = null;
     private static readonly userLocks = new Map<number, Promise<void>>();
@@ -355,7 +480,7 @@ export class AzitGameService {
 
         await previous;
         try {
-            return await fn();
+            return await runSerializedDbOp(fn);
         } finally {
             release();
             if (this.userLocks.get(userId) === tail) {
@@ -366,7 +491,7 @@ export class AzitGameService {
 
     static async ensureTables(): Promise<void> {
         if (!this.ensureTablesPromise) {
-            this.ensureTablesPromise = this.createTablesInternal().catch((err) => {
+            this.ensureTablesPromise = runSerializedDbOp(() => this.createTablesInternal()).catch((err) => {
                 this.ensureTablesPromise = null;
                 throw err;
             });
@@ -552,6 +677,64 @@ export class AzitGameService {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );`,
             `CREATE INDEX IF NOT EXISTS idx_azit_farmer_logs_user ON azit_farmer_logs(user_id, id DESC);`,
+            `CREATE TABLE IF NOT EXISTS azit_mercenary_groups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                slot_index INTEGER NOT NULL DEFAULT 0,
+                merc_codes_json TEXT NOT NULL,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                deleted_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );`,
+            `CREATE INDEX IF NOT EXISTS idx_azit_groups_user ON azit_mercenary_groups(user_id, is_deleted, slot_index);`,
+            `CREATE TABLE IF NOT EXISTS azit_item_inventory (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                item_id TEXT NOT NULL,
+                qty INTEGER NOT NULL DEFAULT 0,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                deleted_at DATETIME,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, item_id)
+            );`,
+            `CREATE INDEX IF NOT EXISTS idx_azit_items_user ON azit_item_inventory(user_id, is_deleted);`,
+            `CREATE TABLE IF NOT EXISTS azit_tower_progress (
+                user_id INTEGER PRIMARY KEY,
+                highest_cleared_floor INTEGER NOT NULL DEFAULT 0,
+                total_clears INTEGER NOT NULL DEFAULT 0,
+                total_attempts INTEGER NOT NULL DEFAULT 0,
+                last_cleared_at DATETIME,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                deleted_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );`,
+            `CREATE TABLE IF NOT EXISTS azit_tower_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                group_id INTEGER,
+                floor INTEGER NOT NULL,
+                party_merc_codes_json TEXT NOT NULL,
+                elixir_item_id TEXT,
+                won INTEGER NOT NULL DEFAULT 0,
+                is_first_clear INTEGER NOT NULL DEFAULT 0,
+                battle_seed INTEGER NOT NULL,
+                duration_ms INTEGER NOT NULL DEFAULT 0,
+                reward_points INTEGER NOT NULL DEFAULT 0,
+                reward_azit_xp INTEGER NOT NULL DEFAULT 0,
+                reward_merc_xp INTEGER NOT NULL DEFAULT 0,
+                reward_materials_json TEXT,
+                reward_crops_json TEXT,
+                reward_items_json TEXT,
+                battle_replay_json TEXT,
+                battle_log_json TEXT,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                deleted_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );`,
+            `CREATE INDEX IF NOT EXISTS idx_azit_tower_runs_user ON azit_tower_runs(user_id, floor, id DESC);`,
         ];
 
         for (const sql of statements) {
@@ -574,8 +757,26 @@ export class AzitGameService {
             ['special_qty', 'ALTER TABLE azit_dish_inventory ADD COLUMN special_qty INTEGER NOT NULL DEFAULT 0;'],
         ]);
 
+        await this.ensureColumns('azit_mercenaries', [
+            ['main_skill_level', 'ALTER TABLE azit_mercenaries ADD COLUMN main_skill_level INTEGER NOT NULL DEFAULT 1;'],
+            ['sub_skill_level', 'ALTER TABLE azit_mercenaries ADD COLUMN sub_skill_level INTEGER NOT NULL DEFAULT 1;'],
+            ['died_at', 'ALTER TABLE azit_mercenaries ADD COLUMN died_at DATETIME;'],
+            ['death_zone_id', 'ALTER TABLE azit_mercenaries ADD COLUMN death_zone_id TEXT;'],
+        ]);
+
         await this.ensureColumns('azit_expeditions', [
             ['dish_quality', "ALTER TABLE azit_expeditions ADD COLUMN dish_quality TEXT NOT NULL DEFAULT 'normal';"],
+            ['group_id', 'ALTER TABLE azit_expeditions ADD COLUMN group_id INTEGER;'],
+            ['group_name', 'ALTER TABLE azit_expeditions ADD COLUMN group_name TEXT;'],
+            ['duration_sec', 'ALTER TABLE azit_expeditions ADD COLUMN duration_sec INTEGER NOT NULL DEFAULT 3600;'],
+            ['battle_seed', 'ALTER TABLE azit_expeditions ADD COLUMN battle_seed INTEGER;'],
+            ['party_snapshot_json', 'ALTER TABLE azit_expeditions ADD COLUMN party_snapshot_json TEXT;'],
+            ['battle_replay_json', 'ALTER TABLE azit_expeditions ADD COLUMN battle_replay_json TEXT;'],
+            ['dead_merc_codes_json', 'ALTER TABLE azit_expeditions ADD COLUMN dead_merc_codes_json TEXT;'],
+            ['reward_items_json', 'ALTER TABLE azit_expeditions ADD COLUMN reward_items_json TEXT;'],
+            ['reward_crops_json', 'ALTER TABLE azit_expeditions ADD COLUMN reward_crops_json TEXT;'],
+            ['reward_merc_xp', 'ALTER TABLE azit_expeditions ADD COLUMN reward_merc_xp INTEGER NOT NULL DEFAULT 0;'],
+            ['elixir_item_id', 'ALTER TABLE azit_expeditions ADD COLUMN elixir_item_id TEXT;'],
         ]);
     }
 
@@ -700,6 +901,10 @@ export class AzitGameService {
     }
 
     static async ensureUserInitialized(userId: number): Promise<void> {
+        return runSerializedDbOp(() => this.ensureUserInitializedInternal(userId));
+    }
+
+    private static async ensureUserInitializedInternal(userId: number): Promise<void> {
         await this.ensureTables();
         await this.getVeraPoints(userId);
 
@@ -748,6 +953,22 @@ export class AzitGameService {
         if (claimMigrateRes.rowCount > 0) {
             await this.migrateLegacyGardenOnce(userId);
         }
+
+        for (const item of AZIT_ITEMS) {
+            await pool.query(
+                `INSERT INTO azit_item_inventory (user_id, item_id, qty)
+                 VALUES ($1, $2, 0)
+                 ON CONFLICT (user_id, item_id) DO NOTHING`,
+                [userId, item.itemId]
+            );
+        }
+
+        await pool.query(
+            `INSERT INTO azit_tower_progress (user_id, highest_cleared_floor, total_clears, total_attempts)
+             VALUES ($1, 0, 0, 0)
+             ON CONFLICT (user_id) DO NOTHING`,
+            [userId]
+        );
 
         // 0..15 전체 텃밭 구획 레코드 보장 (0..5 기본 해금, 6..15 잠금 상태; 기존 레코드는 보존)
         for (let plotIndex = 0; plotIndex < MAX_GARDEN_PLOTS; plotIndex += 1) {
@@ -1134,25 +1355,142 @@ export class AzitGameService {
         });
 
         const mercRes = await pool.query(
-            `SELECT merc_code, level, xp, status FROM azit_mercenaries WHERE user_id = $1 AND is_deleted = 0 ORDER BY id ASC`,
+            `SELECT merc_code, level, xp, status, main_skill_level, sub_skill_level, died_at, death_zone_id
+             FROM azit_mercenaries
+             WHERE user_id = $1 AND is_deleted = 0
+             ORDER BY id ASC`,
             [userId]
         );
         const mercenaries: AzitMercenaryRecord[] = [];
+        const mercSnapshotLookup = new Map<AzitMercCode, CombatUnitInput>();
         for (const r of mercRes.rows) {
             const code = String(r.merc_code) as AzitMercCode;
             const def = getMercDef(code);
             if (!def) continue;
             const level = Number(r.level ?? 1);
+            const mainSkillLevel = Math.max(1, Math.min(MAX_SKILL_LEVEL, Number(r.main_skill_level ?? 1)));
+            const subSkillLevel = Math.max(1, Math.min(MAX_SKILL_LEVEL, Number(r.sub_skill_level ?? 1)));
+            const stats = getMercenaryCombatStats(code, level, mainSkillLevel, subSkillLevel);
+            const rawMercStatus = String(r.status ?? 'idle');
+            const status: 'idle' | 'expedition' | 'dead' =
+                rawMercStatus === 'expedition'
+                    ? 'expedition'
+                    : rawMercStatus === 'dead'
+                      ? 'dead'
+                      : 'idle';
+            mercSnapshotLookup.set(
+                code,
+                buildMercCombatUnit({
+                    mercCode: code,
+                    level,
+                    mainSkillLevel,
+                    subSkillLevel,
+                    unitId: `ally-${code}`,
+                })
+            );
             mercenaries.push({
                 mercCode: code,
                 level,
                 xp: Number(r.xp ?? 0),
                 nextXp: getMercNextXp(level),
                 power: getMercenaryEffectivePower(code, level),
-                status: r.status === 'expedition' ? 'expedition' : 'idle',
-                upgradeCost: level >= def.maxLevel ? null : getMercUpgradeCost(level),
+                status,
+                upgradeCost: null,
+                role: def.role,
+                combatRole: stats.combatRole,
+                hp: status === 'dead' ? 0 : stats.hp,
+                maxHp: stats.hp,
+                atk: stats.atk,
+                def: stats.def,
+                spd: stats.moveSpeed,
+                range: stats.range,
+                diedAt: (r.died_at as string | null) ?? null,
+                deathZoneId: r.death_zone_id ? (String(r.death_zone_id) as AzitZoneId) : null,
+                mainSkill: {
+                    id: def.mainSkill.id,
+                    name: def.mainSkill.name,
+                    emoji: def.mainSkill.emoji,
+                    description: def.mainSkill.description,
+                    level: mainSkillLevel,
+                    maxLevel: MAX_SKILL_LEVEL,
+                    cooldownMs: def.mainSkill.cooldownMs,
+                    powerPct: stats.mainSkillPowerPct,
+                },
+                subSkill: {
+                    id: def.subSkill.id,
+                    name: def.subSkill.name,
+                    emoji: def.subSkill.emoji,
+                    description: def.subSkill.description,
+                    level: subSkillLevel,
+                    maxLevel: MAX_SKILL_LEVEL,
+                    cooldownMs: def.subSkill.cooldownMs,
+                    powerPct: stats.subSkillPowerPct,
+                },
             });
         }
+
+        const groupRes = await pool.query(
+            `SELECT id, name, slot_index, merc_codes_json
+             FROM azit_mercenary_groups
+             WHERE user_id = $1 AND is_deleted = 0
+             ORDER BY slot_index ASC, id ASC`,
+            [userId]
+        );
+        const groups: AzitMercenaryGroupRecord[] = [];
+        for (const r of groupRes.rows) {
+            let mercCodes: AzitMercCode[] = [];
+            try {
+                const parsed = JSON.parse(String(r.merc_codes_json || '[]'));
+                if (Array.isArray(parsed)) {
+                    mercCodes = parsed.filter(
+                        (c): c is AzitMercCode => typeof c === 'string' && Boolean(getMercDef(c))
+                    );
+                }
+            } catch (_) {
+                mercCodes = [];
+            }
+            groups.push({
+                id: Number(r.id),
+                name: String(r.name ?? ''),
+                slotIndex: Number(r.slot_index ?? 0),
+                mercCodes,
+            });
+        }
+
+        const itemRes = await pool.query(
+            `SELECT item_id, qty
+             FROM azit_item_inventory
+             WHERE user_id = $1 AND is_deleted = 0`,
+            [userId]
+        );
+        const itemQtyMap = new Map<AzitItemId, number>();
+        for (const r of itemRes.rows) {
+            const itemId = String(r.item_id) as AzitItemId;
+            if (VALID_ITEM_IDS.has(itemId)) {
+                itemQtyMap.set(itemId, Math.max(0, Number(r.qty ?? 0)));
+            }
+        }
+        const items: AzitItemInventoryRecord[] = AZIT_ITEMS.map((itemDef) => ({
+            itemId: itemDef.itemId,
+            qty: itemQtyMap.get(itemDef.itemId) ?? 0,
+        }));
+
+        const towerProgressRes = await pool.query(
+            `SELECT highest_cleared_floor, total_clears, total_attempts
+             FROM azit_tower_progress
+             WHERE user_id = $1 AND is_deleted = 0`,
+            [userId]
+        );
+        const towerRow = towerProgressRes.rows[0];
+        const tower: AzitTowerProgressState = {
+            highestClearedFloor: Math.max(
+                0,
+                Math.min(MAX_TOWER_FLOOR, Number(towerRow?.highest_cleared_floor ?? 0))
+            ),
+            maxFloor: MAX_TOWER_FLOOR,
+            totalClears: Math.max(0, Number(towerRow?.total_clears ?? 0)),
+            totalAttempts: Math.max(0, Number(towerRow?.total_attempts ?? 0)),
+        };
 
         const expRes = await pool.query(
             `SELECT * FROM azit_expeditions
@@ -1164,7 +1502,11 @@ export class AzitGameService {
         const mapExpeditionRow = (row: Record<string, unknown>): AzitExpeditionRecord => {
             let partyMercCodes: AzitMercCode[] = [];
             let rewardMaterials: Partial<Record<AzitMaterialId, number>> = {};
+            let rewardItems: Partial<Record<AzitItemId, number>> = {};
+            let rewardCrops: Partial<Record<AzitCropId, number>> = {};
+            let casualties: AzitMercCode[] = [];
             let battleLog: string[] = [];
+            let partySnapshot: CombatUnitInput[] | undefined;
             try {
                 partyMercCodes = JSON.parse(String(row.party_merc_codes_json || '[]')) as AzitMercCode[];
             } catch (_) {
@@ -1178,33 +1520,100 @@ export class AzitGameService {
                 rewardMaterials = {};
             }
             try {
+                if (row.reward_items_json) {
+                    rewardItems = JSON.parse(String(row.reward_items_json)) as Partial<Record<AzitItemId, number>>;
+                }
+            } catch (_) {
+                rewardItems = {};
+            }
+            try {
+                if (row.reward_crops_json) {
+                    rewardCrops = JSON.parse(String(row.reward_crops_json)) as Partial<Record<AzitCropId, number>>;
+                }
+            } catch (_) {
+                rewardCrops = {};
+            }
+            try {
+                if (row.dead_merc_codes_json) {
+                    casualties = JSON.parse(String(row.dead_merc_codes_json)) as AzitMercCode[];
+                }
+            } catch (_) {
+                casualties = [];
+            }
+            try {
                 if (row.battle_log_json) {
                     battleLog = JSON.parse(String(row.battle_log_json)) as string[];
                 }
             } catch (_) {
                 battleLog = [];
             }
+            try {
+                if (row.party_snapshot_json) {
+                    const parsedSnap = JSON.parse(String(row.party_snapshot_json));
+                    if (Array.isArray(parsedSnap) && parsedSnap.length > 0) {
+                        partySnapshot = parsedSnap as CombatUnitInput[];
+                    }
+                }
+            } catch (_) {
+                partySnapshot = undefined;
+            }
+            if (!partySnapshot && partyMercCodes.length > 0) {
+                partySnapshot = partyMercCodes.map((code, idx) => {
+                    const existing = mercSnapshotLookup.get(code);
+                    if (existing) {
+                        return { ...existing, unitId: `ally-${idx}-${code}` };
+                    }
+                    return buildMercCombatUnit({
+                        mercCode: code,
+                        level: 1,
+                        unitId: `ally-${idx}-${code}`,
+                    });
+                });
+            }
 
+            const zoneId = String(row.zone_id) as AzitZoneId;
+            const zone = getZoneDef(zoneId);
             const rawStatus = String(row.status);
             const normalizedStatus: 'running' | 'won' | 'lost' =
                 rawStatus === 'won' ? 'won' : rawStatus === 'lost' ? 'lost' : 'running';
+            const startedAtMs = Number(row.started_at_ms ?? 0);
+            const endsAtMs = Number(row.ends_at_ms ?? 0);
+            const rawDurationSec = Number(row.duration_sec ?? 0);
+            const durationSec =
+                rawDurationSec > 0
+                    ? rawDurationSec
+                    : zone?.durationSec ?? Math.max(3600, Math.round((endsAtMs - startedAtMs) / 1000));
 
             return {
                 id: Number(row.id),
-                zoneId: String(row.zone_id) as AzitZoneId,
+                zoneId,
                 partyMercCodes,
                 dishRecipeId: String(row.dish_recipe_id) as AzitRecipeId,
                 dishQuality: row.dish_quality === 'special' ? 'special' : 'normal',
                 entryCost: Number(row.entry_cost ?? 0),
                 predictedWinRate: Number(row.predicted_win_rate ?? 25),
                 status: normalizedStatus,
-                startedAtMs: Number(row.started_at_ms ?? 0),
-                endsAtMs: Number(row.ends_at_ms ?? 0),
+                startedAtMs,
+                endsAtMs,
                 claimedAt: (row.claimed_at as string | null) ?? null,
                 rewardPoints: Number(row.reward_points ?? 0),
                 rewardXp: Number(row.reward_xp ?? 0),
                 rewardMaterials,
                 battleLog,
+                groupId: row.group_id !== null && row.group_id !== undefined ? Number(row.group_id) : null,
+                groupName: row.group_name ? String(row.group_name) : null,
+                durationSec,
+                zoneTheme: zone?.zoneTheme,
+                monsters: zone?.monsters,
+                battleSeed:
+                    row.battle_seed !== null && row.battle_seed !== undefined
+                        ? Number(row.battle_seed)
+                        : undefined,
+                partySnapshot,
+                casualties,
+                rewardItems,
+                rewardCrops,
+                rewardMercXp: Number(row.reward_merc_xp ?? 0),
             };
         };
 
@@ -1329,6 +1738,9 @@ export class AzitGameService {
             chefs,
             kitchenSlots,
             mercenaries,
+            groups,
+            items,
+            tower,
             activeExpeditions,
             recentExpeditions,
             recentLedger,
@@ -1346,6 +1758,10 @@ export class AzitGameService {
                 mercenaries: AZIT_MERCENARIES,
                 zones: AZIT_EXPEDITION_ZONES,
                 levels: AZIT_LEVEL_TABLE,
+                items: AZIT_ITEMS,
+                craftRecipes: AZIT_CRAFT_RECIPES,
+                towerThemes: AZIT_TOWER_THEMES,
+                towerFloorsSummary: getTowerFloorSummaries(1, MAX_TOWER_FLOOR),
             },
         };
     }
@@ -3635,14 +4051,20 @@ export class AzitGameService {
 
             try {
                 await pool.query(
-                    `INSERT INTO azit_mercenaries (user_id, merc_code, level, xp, status, is_deleted, deleted_at)
-                     VALUES ($1, $2, 1, 0, 'idle', 0, NULL)
+                    `INSERT INTO azit_mercenaries (
+                        user_id, merc_code, level, xp, status, main_skill_level, sub_skill_level, died_at, death_zone_id, is_deleted, deleted_at
+                     )
+                     VALUES ($1, $2, 1, 0, 'idle', 1, 1, NULL, NULL, 0, NULL)
                      ON CONFLICT (user_id, merc_code) DO UPDATE SET
                         is_deleted = 0,
                         deleted_at = NULL,
                         level = 1,
                         xp = 0,
                         status = 'idle',
+                        main_skill_level = 1,
+                        sub_skill_level = 1,
+                        died_at = NULL,
+                        death_zone_id = NULL,
                         updated_at = CURRENT_TIMESTAMP`,
                     [userId, def.mercCode]
                 );
@@ -3666,65 +4088,268 @@ export class AzitGameService {
         });
     }
 
-    static async upgradeMercenary(userId: number, mercCode: string) {
+    static async upgradeMercenary(_userId: number, _mercCode: string): Promise<never> {
+        if (!MERC_GOLD_UPGRADE_ENABLED) {
+            throw new AzitGameError(
+                '용병은 전투 경험치로만 레벨업할 수 있습니다.',
+                403,
+                'GOLD_UPGRADE_DISABLED'
+            );
+        }
+        throw new AzitGameError(
+            '용병은 전투 경험치로만 레벨업할 수 있습니다.',
+            403,
+            'GOLD_UPGRADE_DISABLED'
+        );
+    }
+
+    static async saveGroup(
+        userId: number,
+        params: { id?: number; name: string; slotIndex?: number; mercCodes: string[] }
+    ) {
         return this.runWithUserLock(userId, async () => {
             await this.ensureUserInitialized(userId);
             await this.processFarmerAutomationInternal(userId, Date.now());
-            const def = getMercDef(mercCode);
-            if (!def) {
-                throw new AzitGameError('존재하지 않는 용병입니다.', 400);
+
+            const trimmedName = typeof params.name === 'string' ? params.name.trim() : '';
+            if (trimmedName.length < 1 || trimmedName.length > 24) {
+                throw new AzitGameError('용병 그룹 이름은 1~24자 사이여야 합니다.', 400);
             }
 
-            const mercRes = await pool.query(
-                `SELECT level, status FROM azit_mercenaries WHERE user_id = $1 AND merc_code = $2 AND is_deleted = 0`,
-                [userId, def.mercCode]
+            const rawCodes = Array.isArray(params.mercCodes)
+                ? params.mercCodes.map((c) => (typeof c === 'string' ? c.trim() : '')).filter(Boolean)
+                : [];
+            const uniqueCodes = Array.from(new Set(rawCodes));
+            if (uniqueCodes.length === 0) {
+                throw new AzitGameError('그룹에는 최소 1명의 용병이 포함되어야 합니다.', 400);
+            }
+
+            const profileRes = await pool.query('SELECT azit_xp FROM azit_profiles WHERE user_id = $1', [userId]);
+            const levelInfo = getAzitLevelInfo(Number(profileRes.rows[0]?.azit_xp ?? 0));
+            if (uniqueCodes.length > levelInfo.maxPartySize) {
+                throw new AzitGameError(
+                    `현재 아지트 레벨(Lv.${levelInfo.level})에서는 최대 ${levelInfo.maxPartySize}명까지 편성할 수 있습니다.`,
+                    400
+                );
+            }
+
+            const ownedRes = await pool.query(
+                `SELECT merc_code FROM azit_mercenaries WHERE user_id = $1 AND is_deleted = 0`,
+                [userId]
             );
-            if (mercRes.rows.length === 0) {
-                throw new AzitGameError('영입하지 않은 용병입니다.', 404);
-            }
-            const merc = mercRes.rows[0];
-            if (merc.status === 'expedition') {
-                throw new AzitGameError('원정 중인 용병은 귀환 후 훈련할 수 있습니다.', 400);
-            }
-
-            const currentLevel = Number(merc.level ?? 1);
-            if (currentLevel >= def.maxLevel) {
-                throw new AzitGameError(`[${def.name}] 용병은 이미 최고 레벨(Lv.${def.maxLevel})입니다.`, 400);
+            const ownedSet = new Set(ownedRes.rows.map((r) => String(r.merc_code)));
+            for (const code of uniqueCodes) {
+                if (!getMercDef(code) || !ownedSet.has(code)) {
+                    throw new AzitGameError('보유하지 않았거나 존재하지 않는 용병이 포함되어 있습니다.', 400);
+                }
             }
 
-            const cost = getMercUpgradeCost(currentLevel);
-            await this.deductVeraPoints({
-                userId,
-                amount: cost,
-                txType: 'merc_upgrade',
-                refId: def.mercCode,
-                description: `${def.emoji} 용병 [${def.name}] Lv.${currentLevel + 1} 훈련 강화`,
-            });
+            let slotIndex: number | undefined;
+            if (params.slotIndex !== undefined) {
+                if (!Number.isInteger(params.slotIndex) || params.slotIndex < 0 || params.slotIndex > 9) {
+                    throw new AzitGameError('올바른 그룹 슬롯 번호(0~9)가 아닙니다.', 400);
+                }
+                slotIndex = params.slotIndex;
+            }
 
-            await pool.query(
-                `UPDATE azit_mercenaries
-                 SET level = level + 1,
-                     updated_at = CURRENT_TIMESTAMP
-                 WHERE user_id = $1 AND merc_code = $2 AND is_deleted = 0`,
-                [userId, def.mercCode]
-            );
+            let groupId: number;
+            let resolvedSlotIndex: number;
+
+            if (params.id !== undefined && params.id !== null) {
+                if (!Number.isInteger(params.id) || params.id <= 0) {
+                    throw new AzitGameError('올바른 용병 그룹 ID가 아닙니다.', 400);
+                }
+                const existingRes = await pool.query(
+                    `SELECT id, slot_index FROM azit_mercenary_groups
+                     WHERE id = $1 AND user_id = $2 AND is_deleted = 0`,
+                    [params.id, userId]
+                );
+                if (existingRes.rows.length === 0) {
+                    throw new AzitGameError('수정할 용병 그룹을 찾을 수 없습니다.', 404);
+                }
+                const activeExpRes = await pool.query(
+                    `SELECT id FROM azit_expeditions
+                     WHERE user_id = $1 AND group_id = $2 AND status IN ('running', 'claiming') AND is_deleted = 0`,
+                    [userId, params.id]
+                );
+                if (activeExpRes.rows.length > 0) {
+                    throw new AzitGameError(
+                        '현재 원정 출정 중인 그룹은 수정할 수 없습니다.',
+                        409,
+                        'GROUP_ON_EXPEDITION'
+                    );
+                }
+                resolvedSlotIndex = slotIndex ?? Number(existingRes.rows[0].slot_index ?? 0);
+                groupId = params.id;
+                await pool.query(
+                    `UPDATE azit_mercenary_groups
+                     SET name = $1,
+                         slot_index = $2,
+                         merc_codes_json = $3,
+                         updated_at = CURRENT_TIMESTAMP
+                     WHERE id = $4 AND user_id = $5 AND is_deleted = 0`,
+                    [trimmedName, resolvedSlotIndex, JSON.stringify(uniqueCodes), groupId, userId]
+                );
+            } else {
+                const activeGroupsRes = await pool.query(
+                    `SELECT id, slot_index FROM azit_mercenary_groups
+                     WHERE user_id = $1 AND is_deleted = 0
+                     ORDER BY slot_index ASC`,
+                    [userId]
+                );
+                if (activeGroupsRes.rows.length >= MAX_MERC_GROUPS) {
+                    throw new AzitGameError(
+                        `용병 그룹은 최대 ${MAX_MERC_GROUPS}개까지 저장할 수 있습니다.`,
+                        400
+                    );
+                }
+                const usedSlots = new Set(activeGroupsRes.rows.map((r) => Number(r.slot_index ?? 0)));
+                if (slotIndex !== undefined) {
+                    resolvedSlotIndex = slotIndex;
+                } else {
+                    let candidate = 0;
+                    while (usedSlots.has(candidate) && candidate < MAX_MERC_GROUPS) {
+                        candidate += 1;
+                    }
+                    resolvedSlotIndex = candidate;
+                }
+                const insertRes = await pool.query(
+                    `INSERT INTO azit_mercenary_groups (user_id, name, slot_index, merc_codes_json)
+                     VALUES ($1, $2, $3, $4)`,
+                    [userId, trimmedName, resolvedSlotIndex, JSON.stringify(uniqueCodes)]
+                );
+                groupId = Number(insertRes.lastInsertRowid ?? 0);
+            }
 
             const state = await this.getStateInternal(userId, { skipFarmerAutomation: true });
+            const savedGroup = state.groups.find((g) => g.id === groupId) ?? {
+                id: groupId,
+                name: trimmedName,
+                slotIndex: resolvedSlotIndex,
+                mercCodes: uniqueCodes as AzitMercCode[],
+            };
             return {
-                message: `💪 [${def.emoji} ${def.name}] Lv.${currentLevel + 1} 훈련 완료! 전투력이 크게 상승했습니다.`,
+                message: `🛡️ 용병 그룹 [${trimmedName}] 편성을 저장했습니다!`,
+                group: savedGroup,
                 state,
             };
         });
     }
 
+    static async deleteGroup(userId: number, groupId: number) {
+        return this.runWithUserLock(userId, async () => {
+            await this.ensureUserInitialized(userId);
+            await this.processFarmerAutomationInternal(userId, Date.now());
+            if (!Number.isInteger(groupId) || groupId <= 0) {
+                throw new AzitGameError('올바른 용병 그룹 ID가 아닙니다.', 400);
+            }
+
+            const existingRes = await pool.query(
+                `SELECT id, name FROM azit_mercenary_groups
+                 WHERE id = $1 AND user_id = $2 AND is_deleted = 0`,
+                [groupId, userId]
+            );
+            if (existingRes.rows.length === 0) {
+                throw new AzitGameError('삭제할 용병 그룹을 찾을 수 없습니다.', 404);
+            }
+
+            const activeExpRes = await pool.query(
+                `SELECT id FROM azit_expeditions
+                 WHERE user_id = $1 AND group_id = $2 AND status IN ('running', 'claiming') AND is_deleted = 0`,
+                [userId, groupId]
+            );
+            if (activeExpRes.rows.length > 0) {
+                throw new AzitGameError(
+                    '현재 원정 출정 중인 그룹은 삭제할 수 없습니다.',
+                    409,
+                    'GROUP_ON_EXPEDITION'
+                );
+            }
+
+            await pool.query(
+                `UPDATE azit_mercenary_groups
+                 SET is_deleted = 1,
+                     deleted_at = CURRENT_TIMESTAMP,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $1 AND user_id = $2 AND is_deleted = 0`,
+                [groupId, userId]
+            );
+
+            const state = await this.getStateInternal(userId, { skipFarmerAutomation: true });
+            return {
+                message: `🗑️ 용병 그룹 [${String(existingRes.rows[0].name)}]을(를) 삭제했습니다.`,
+                state,
+            };
+        });
+    }
+
+    private static async creditMaterialInventory(
+        userId: number,
+        materialId: string,
+        qty: number
+    ): Promise<void> {
+        const safeQty = Math.max(0, Math.floor(qty));
+        if (safeQty <= 0 || !VALID_MATERIAL_IDS.has(materialId)) return;
+        await pool.query(
+            `INSERT INTO azit_material_inventory (user_id, material_id, qty)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (user_id, material_id) DO UPDATE SET
+                qty = azit_material_inventory.qty + $4,
+                is_deleted = 0,
+                deleted_at = NULL,
+                updated_at = CURRENT_TIMESTAMP`,
+            [userId, materialId, safeQty, safeQty]
+        );
+    }
+
+    private static async creditCropInventory(
+        userId: number,
+        cropId: string,
+        qty: number
+    ): Promise<void> {
+        const safeQty = Math.max(0, Math.floor(qty));
+        if (safeQty <= 0 || !VALID_CROP_IDS.has(cropId)) return;
+        await pool.query(
+            `INSERT INTO azit_crop_inventory (user_id, crop_id, seed_qty, harvest_qty)
+             VALUES ($1, $2, 0, $3)
+             ON CONFLICT (user_id, crop_id) DO UPDATE SET
+                harvest_qty = azit_crop_inventory.harvest_qty + $4,
+                is_deleted = 0,
+                deleted_at = NULL,
+                updated_at = CURRENT_TIMESTAMP`,
+            [userId, cropId, safeQty, safeQty]
+        );
+    }
+
+    private static async creditItemInventory(
+        userId: number,
+        itemId: string,
+        qty: number
+    ): Promise<void> {
+        const safeQty = Math.max(0, Math.floor(qty));
+        if (safeQty <= 0 || !VALID_ITEM_IDS.has(itemId)) return;
+        await pool.query(
+            `INSERT INTO azit_item_inventory (user_id, item_id, qty)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (user_id, item_id) DO UPDATE SET
+                qty = azit_item_inventory.qty + $4,
+                is_deleted = 0,
+                deleted_at = NULL,
+                updated_at = CURRENT_TIMESTAMP`,
+            [userId, itemId, safeQty, safeQty]
+        );
+    }
+
     static async startExpedition(params: {
         userId: number;
         zoneId: string;
-        partyMercCodes: string[];
+        groupId?: number | null;
+        partyMercCodes?: string[];
         dishRecipeId: string;
         dishQuality?: AzitDishQuality;
+        elixirItemId?: string | null;
     }) {
-        const { userId, zoneId, partyMercCodes, dishRecipeId } = params;
+        const { userId, zoneId, dishRecipeId } = params;
         const dishQuality: AzitDishQuality = params.dishQuality === 'special' ? 'special' : 'normal';
         const dishLabelPrefix = dishQuality === 'special' ? '★특제 ' : '';
         return this.runWithUserLock(userId, async () => {
@@ -3740,6 +4365,55 @@ export class AzitGameService {
                 throw new AzitGameError('존재하지 않는 원정 도시락입니다.', 400);
             }
 
+            let resolvedGroupId: number | null = null;
+            let resolvedGroupName: string | null = null;
+            let requestedPartyCodes = Array.isArray(params.partyMercCodes)
+                ? params.partyMercCodes.map((c) => (typeof c === 'string' ? c.trim() : '')).filter(Boolean)
+                : [];
+
+            if (params.groupId !== undefined && params.groupId !== null) {
+                if (!Number.isInteger(params.groupId) || params.groupId <= 0) {
+                    throw new AzitGameError('올바른 용병 그룹 ID가 아닙니다.', 400);
+                }
+                const groupRes = await pool.query(
+                    `SELECT id, name, merc_codes_json FROM azit_mercenary_groups
+                     WHERE id = $1 AND user_id = $2 AND is_deleted = 0`,
+                    [params.groupId, userId]
+                );
+                if (groupRes.rows.length === 0) {
+                    throw new AzitGameError('선택한 용병 그룹을 찾을 수 없습니다.', 404);
+                }
+                resolvedGroupId = Number(groupRes.rows[0].id);
+                resolvedGroupName = String(groupRes.rows[0].name ?? '');
+                let groupMercCodes: string[] = [];
+                try {
+                    const parsed = JSON.parse(String(groupRes.rows[0].merc_codes_json || '[]'));
+                    if (Array.isArray(parsed)) {
+                        groupMercCodes = parsed
+                            .map((c) => (typeof c === 'string' ? c.trim() : ''))
+                            .filter(Boolean);
+                    }
+                } catch (_) {
+                    groupMercCodes = [];
+                }
+                if (requestedPartyCodes.length === 0) {
+                    requestedPartyCodes = groupMercCodes;
+                } else {
+                    const reqSet = new Set(requestedPartyCodes);
+                    const grpSet = new Set(groupMercCodes);
+                    const matchesGroup =
+                        reqSet.size === grpSet.size &&
+                        Array.from(reqSet).every((code) => grpSet.has(code));
+                    if (!matchesGroup) {
+                        throw new AzitGameError(
+                            '선택한 용병 그룹의 편성 인원과 출전 용병 목록이 일치하지 않습니다.',
+                            400,
+                            'GROUP_PARTY_MISMATCH'
+                        );
+                    }
+                }
+            }
+
             const profileRes = await pool.query('SELECT azit_xp FROM azit_profiles WHERE user_id = $1', [userId]);
             const levelInfo = getAzitLevelInfo(Number(profileRes.rows[0]?.azit_xp ?? 0));
 
@@ -3751,10 +4425,17 @@ export class AzitGameService {
             }
 
             const activeRes = await pool.query(
-                `SELECT id FROM azit_expeditions
+                `SELECT id, group_id FROM azit_expeditions
                  WHERE user_id = $1 AND status IN ('running', 'claiming') AND is_deleted = 0`,
                 [userId]
             );
+            if (resolvedGroupId !== null && activeRes.rows.some((r) => Number(r.group_id ?? 0) === resolvedGroupId)) {
+                throw new AzitGameError(
+                    '해당 용병 그룹은 이미 원정에 출정 중입니다.',
+                    409,
+                    'GROUP_ALREADY_ON_EXPEDITION'
+                );
+            }
             if (activeRes.rows.length >= levelInfo.maxActiveExpeditions) {
                 throw new AzitGameError(
                     `현재 아지트 레벨(Lv.${levelInfo.level})에서는 최대 ${levelInfo.maxActiveExpeditions}개 원정대만 동시 운영할 수 있습니다.`,
@@ -3762,7 +4443,7 @@ export class AzitGameService {
                 );
             }
 
-            const uniqueParty = Array.from(new Set(partyMercCodes));
+            const uniqueParty = Array.from(new Set(requestedPartyCodes));
             if (uniqueParty.length === 0) {
                 throw new AzitGameError('최소 1명의 용병을 선택해 주세요.', 400);
             }
@@ -3781,20 +4462,48 @@ export class AzitGameService {
             }
 
             const mercRowsRes = await pool.query(
-                `SELECT merc_code, level, status FROM azit_mercenaries WHERE user_id = $1 AND is_deleted = 0`,
+                `SELECT merc_code, level, main_skill_level, sub_skill_level, status
+                 FROM azit_mercenaries
+                 WHERE user_id = $1 AND is_deleted = 0`,
                 [userId]
             );
-            const partyMercDetails: Array<{ mercCode: string; level: number }> = [];
+            const partyMercDetails: Array<{
+                mercCode: AzitMercCode;
+                level: number;
+                mainSkillLevel: number;
+                subSkillLevel: number;
+            }> = [];
             for (const code of uniqueParty) {
                 const row = mercRowsRes.rows.find((r) => r.merc_code === code);
                 const mDef = getMercDef(code);
                 if (!row || !mDef) {
                     throw new AzitGameError('영입되지 않은 용병이 포함되어 있습니다.', 400);
                 }
+                if (row.status === 'dead') {
+                    throw new AzitGameError(
+                        `[${mDef.name}] 용병은 쓰러진 상태입니다. 부활 아이템으로 먼저 소생시켜 주세요.`,
+                        400,
+                        'MERCENARY_DEAD'
+                    );
+                }
                 if (row.status !== 'idle') {
                     throw new AzitGameError(`[${mDef.name}] 용병은 이미 다른 원정에 출정 중입니다.`, 400);
                 }
-                partyMercDetails.push({ mercCode: code, level: Number(row.level ?? 1) });
+                partyMercDetails.push({
+                    mercCode: mDef.mercCode,
+                    level: Number(row.level ?? 1),
+                    mainSkillLevel: Math.max(1, Math.min(MAX_SKILL_LEVEL, Number(row.main_skill_level ?? 1))),
+                    subSkillLevel: Math.max(1, Math.min(MAX_SKILL_LEVEL, Number(row.sub_skill_level ?? 1))),
+                });
+            }
+
+            let resolvedElixirId: AzitItemId | null = null;
+            if (params.elixirItemId !== undefined && params.elixirItemId !== null && params.elixirItemId.trim() !== '') {
+                const elixirDef = getItemDef(params.elixirItemId.trim());
+                if (!elixirDef || elixirDef.category !== 'consumable') {
+                    throw new AzitGameError('원정에 사용할 수 없는 비약 아이템입니다.', 400);
+                }
+                resolvedElixirId = elixirDef.itemId;
             }
 
             const { winRatePct, buffs } = calculateExpeditionWinRate({
@@ -3804,32 +4513,57 @@ export class AzitGameService {
                 dishQuality,
             });
 
-            // 1) 필수 도시락 1개 원자적 차감
-            const dishDeductSql =
-                dishQuality === 'special'
-                    ? `UPDATE azit_dish_inventory
-                       SET special_qty = special_qty - 1,
-                           updated_at = CURRENT_TIMESTAMP
-                       WHERE user_id = $1 AND recipe_id = $2 AND special_qty >= 1 AND is_deleted = 0`
-                    : `UPDATE azit_dish_inventory
-                       SET qty = qty - 1,
-                           updated_at = CURRENT_TIMESTAMP
-                       WHERE user_id = $1 AND recipe_id = $2 AND qty >= 1 AND is_deleted = 0`;
-            const dishRefundSql =
-                dishQuality === 'special'
-                    ? `UPDATE azit_dish_inventory SET special_qty = special_qty + 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND recipe_id = $2`
-                    : `UPDATE azit_dish_inventory SET qty = qty + 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND recipe_id = $2`;
+            // 1~4) 도시락·비약·출정비 차감 + 용병 잠금 + 원정 생성 (원자적 트랜잭션)
+            const nowMs = Date.now();
+            const effectiveDurationSec = Math.max(
+                3600,
+                Math.min(28800, Math.round(zone.durationSec * (1 - buffs.expeditionSpeedBonusPct / 100)))
+            );
+            const endsAtMs = nowMs + effectiveDurationSec * 1000;
+            const battleSeed = crypto.randomInt(1, 2_147_483_647);
+            const partySnapshot = partyMercDetails.map((m, idx) =>
+                buildMercCombatUnit({
+                    mercCode: m.mercCode,
+                    level: m.level,
+                    mainSkillLevel: m.mainSkillLevel,
+                    subSkillLevel: m.subSkillLevel,
+                    unitId: `ally-${idx}-${m.mercCode}`,
+                })
+            );
 
-            const dishDeduct = await pool.query(dishDeductSql, [userId, recipe.recipeId]);
-            if (dishDeduct.rowCount === 0) {
-                throw new AzitGameError(
-                    `보유 중인 [${dishLabelPrefix}${recipe.emoji} ${recipe.name}] 도시락이 없습니다. 주방에서 먼저 조리해 주세요!`,
-                    400
-                );
-            }
+            const createdExpeditionId = await runSerializedTransaction(async () => {
+                const dishDeductSql =
+                    dishQuality === 'special'
+                        ? `UPDATE azit_dish_inventory
+                           SET special_qty = special_qty - 1,
+                               updated_at = CURRENT_TIMESTAMP
+                           WHERE user_id = $1 AND recipe_id = $2 AND special_qty >= 1 AND is_deleted = 0`
+                        : `UPDATE azit_dish_inventory
+                           SET qty = qty - 1,
+                               updated_at = CURRENT_TIMESTAMP
+                           WHERE user_id = $1 AND recipe_id = $2 AND qty >= 1 AND is_deleted = 0`;
 
-            // 2) 출정비 차감 (실패 시 도시락 복구)
-            try {
+                const dishDeduct = await pool.query(dishDeductSql, [userId, recipe.recipeId]);
+                if (dishDeduct.rowCount === 0) {
+                    throw new AzitGameError(
+                        `보유 중인 [${dishLabelPrefix}${recipe.emoji} ${recipe.name}] 도시락이 없습니다. 주방에서 먼저 조리해 주세요!`,
+                        400
+                    );
+                }
+
+                if (resolvedElixirId) {
+                    const elixirDeduct = await pool.query(
+                        `UPDATE azit_item_inventory
+                         SET qty = qty - 1,
+                             updated_at = CURRENT_TIMESTAMP
+                         WHERE user_id = $1 AND item_id = $2 AND qty >= 1 AND is_deleted = 0`,
+                        [userId, resolvedElixirId]
+                    );
+                    if (elixirDeduct.rowCount === 0) {
+                        throw new AzitGameError('보유 중인 투지의 비약이 부족합니다.', 400, 'INSUFFICIENT_ITEM');
+                    }
+                }
+
                 await this.deductVeraPoints({
                     userId,
                     amount: zone.entryCost,
@@ -3837,21 +4571,7 @@ export class AzitGameService {
                     refId: zone.zoneId,
                     description: `${zone.emoji} ${zone.name} 출정비`,
                 });
-            } catch (err) {
-                await pool.query(dishRefundSql, [userId, recipe.recipeId]);
-                throw err;
-            }
 
-            // 3) 용병 출정 상태 잠금 (실패 시 도시락 + 출정비 모두 복구)
-            const lockedMercs: string[] = [];
-            const nowMs = Date.now();
-            const effectiveDurationSec = Math.max(
-                60,
-                Math.round(zone.durationSec * (1 - buffs.expeditionSpeedBonusPct / 100))
-            );
-            const endsAtMs = nowMs + effectiveDurationSec * 1000;
-            let createdExpeditionId = 0;
-            try {
                 for (const code of uniqueParty) {
                     const lockRes = await pool.query(
                         `UPDATE azit_mercenaries
@@ -3863,46 +4583,35 @@ export class AzitGameService {
                     if (lockRes.rowCount === 0) {
                         throw new AzitGameError('일부 용병이 이미 출정 상태입니다. 다시 선택해 주세요.', 409);
                     }
-                    lockedMercs.push(code);
                 }
 
                 const expInsertRes = await pool.query(
                     `INSERT INTO azit_expeditions (
-                        user_id, zone_id, party_merc_codes_json, dish_recipe_id, dish_quality,
-                        entry_cost, predicted_win_rate, status, started_at_ms, ends_at_ms
+                        user_id, zone_id, group_id, group_name, duration_sec, battle_seed,
+                        party_merc_codes_json, party_snapshot_json, dish_recipe_id, dish_quality,
+                        elixir_item_id, entry_cost, predicted_win_rate, status, started_at_ms, ends_at_ms
                      )
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, 'running', $8, $9)`,
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'running', $14, $15)`,
                     [
                         userId,
                         zone.zoneId,
+                        resolvedGroupId,
+                        resolvedGroupName,
+                        effectiveDurationSec,
+                        battleSeed,
                         JSON.stringify(uniqueParty),
+                        JSON.stringify(partySnapshot),
                         recipe.recipeId,
                         dishQuality,
+                        resolvedElixirId,
                         zone.entryCost,
                         winRatePct,
                         nowMs,
                         endsAtMs,
                     ]
                 );
-                createdExpeditionId = Number(expInsertRes.lastInsertRowid ?? 0);
-            } catch (err) {
-                for (const code of lockedMercs) {
-                    await pool.query(
-                        `UPDATE azit_mercenaries SET status = 'idle' WHERE user_id = $1 AND merc_code = $2`,
-                        [userId, code]
-                    );
-                }
-                await pool.query(dishRefundSql, [userId, recipe.recipeId]);
-                await this.creditVeraPoints({
-                    userId,
-                    amount: zone.entryCost,
-                    txType: 'refund',
-                    refId: zone.zoneId,
-                    description: `${zone.name} 출정 취소 환불`,
-                    countAsActivity: false,
-                });
-                throw err;
-            }
+                return Number(expInsertRes.lastInsertRowid ?? 0);
+            });
 
             if (createdExpeditionId > 0) {
                 await this.scheduleAzitNotification({
@@ -3979,18 +4688,72 @@ export class AzitGameService {
                 const dishQuality: AzitDishQuality =
                     expRow.dish_quality === 'special' ? 'special' : 'normal';
                 const dishBuffs = getDishEffectiveBuffs(recipe, dishQuality);
-
                 const winRate = Number(expRow.predicted_win_rate ?? 50);
-                const roll = crypto.randomInt(1, 101);
-                const won = roll <= winRate;
+
+                let allies: CombatUnitInput[] = [];
+                try {
+                    if (expRow.party_snapshot_json) {
+                        const parsed = JSON.parse(String(expRow.party_snapshot_json));
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            allies = parsed as CombatUnitInput[];
+                        }
+                    }
+                } catch (_) {
+                    allies = [];
+                }
+
+                if (allies.length === 0) {
+                    const mercRes = await pool.query(
+                        `SELECT merc_code, level, main_skill_level, sub_skill_level
+                         FROM azit_mercenaries
+                         WHERE user_id = $1 AND is_deleted = 0`,
+                        [userId]
+                    );
+                    allies = partyCodes.map((code, idx) => {
+                        const row = mercRes.rows.find((r) => r.merc_code === code);
+                        return buildMercCombatUnit({
+                            mercCode: code,
+                            level: Number(row?.level ?? 1),
+                            mainSkillLevel: Number(row?.main_skill_level ?? 1),
+                            subSkillLevel: Number(row?.sub_skill_level ?? 1),
+                            unitId: `ally-${idx}-${code}`,
+                        });
+                    });
+                }
+
+                const enemies = buildZoneEnemyUnits(zone);
+                const seed =
+                    Number(expRow.battle_seed) > 0
+                        ? Number(expRow.battle_seed)
+                        : crypto.randomInt(1, 2_147_483_647);
+                const elixirBoostPct = expRow.elixir_item_id === 'item-battle-elixir' ? 12 : 0;
+
+                const simResult = runCombatSimulation({
+                    mode: 'expedition',
+                    seed,
+                    allies,
+                    enemies,
+                    dishBuffs,
+                    elixirBoostPct,
+                    deathRiskPct: zone.deathRiskPct,
+                    recordFrames: true,
+                    frameIntervalTicks: 2,
+                });
+
+                const won = simResult.won;
+                const casualties: AzitMercCode[] = simResult.casualties.filter(
+                    (c): c is AzitMercCode => Boolean(getMercDef(c))
+                );
+                const casualtySet = new Set<string>(casualties);
+
+                const baseMercXp = won ? zone.rewardMercXp : zone.lossMercXp;
+                const rewardMercXp = Math.round(baseMercXp * (1 + dishBuffs.mercXpBonusPct / 100));
 
                 let rewardPoints = 0;
                 let rewardAzitXp = 0;
-                let rewardMercXp = 0;
-                let dropQty = 0;
                 const rewardMaterials: Partial<Record<AzitMaterialId, number>> = {};
-                const matDef = getMaterialDef(zone.dropMaterialId);
-                const mercNames = partyCodes.map((c) => getMercDef(c)?.name || c);
+                const rewardCrops: Partial<Record<AzitCropId, number>> = {};
+                const rewardItems: Partial<Record<AzitItemId, number>> = {};
 
                 if (won) {
                     let bossBonusPct = 0;
@@ -4006,123 +4769,166 @@ export class AzitGameService {
                         zone.rewardPoints * (1 + (bossBonusPct + dishBuffs.rewardBonusPct) / 100)
                     );
                     rewardAzitXp = zone.rewardAzitXp;
-                    rewardMercXp = Math.round(zone.rewardMercXp * (1 + dishBuffs.mercXpBonusPct / 100));
-                    dropQty =
+
+                    const primaryQty =
                         zone.dropMinQty === zone.dropMaxQty
                             ? zone.dropMinQty
                             : crypto.randomInt(zone.dropMinQty, zone.dropMaxQty + 1);
-                    rewardMaterials[zone.dropMaterialId] = dropQty;
+                    rewardMaterials[zone.dropMaterialId] = primaryQty;
 
-                    await this.creditVeraPoints({
-                        userId,
-                        amount: rewardPoints,
-                        txType: 'expedition_reward',
-                        refId: String(expeditionId),
-                        description: `${zone.emoji} ${zone.name} 토벌 승리 보상`,
-                    });
+                    if (
+                        zone.bonusMaterialId &&
+                        zone.bonusMaterialMinQty !== undefined &&
+                        zone.bonusMaterialMaxQty !== undefined
+                    ) {
+                        const bonusQty =
+                            zone.bonusMaterialMinQty === zone.bonusMaterialMaxQty
+                                ? zone.bonusMaterialMinQty
+                                : crypto.randomInt(zone.bonusMaterialMinQty, zone.bonusMaterialMaxQty + 1);
+                        if (bonusQty > 0) {
+                            rewardMaterials[zone.bonusMaterialId] =
+                                (rewardMaterials[zone.bonusMaterialId] ?? 0) + bonusQty;
+                        }
+                    }
 
-                    await pool.query(
-                        `INSERT INTO azit_material_inventory (user_id, material_id, qty)
-                         VALUES ($1, $2, $3)
-                         ON CONFLICT (user_id, material_id) DO UPDATE SET
-                            qty = azit_material_inventory.qty + $4,
-                            is_deleted = 0,
-                            deleted_at = NULL,
-                            updated_at = CURRENT_TIMESTAMP`,
-                        [userId, zone.dropMaterialId, dropQty, dropQty]
-                    );
+                    if (zone.cropDropPool.length > 0) {
+                        const cropPick = zone.cropDropPool[crypto.randomInt(0, zone.cropDropPool.length)];
+                        const cropQty = zone.isBoss ? 2 : 1;
+                        rewardCrops[cropPick] = cropQty;
+                    }
 
-                    // 용병 경험치 적립 & 자동 레벨업 (요리 용병 EXP 버프 반영)
+                    for (const drop of zone.itemDrops) {
+                        if (crypto.randomInt(1, 101) <= drop.chancePct) {
+                            const itemQty =
+                                drop.minQty === drop.maxQty
+                                    ? drop.minQty
+                                    : crypto.randomInt(drop.minQty, drop.maxQty + 1);
+                            if (itemQty > 0) {
+                                rewardItems[drop.itemId] = (rewardItems[drop.itemId] ?? 0) + itemQty;
+                            }
+                        }
+                    }
+                }
+
+                const battleLog = simResult.battleLog;
+                const finalStatus = won ? 'won' : 'lost';
+                const replayPayload = {
+                    seed: simResult.seed,
+                    durationMs: simResult.durationMs,
+                    mvpMercCode: simResult.mvpMercCode,
+                    frames: simResult.frames,
+                };
+
+                await runSerializedTransaction(async () => {
+                    if (won) {
+                        await this.creditVeraPoints({
+                            userId,
+                            amount: rewardPoints,
+                            txType: 'expedition_reward',
+                            refId: String(expeditionId),
+                            description: `${zone.emoji} ${zone.name} 토벌 승리 보상`,
+                        });
+
+                        for (const [matId, qty] of Object.entries(rewardMaterials)) {
+                            if (qty && qty > 0) {
+                                await this.creditMaterialInventory(userId, matId, qty);
+                            }
+                        }
+                        for (const [cropId, qty] of Object.entries(rewardCrops)) {
+                            if (qty && qty > 0) {
+                                await this.creditCropInventory(userId, cropId, qty);
+                            }
+                        }
+                        for (const [itemId, qty] of Object.entries(rewardItems)) {
+                            if (qty && qty > 0) {
+                                await this.creditItemInventory(userId, itemId, qty);
+                            }
+                        }
+
+                        await pool.query(
+                            `UPDATE azit_profiles
+                             SET total_expeditions_won = total_expeditions_won + 1,
+                                 updated_at = CURRENT_TIMESTAMP
+                             WHERE user_id = $1`,
+                            [userId]
+                        );
+                        await this.addAzitXp(userId, rewardAzitXp);
+                    } else {
+                        await pool.query(
+                            `UPDATE azit_profiles
+                             SET total_expeditions_lost = total_expeditions_lost + 1,
+                                 updated_at = CURRENT_TIMESTAMP
+                             WHERE user_id = $1`,
+                            [userId]
+                        );
+                    }
+
+                    // 용병 상태 & 전투 경험치 반영 (생존자만 경험치 획득, 전사자는 dead 전환)
                     for (const code of partyCodes) {
                         const mDef = getMercDef(code);
-                        const mRes = await pool.query(
-                            `SELECT level, xp FROM azit_mercenaries WHERE user_id = $1 AND merc_code = $2`,
-                            [userId, code]
-                        );
-                        if (mRes.rows.length > 0 && mDef) {
-                            let lv = Number(mRes.rows[0].level ?? 1);
-                            let xp = Number(mRes.rows[0].xp ?? 0) + rewardMercXp;
-                            while (lv < mDef.maxLevel && xp >= getMercNextXp(lv)) {
-                                xp -= getMercNextXp(lv);
-                                lv += 1;
-                            }
-                            if (lv >= mDef.maxLevel) {
-                                xp = 0;
-                            }
+                        if (!mDef) continue;
+                        if (casualtySet.has(code)) {
+                            await pool.query(
+                                `UPDATE azit_mercenaries
+                                 SET status = 'dead',
+                                     died_at = CURRENT_TIMESTAMP,
+                                     death_zone_id = $1,
+                                     updated_at = CURRENT_TIMESTAMP
+                                 WHERE user_id = $2 AND merc_code = $3`,
+                                [zone.zoneId, userId, code]
+                            );
+                        } else {
+                            const mRes = await pool.query(
+                                `SELECT level, xp FROM azit_mercenaries WHERE user_id = $1 AND merc_code = $2`,
+                                [userId, code]
+                            );
+                            const curLv = Number(mRes.rows[0]?.level ?? 1);
+                            const curXp = Number(mRes.rows[0]?.xp ?? 0);
+                            const xpOut = applyMercenaryCombatXp(curLv, curXp, rewardMercXp, mDef.maxLevel);
                             await pool.query(
                                 `UPDATE azit_mercenaries
                                  SET level = $1,
                                      xp = $2,
                                      status = 'idle',
+                                     died_at = NULL,
+                                     death_zone_id = NULL,
                                      updated_at = CURRENT_TIMESTAMP
                                  WHERE user_id = $3 AND merc_code = $4`,
-                                [lv, xp, userId, code]
+                                [xpOut.level, xpOut.xp, userId, code]
                             );
                         }
                     }
 
                     await pool.query(
-                        `UPDATE azit_profiles
-                         SET total_expeditions_won = total_expeditions_won + 1,
-                             updated_at = CURRENT_TIMESTAMP
-                         WHERE user_id = $1`,
-                        [userId]
+                        `UPDATE azit_expeditions
+                         SET status = $1,
+                             claimed_at = CURRENT_TIMESTAMP,
+                             reward_points = $2,
+                             reward_xp = $3,
+                             reward_merc_xp = $4,
+                             reward_materials_json = $5,
+                             reward_items_json = $6,
+                             reward_crops_json = $7,
+                             dead_merc_codes_json = $8,
+                             battle_log_json = $9,
+                             battle_replay_json = $10
+                         WHERE id = $11 AND user_id = $12`,
+                        [
+                            finalStatus,
+                            rewardPoints,
+                            rewardAzitXp,
+                            rewardMercXp,
+                            JSON.stringify(rewardMaterials),
+                            JSON.stringify(rewardItems),
+                            JSON.stringify(rewardCrops),
+                            JSON.stringify(casualties),
+                            JSON.stringify(battleLog),
+                            JSON.stringify(replayPayload),
+                            expeditionId,
+                            userId,
+                        ]
                     );
-                    await this.addAzitXp(userId, rewardAzitXp);
-                } else {
-                    // 패배 시 용병 idle 복귀만 처리 (출정비/도시락은 출정 시 이미 소모 확정)
-                    for (const code of partyCodes) {
-                        await pool.query(
-                            `UPDATE azit_mercenaries
-                             SET status = 'idle',
-                                 updated_at = CURRENT_TIMESTAMP
-                             WHERE user_id = $1 AND merc_code = $2`,
-                            [userId, code]
-                        );
-                    }
-                    await pool.query(
-                        `UPDATE azit_profiles
-                         SET total_expeditions_lost = total_expeditions_lost + 1,
-                             updated_at = CURRENT_TIMESTAMP
-                         WHERE user_id = $1`,
-                        [userId]
-                    );
-                }
-
-                const battleLog = generateBattleLog({
-                    won,
-                    zone,
-                    mercenaryNames: mercNames,
-                    dishName: recipe.name,
-                    dishEmoji: recipe.emoji,
-                    dishQuality,
-                    buffs: dishBuffs,
-                    rewardPoints,
-                    materialName: matDef?.name || zone.dropMaterialId,
-                    materialEmoji: matDef?.emoji || '🎁',
-                    dropQty,
                 });
-
-                const finalStatus = won ? 'won' : 'lost';
-                await pool.query(
-                    `UPDATE azit_expeditions
-                     SET status = $1,
-                         claimed_at = CURRENT_TIMESTAMP,
-                         reward_points = $2,
-                         reward_xp = $3,
-                         reward_materials_json = $4,
-                         battle_log_json = $5
-                     WHERE id = $6 AND user_id = $7`,
-                    [
-                        finalStatus,
-                        rewardPoints,
-                        rewardAzitXp,
-                        JSON.stringify(rewardMaterials),
-                        JSON.stringify(battleLog),
-                        expeditionId,
-                        userId,
-                    ]
-                );
 
                 await this.cancelAzitNotification(userId, `azit:expedition:${expeditionId}`);
 
@@ -4130,7 +4936,7 @@ export class AzitGameService {
                 return {
                     message: won
                         ? `🏆 [${zone.emoji} ${zone.name}] 토벌 승리! (+${rewardPoints.toLocaleString()}P)`
-                        : `💔 [${zone.emoji} ${zone.name}] 토벌 실패... 용병 강화 후 재도전해 보세요.`,
+                        : `💔 [${zone.emoji} ${zone.name}] 토벌 실패... 생존 용병은 전투 EXP +${rewardMercXp}를 얻었습니다.`,
                     report: {
                         expeditionId,
                         zoneId: zone.zoneId,
@@ -4148,6 +4954,11 @@ export class AzitGameService {
                         entryCostLost: Number(expRow.entry_cost ?? zone.entryCost),
                         lostDishId: recipe.recipeId,
                         battleLog,
+                        casualties,
+                        rewardItems,
+                        rewardCrops,
+                        mvpMercCode: simResult.mvpMercCode as AzitMercCode | null,
+                        battleFrames: simResult.frames,
                     },
                     state,
                 };
@@ -4158,6 +4969,707 @@ export class AzitGameService {
                 );
                 throw err;
             }
+        });
+    }
+
+    static async reviveMercenary(userId: number, mercCode: string, itemId: string) {
+        return this.runWithUserLock(userId, async () => {
+            await this.ensureUserInitialized(userId);
+            await this.processFarmerAutomationInternal(userId, Date.now());
+
+            const mDef = getMercDef(mercCode);
+            if (!mDef) {
+                throw new AzitGameError('존재하지 않는 용병입니다.', 400);
+            }
+            const itemDef = getItemDef(itemId);
+            if (!itemDef || itemDef.category !== 'revival') {
+                throw new AzitGameError(
+                    '부활 전용 아이템(생명의 약초/불사조의 깃털)만 사용할 수 있습니다. (골드 부활 불가)',
+                    400,
+                    'INVALID_REVIVAL_ITEM'
+                );
+            }
+
+            const mercRes = await pool.query(
+                `SELECT level, xp, status FROM azit_mercenaries
+                 WHERE user_id = $1 AND merc_code = $2 AND is_deleted = 0`,
+                [userId, mDef.mercCode]
+            );
+            if (mercRes.rows.length === 0) {
+                throw new AzitGameError('영입하지 않은 용병입니다.', 404);
+            }
+            const mercRow = mercRes.rows[0];
+            if (mercRow.status !== 'dead') {
+                throw new AzitGameError(
+                    `[${mDef.name}] 용병은 사망 상태가 아닙니다.`,
+                    400,
+                    'MERCENARY_NOT_DEAD'
+                );
+            }
+
+            const bonusXp = itemDef.bonusMercXp ?? 0;
+            const xpOut = applyMercenaryCombatXp(
+                Number(mercRow.level ?? 1),
+                Number(mercRow.xp ?? 0),
+                bonusXp,
+                mDef.maxLevel
+            );
+
+            await runSerializedTransaction(async () => {
+                const deductRes = await pool.query(
+                    `UPDATE azit_item_inventory
+                     SET qty = qty - 1,
+                         updated_at = CURRENT_TIMESTAMP
+                     WHERE user_id = $1 AND item_id = $2 AND qty >= 1 AND is_deleted = 0`,
+                    [userId, itemDef.itemId]
+                );
+                if (deductRes.rowCount === 0) {
+                    throw new AzitGameError(
+                        `보유 중인 [${itemDef.emoji} ${itemDef.name}] 아이템이 부족합니다. 상점이나 연금술 제작을 이용해 주세요.`,
+                        400,
+                        'INSUFFICIENT_ITEM'
+                    );
+                }
+
+                const reviveRes = await pool.query(
+                    `UPDATE azit_mercenaries
+                     SET status = 'idle',
+                         died_at = NULL,
+                         death_zone_id = NULL,
+                         level = $1,
+                         xp = $2,
+                         updated_at = CURRENT_TIMESTAMP
+                     WHERE user_id = $3 AND merc_code = $4 AND status = 'dead' AND is_deleted = 0`,
+                    [xpOut.level, xpOut.xp, userId, mDef.mercCode]
+                );
+                if (reviveRes.rowCount === 0) {
+                    throw new AzitGameError('용병 부활 상태 처리에 실패했습니다.', 409);
+                }
+            });
+
+            const state = await this.getStateInternal(userId, { skipFarmerAutomation: true });
+            const bonusText = bonusXp > 0 ? ` (보너스 전투 EXP +${bonusXp})` : '';
+            return {
+                message: `✨ [${itemDef.emoji} ${itemDef.name}] 사용! [${mDef.emoji} ${mDef.name}] 용병이 부활했습니다!${bonusText}`,
+                mercCode: mDef.mercCode,
+                itemId: itemDef.itemId,
+                bonusXpApplied: bonusXp,
+                state,
+            };
+        });
+    }
+
+    static async upgradeMercSkill(userId: number, mercCode: string, skillSlot: 'main' | 'sub') {
+        return this.runWithUserLock(userId, async () => {
+            await this.ensureUserInitialized(userId);
+            await this.processFarmerAutomationInternal(userId, Date.now());
+
+            const mDef = getMercDef(mercCode);
+            if (!mDef) {
+                throw new AzitGameError('존재하지 않는 용병입니다.', 400);
+            }
+            if (skillSlot !== 'main' && skillSlot !== 'sub') {
+                throw new AzitGameError('스킬 슬롯은 main 또는 sub만 지정할 수 있습니다.', 400);
+            }
+
+            const mercRes = await pool.query(
+                `SELECT status, main_skill_level, sub_skill_level
+                 FROM azit_mercenaries
+                 WHERE user_id = $1 AND merc_code = $2 AND is_deleted = 0`,
+                [userId, mDef.mercCode]
+            );
+            if (mercRes.rows.length === 0) {
+                throw new AzitGameError('영입하지 않은 용병입니다.', 404);
+            }
+            const mercRow = mercRes.rows[0];
+            if (mercRow.status !== 'idle') {
+                throw new AzitGameError(
+                    mercRow.status === 'dead'
+                        ? '사망한 용병은 부활 후 스킬을 강화할 수 있습니다.'
+                        : '원정 중인 용병은 귀환 후 스킬을 강화할 수 있습니다.',
+                    400
+                );
+            }
+
+            const currentSkillLv =
+                skillSlot === 'main'
+                    ? Number(mercRow.main_skill_level ?? 1)
+                    : Number(mercRow.sub_skill_level ?? 1);
+            if (currentSkillLv >= MAX_SKILL_LEVEL) {
+                throw new AzitGameError(
+                    `스킬이 이미 최고 레벨(Lv.${MAX_SKILL_LEVEL})에 도달했습니다.`,
+                    400,
+                    'MAX_SKILL_LEVEL'
+                );
+            }
+
+            const requiredItemId: AzitItemId =
+                skillSlot === 'main' ? 'item-skill-tome' : 'item-skill-stone';
+            const itemDef = getItemDef(requiredItemId)!;
+            const colName = skillSlot === 'main' ? 'main_skill_level' : 'sub_skill_level';
+
+            await runSerializedTransaction(async () => {
+                const deductRes = await pool.query(
+                    `UPDATE azit_item_inventory
+                     SET qty = qty - 1,
+                         updated_at = CURRENT_TIMESTAMP
+                     WHERE user_id = $1 AND item_id = $2 AND qty >= 1 AND is_deleted = 0`,
+                    [userId, requiredItemId]
+                );
+                if (deductRes.rowCount === 0) {
+                    throw new AzitGameError(
+                        `[${itemDef.emoji} ${itemDef.name}] 아이템이 부족합니다.`,
+                        400,
+                        'INSUFFICIENT_ITEM'
+                    );
+                }
+
+                const updRes = await pool.query(
+                    `UPDATE azit_mercenaries
+                     SET ${colName} = ${colName} + 1,
+                         updated_at = CURRENT_TIMESTAMP
+                     WHERE user_id = $1 AND merc_code = $2 AND status = 'idle' AND ${colName} = $3 AND ${colName} < $4 AND is_deleted = 0`,
+                    [userId, mDef.mercCode, currentSkillLv, MAX_SKILL_LEVEL]
+                );
+                if (updRes.rowCount === 0) {
+                    throw new AzitGameError('스킬 강화 상태가 변경되었습니다. 다시 시도해 주세요.', 409);
+                }
+            });
+
+            const newLevel = currentSkillLv + 1;
+            const skillName = skillSlot === 'main' ? mDef.mainSkill.name : mDef.subSkill.name;
+            const state = await this.getStateInternal(userId, { skipFarmerAutomation: true });
+            return {
+                message: `📘 [${mDef.name}]의 [${skillName}] 스킬이 Lv.${newLevel}(으)로 강화되었습니다!`,
+                mercCode: mDef.mercCode,
+                skillSlot,
+                newLevel,
+                state,
+            };
+        });
+    }
+
+    static async buyShopItem(userId: number, itemId: string, rawQty = 1) {
+        return this.runWithUserLock(userId, async () => {
+            await this.ensureUserInitialized(userId);
+            await this.processFarmerAutomationInternal(userId, Date.now());
+
+            const itemDef = getItemDef(itemId);
+            if (!itemDef) {
+                throw new AzitGameError('존재하지 않는 아이템입니다.', 400);
+            }
+            if (itemDef.shopPrice === null || itemDef.shopPrice <= 0) {
+                throw new AzitGameError(
+                    `[${itemDef.name}] 아이템은 상점에서 직접 구매할 수 없습니다. 제작이나 원정/탑 보상으로 획득하세요.`,
+                    400,
+                    'ITEM_NOT_PURCHASABLE'
+                );
+            }
+
+            const profileRes = await pool.query('SELECT azit_xp FROM azit_profiles WHERE user_id = $1', [userId]);
+            const levelInfo = getAzitLevelInfo(Number(profileRes.rows[0]?.azit_xp ?? 0));
+            if (levelInfo.level < itemDef.requiredAzitLevel) {
+                throw new AzitGameError(
+                    `[${itemDef.emoji} ${itemDef.name}] 아이템은 아지트 Lv.${itemDef.requiredAzitLevel}부터 구매할 수 있습니다.`,
+                    400,
+                    'AZIT_LEVEL_LOCKED'
+                );
+            }
+
+            const qty = Math.max(1, Math.min(99, Math.floor(rawQty)));
+            const totalCost = itemDef.shopPrice * qty;
+
+            await runSerializedTransaction(async () => {
+                await this.deductVeraPoints({
+                    userId,
+                    amount: totalCost,
+                    txType: 'item_buy',
+                    refId: itemDef.itemId,
+                    description: `${itemDef.emoji} ${itemDef.name} ×${qty} 구매`,
+                });
+                await this.creditItemInventory(userId, itemDef.itemId, qty);
+            });
+
+            const state = await this.getStateInternal(userId, { skipFarmerAutomation: true });
+            return {
+                message: `🛒 [${itemDef.emoji} ${itemDef.name}] ×${qty}개를 ${totalCost.toLocaleString()}P에 구매했습니다!`,
+                itemId: itemDef.itemId,
+                qty,
+                totalCost,
+                state,
+            };
+        });
+    }
+
+    static async craftItem(userId: number, recipeId: string, rawQty = 1) {
+        return this.runWithUserLock(userId, async () => {
+            await this.ensureUserInitialized(userId);
+            await this.processFarmerAutomationInternal(userId, Date.now());
+
+            const recipe = getCraftRecipeDef(recipeId);
+            if (!recipe) {
+                throw new AzitGameError('존재하지 않는 제작 레시피입니다.', 400);
+            }
+
+            const profileRes = await pool.query('SELECT azit_xp FROM azit_profiles WHERE user_id = $1', [userId]);
+            const levelInfo = getAzitLevelInfo(Number(profileRes.rows[0]?.azit_xp ?? 0));
+            if (levelInfo.level < recipe.requiredAzitLevel) {
+                throw new AzitGameError(
+                    `[${recipe.emoji} ${recipe.name}] 제작은 아지트 Lv.${recipe.requiredAzitLevel}부터 가능합니다.`,
+                    400,
+                    'AZIT_LEVEL_LOCKED'
+                );
+            }
+
+            const qty = Math.max(1, Math.min(50, Math.floor(rawQty)));
+            const craftedQty = recipe.resultQty * qty;
+
+            await runSerializedTransaction(async () => {
+                for (const ing of recipe.ingredients) {
+                    const needed = ing.qty * qty;
+                    if (ing.kind === 'crop') {
+                        const res = await pool.query(
+                            `UPDATE azit_crop_inventory
+                             SET harvest_qty = harvest_qty - $1,
+                                 updated_at = CURRENT_TIMESTAMP
+                             WHERE user_id = $2 AND crop_id = $3 AND harvest_qty >= $4 AND is_deleted = 0`,
+                            [needed, userId, ing.id, needed]
+                        );
+                        if (res.rowCount === 0) {
+                            const cDef = getCropDef(ing.id);
+                            throw new AzitGameError(
+                                `수확한 [${cDef?.name || ing.id}] 작물이 ${needed}개 필요합니다.`,
+                                400,
+                                'INSUFFICIENT_INGREDIENT'
+                            );
+                        }
+                    } else if (ing.kind === 'material') {
+                        const res = await pool.query(
+                            `UPDATE azit_material_inventory
+                             SET qty = qty - $1,
+                                 updated_at = CURRENT_TIMESTAMP
+                             WHERE user_id = $2 AND material_id = $3 AND qty >= $4 AND is_deleted = 0`,
+                            [needed, userId, ing.id, needed]
+                        );
+                        if (res.rowCount === 0) {
+                            const mDef = getMaterialDef(ing.id);
+                            throw new AzitGameError(
+                                `몬스터 재료 [${mDef?.name || ing.id}]이(가) ${needed}개 필요합니다.`,
+                                400,
+                                'INSUFFICIENT_INGREDIENT'
+                            );
+                        }
+                    } else {
+                        const res = await pool.query(
+                            `UPDATE azit_item_inventory
+                             SET qty = qty - $1,
+                                 updated_at = CURRENT_TIMESTAMP
+                             WHERE user_id = $2 AND item_id = $3 AND qty >= $4 AND is_deleted = 0`,
+                            [needed, userId, ing.id, needed]
+                        );
+                        if (res.rowCount === 0) {
+                            const iDef = getItemDef(ing.id);
+                            throw new AzitGameError(
+                                `아이템 [${iDef?.name || ing.id}]이(가) ${needed}개 필요합니다.`,
+                                400,
+                                'INSUFFICIENT_INGREDIENT'
+                            );
+                        }
+                    }
+                }
+
+                const totalPointsCost = recipe.pointsCost * qty;
+                if (totalPointsCost > 0) {
+                    await this.deductVeraPoints({
+                        userId,
+                        amount: totalPointsCost,
+                        txType: 'item_craft',
+                        refId: recipe.recipeId,
+                        description: `${recipe.emoji} ${recipe.name} ×${qty} 제작`,
+                    });
+                }
+
+                await this.creditItemInventory(userId, recipe.resultItemId, craftedQty);
+            });
+
+            const resultDef = getItemDef(recipe.resultItemId);
+            const state = await this.getStateInternal(userId, { skipFarmerAutomation: true });
+            return {
+                message: `⚗️ [${resultDef?.emoji || recipe.emoji} ${resultDef?.name || recipe.name}] ×${craftedQty}개 제작 완료!`,
+                recipeId: recipe.recipeId,
+                resultItemId: recipe.resultItemId,
+                qty: craftedQty,
+                state,
+            };
+        });
+    }
+
+    static async getTowerFloors(userId: number, from = 1, to = MAX_TOWER_FLOOR) {
+        if (
+            !Number.isInteger(from) ||
+            !Number.isInteger(to) ||
+            from < 1 ||
+            to > MAX_TOWER_FLOOR ||
+            from > to
+        ) {
+            throw new AzitGameError(`유효한 탑 층수 범위(1~${MAX_TOWER_FLOOR})를 지정해 주세요.`, 400);
+        }
+        return this.runWithUserLock(userId, async () => {
+            await this.ensureUserInitialized(userId);
+            const progressRes = await pool.query(
+                `SELECT highest_cleared_floor, total_clears, total_attempts
+                 FROM azit_tower_progress
+                 WHERE user_id = $1 AND is_deleted = 0`,
+                [userId]
+            );
+            const row = progressRes.rows[0];
+            return {
+                floors: getTowerFloorSummaries(from, to),
+                themes: AZIT_TOWER_THEMES,
+                progress: {
+                    highestClearedFloor: Math.max(
+                        0,
+                        Math.min(MAX_TOWER_FLOOR, Number(row?.highest_cleared_floor ?? 0))
+                    ),
+                    maxFloor: MAX_TOWER_FLOOR,
+                    totalClears: Math.max(0, Number(row?.total_clears ?? 0)),
+                    totalAttempts: Math.max(0, Number(row?.total_attempts ?? 0)),
+                },
+                totalFloors: MAX_TOWER_FLOOR,
+            };
+        });
+    }
+
+    static async battleTowerFloor(params: {
+        userId: number;
+        floor: number;
+        groupId?: number | null;
+        partyMercCodes?: string[];
+        elixirItemId?: string | null;
+    }) {
+        const { userId, floor } = params;
+        return this.runWithUserLock(userId, async () => {
+            await this.ensureUserInitialized(userId);
+            await this.processFarmerAutomationInternal(userId, Date.now());
+
+            if (!Number.isInteger(floor) || floor < 1 || floor > MAX_TOWER_FLOOR) {
+                throw new AzitGameError(`베라의 탑은 1층~${MAX_TOWER_FLOOR}층까지만 도전할 수 있습니다.`, 400);
+            }
+            const floorDef = getTowerFloorDef(floor);
+            if (!floorDef) {
+                throw new AzitGameError('존재하지 않는 탑 층수입니다.', 400);
+            }
+
+            const progressRes = await pool.query(
+                `SELECT highest_cleared_floor FROM azit_tower_progress WHERE user_id = $1 AND is_deleted = 0`,
+                [userId]
+            );
+            const highestCleared = Math.max(
+                0,
+                Math.min(MAX_TOWER_FLOOR, Number(progressRes.rows[0]?.highest_cleared_floor ?? 0))
+            );
+            const maxUnlockedFloor = Math.min(MAX_TOWER_FLOOR, highestCleared + 1);
+            if (floor > maxUnlockedFloor) {
+                throw new AzitGameError(
+                    `${floor}층은 아직 잠겨 있습니다. 먼저 ${maxUnlockedFloor}층을 공략해 주세요!`,
+                    400,
+                    'TOWER_FLOOR_LOCKED'
+                );
+            }
+
+            let resolvedGroupId: number | null = null;
+            let requestedPartyCodes = Array.isArray(params.partyMercCodes)
+                ? params.partyMercCodes.map((c) => (typeof c === 'string' ? c.trim() : '')).filter(Boolean)
+                : [];
+
+            if (params.groupId !== undefined && params.groupId !== null) {
+                if (!Number.isInteger(params.groupId) || params.groupId <= 0) {
+                    throw new AzitGameError('올바른 용병 그룹 ID가 아닙니다.', 400);
+                }
+                const groupRes = await pool.query(
+                    `SELECT id, merc_codes_json FROM azit_mercenary_groups
+                     WHERE id = $1 AND user_id = $2 AND is_deleted = 0`,
+                    [params.groupId, userId]
+                );
+                if (groupRes.rows.length === 0) {
+                    throw new AzitGameError('선택한 용병 그룹을 찾을 수 없습니다.', 404);
+                }
+                resolvedGroupId = Number(groupRes.rows[0].id);
+                let groupMercCodes: string[] = [];
+                try {
+                    const parsed = JSON.parse(String(groupRes.rows[0].merc_codes_json || '[]'));
+                    if (Array.isArray(parsed)) {
+                        groupMercCodes = parsed
+                            .map((c) => (typeof c === 'string' ? c.trim() : ''))
+                            .filter(Boolean);
+                    }
+                } catch (_) {
+                    groupMercCodes = [];
+                }
+                if (requestedPartyCodes.length === 0) {
+                    requestedPartyCodes = groupMercCodes;
+                } else {
+                    const reqSet = new Set(requestedPartyCodes);
+                    const grpSet = new Set(groupMercCodes);
+                    const matchesGroup =
+                        reqSet.size === grpSet.size &&
+                        Array.from(reqSet).every((code) => grpSet.has(code));
+                    if (!matchesGroup) {
+                        throw new AzitGameError(
+                            '선택한 용병 그룹의 편성 인원과 출전 용병 목록이 일치하지 않습니다.',
+                            400,
+                            'GROUP_PARTY_MISMATCH'
+                        );
+                    }
+                }
+            }
+
+            const uniqueParty = Array.from(new Set(requestedPartyCodes));
+            if (uniqueParty.length === 0) {
+                throw new AzitGameError('베라의 탑에 출전할 용병을 최소 1명 선택해 주세요.', 400);
+            }
+
+            const profileRes = await pool.query('SELECT azit_xp FROM azit_profiles WHERE user_id = $1', [userId]);
+            const levelInfo = getAzitLevelInfo(Number(profileRes.rows[0]?.azit_xp ?? 0));
+            if (uniqueParty.length > levelInfo.maxPartySize) {
+                throw new AzitGameError(
+                    `현재 아지트 레벨(Lv.${levelInfo.level})에서는 최대 ${levelInfo.maxPartySize}명까지 파티를 편성할 수 있습니다.`,
+                    400
+                );
+            }
+
+            const mercRowsRes = await pool.query(
+                `SELECT merc_code, level, xp, main_skill_level, sub_skill_level, status
+                 FROM azit_mercenaries
+                 WHERE user_id = $1 AND is_deleted = 0`,
+                [userId]
+            );
+            const partyMercDetails: Array<{
+                mercCode: AzitMercCode;
+                level: number;
+                xp: number;
+                mainSkillLevel: number;
+                subSkillLevel: number;
+                maxLevel: number;
+            }> = [];
+            for (const code of uniqueParty) {
+                const row = mercRowsRes.rows.find((r) => r.merc_code === code);
+                const mDef = getMercDef(code);
+                if (!row || !mDef) {
+                    throw new AzitGameError('영입되지 않은 용병이 포함되어 있습니다.', 400);
+                }
+                if (row.status === 'dead') {
+                    throw new AzitGameError(
+                        `[${mDef.name}] 용병은 사망 상태입니다. 부활 아이템으로 먼저 소생시켜 주세요.`,
+                        400,
+                        'MERCENARY_DEAD'
+                    );
+                }
+                if (row.status !== 'idle') {
+                    throw new AzitGameError(`[${mDef.name}] 용병은 현재 원정에 출정 중입니다.`, 400);
+                }
+                partyMercDetails.push({
+                    mercCode: mDef.mercCode,
+                    level: Number(row.level ?? 1),
+                    xp: Number(row.xp ?? 0),
+                    mainSkillLevel: Math.max(1, Math.min(MAX_SKILL_LEVEL, Number(row.main_skill_level ?? 1))),
+                    subSkillLevel: Math.max(1, Math.min(MAX_SKILL_LEVEL, Number(row.sub_skill_level ?? 1))),
+                    maxLevel: mDef.maxLevel,
+                });
+            }
+
+            let resolvedElixirId: AzitItemId | null = null;
+            if (params.elixirItemId !== undefined && params.elixirItemId !== null && params.elixirItemId.trim() !== '') {
+                const elixirDef = getItemDef(params.elixirItemId.trim());
+                if (!elixirDef || elixirDef.category !== 'consumable') {
+                    throw new AzitGameError('베라의 탑에서 사용할 수 없는 비약 아이템입니다.', 400);
+                }
+                const elixirCheck = await pool.query(
+                    `SELECT qty FROM azit_item_inventory
+                     WHERE user_id = $1 AND item_id = $2 AND is_deleted = 0`,
+                    [userId, elixirDef.itemId]
+                );
+                if (Number(elixirCheck.rows[0]?.qty ?? 0) < 1) {
+                    throw new AzitGameError('보유 중인 투지의 비약이 부족합니다.', 400, 'INSUFFICIENT_ITEM');
+                }
+                resolvedElixirId = elixirDef.itemId;
+            }
+
+            const allies = partyMercDetails.map((m, idx) =>
+                buildMercCombatUnit({
+                    mercCode: m.mercCode,
+                    level: m.level,
+                    mainSkillLevel: m.mainSkillLevel,
+                    subSkillLevel: m.subSkillLevel,
+                    unitId: `ally-${idx}-${m.mercCode}`,
+                })
+            );
+            const enemies = buildTowerEnemyUnits(floorDef);
+            const seed = crypto.randomInt(1, 2_147_483_647);
+            const elixirBoostPct = resolvedElixirId === 'item-battle-elixir' ? 12 : 0;
+
+            const simResult = runCombatSimulation({
+                mode: 'tower',
+                seed,
+                allies,
+                enemies,
+                elixirBoostPct,
+                recordFrames: true,
+                frameIntervalTicks: 1,
+            });
+
+            const won = simResult.won;
+            const isFirstClear = won && floor > highestCleared;
+            const rewards: AzitTowerRewardBundle = won
+                ? isFirstClear
+                    ? floorDef.firstClearReward
+                    : floorDef.repeatReward
+                : {
+                      veraPoints: 0,
+                      mercXp: 0,
+                      azitXp: 0,
+                      materials: {},
+                      crops: {},
+                      items: {},
+                  };
+
+            await runSerializedTransaction(async () => {
+                if (resolvedElixirId) {
+                    const elixirDeduct = await pool.query(
+                        `UPDATE azit_item_inventory
+                         SET qty = qty - 1,
+                             updated_at = CURRENT_TIMESTAMP
+                         WHERE user_id = $1 AND item_id = $2 AND qty >= 1 AND is_deleted = 0`,
+                        [userId, resolvedElixirId]
+                    );
+                    if (elixirDeduct.rowCount === 0) {
+                        throw new AzitGameError('보유 중인 투지의 비약이 부족합니다.', 400, 'INSUFFICIENT_ITEM');
+                    }
+                }
+
+                if (won) {
+                    if (rewards.veraPoints > 0) {
+                        await this.creditVeraPoints({
+                            userId,
+                            amount: rewards.veraPoints,
+                            txType: isFirstClear ? 'tower_first_clear' : 'tower_repeat_clear',
+                            refId: String(floor),
+                            description: `🏰 베라의 탑 ${floor}층 ${isFirstClear ? '최초 클리어' : '반복 토벌'} 보상`,
+                        });
+                    }
+                    if (rewards.azitXp > 0) {
+                        await this.addAzitXp(userId, rewards.azitXp);
+                    }
+                    for (const [matId, qty] of Object.entries(rewards.materials)) {
+                        if (qty && qty > 0) {
+                            await this.creditMaterialInventory(userId, matId, qty);
+                        }
+                    }
+                    for (const [cropId, qty] of Object.entries(rewards.crops)) {
+                        if (qty && qty > 0) {
+                            await this.creditCropInventory(userId, cropId, qty);
+                        }
+                    }
+                    for (const [itemId, qty] of Object.entries(rewards.items)) {
+                        if (qty && qty > 0) {
+                            await this.creditItemInventory(userId, itemId, qty);
+                        }
+                    }
+
+                    for (const m of partyMercDetails) {
+                        const xpOut = applyMercenaryCombatXp(m.level, m.xp, rewards.mercXp, m.maxLevel);
+                        await pool.query(
+                            `UPDATE azit_mercenaries
+                             SET level = $1,
+                                 xp = $2,
+                                 status = 'idle',
+                                 updated_at = CURRENT_TIMESTAMP
+                             WHERE user_id = $3 AND merc_code = $4 AND is_deleted = 0`,
+                            [xpOut.level, xpOut.xp, userId, m.mercCode]
+                        );
+                    }
+
+                    await pool.query(
+                        `INSERT INTO azit_tower_progress (
+                            user_id, highest_cleared_floor, total_clears, total_attempts, last_cleared_at
+                         )
+                         VALUES ($1, $2, 1, 1, CURRENT_TIMESTAMP)
+                         ON CONFLICT (user_id) DO UPDATE SET
+                            highest_cleared_floor = CASE
+                                WHEN azit_tower_progress.highest_cleared_floor < $3 THEN $4
+                                ELSE azit_tower_progress.highest_cleared_floor
+                            END,
+                            total_clears = azit_tower_progress.total_clears + 1,
+                            total_attempts = azit_tower_progress.total_attempts + 1,
+                            last_cleared_at = CURRENT_TIMESTAMP,
+                            updated_at = CURRENT_TIMESTAMP`,
+                        [userId, floor, floor, floor]
+                    );
+                } else {
+                    // 패배 시 사망 패널티/아이템 손실 없음 — 용병 상태 완전 보존, 시도 횟수만 기록
+                    await pool.query(
+                        `INSERT INTO azit_tower_progress (
+                            user_id, highest_cleared_floor, total_clears, total_attempts
+                         )
+                         VALUES ($1, 0, 0, 1)
+                         ON CONFLICT (user_id) DO UPDATE SET
+                            total_attempts = azit_tower_progress.total_attempts + 1,
+                            updated_at = CURRENT_TIMESTAMP`,
+                        [userId]
+                    );
+                }
+
+                await pool.query(
+                    `INSERT INTO azit_tower_runs (
+                        user_id, group_id, floor, party_merc_codes_json, elixir_item_id,
+                        won, is_first_clear, battle_seed, duration_ms,
+                        reward_points, reward_azit_xp, reward_merc_xp,
+                        reward_materials_json, reward_crops_json, reward_items_json,
+                        battle_replay_json, battle_log_json
+                     )
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+                    [
+                        userId,
+                        resolvedGroupId,
+                        floor,
+                        JSON.stringify(uniqueParty),
+                        resolvedElixirId,
+                        won ? 1 : 0,
+                        isFirstClear ? 1 : 0,
+                        simResult.seed,
+                        simResult.durationMs,
+                        rewards.veraPoints,
+                        rewards.azitXp,
+                        rewards.mercXp,
+                        JSON.stringify(rewards.materials),
+                        JSON.stringify(rewards.crops),
+                        JSON.stringify(rewards.items),
+                        JSON.stringify({
+                            seed: simResult.seed,
+                            durationMs: simResult.durationMs,
+                            mvpMercCode: simResult.mvpMercCode,
+                            frameCount: simResult.frames.length,
+                        }),
+                        JSON.stringify(simResult.battleLog),
+                    ]
+                );
+            });
+
+            const state = await this.getStateInternal(userId, { skipFarmerAutomation: true });
+            return {
+                message: won
+                    ? `🏰 베라의 탑 ${floor}층 ${isFirstClear ? '최초 정복' : '클리어'}! (+${rewards.veraPoints.toLocaleString()}P · 용병 EXP +${rewards.mercXp})`
+                    : `🛡️ 베라의 탑 ${floor}층 공략 실패 — 탑의 결계로 용병이 부상 없이 회복되었습니다!`,
+                won,
+                floor,
+                isFirstClear,
+                durationMs: simResult.durationMs,
+                seed: simResult.seed,
+                frames: simResult.frames as CombatFrame[],
+                battleLog: simResult.battleLog,
+                rewards,
+                state,
+            };
         });
     }
 
